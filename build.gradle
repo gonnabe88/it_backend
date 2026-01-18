@@ -68,17 +68,4 @@ tasks.named('asciidoctor') {
 	dependsOn test
 }
 
-// QueryDSL generated sources settings
-def querydslDir = "build/generated/sources/annotationProcessor/java/main"
 
-sourceSets {
-	main.java.srcDirs += [ querydslDir ]
-}
-
-tasks.withType(JavaCompile) {
-	options.generatedSourceOutputDirectory = file(querydslDir)
-}
-
-clean {
-	delete file(querydslDir)
-}
