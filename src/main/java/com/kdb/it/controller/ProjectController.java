@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -15,8 +16,13 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
+    @GetMapping
+    public ResponseEntity<List<ProjectDto.Response>> getProjects() {
+        return ResponseEntity.ok(projectService.getProjectList());
+    }
+
     @GetMapping("/{prjMngNo}")
-    public ResponseEntity<ProjectDto.Response> getProject(@PathVariable String prjMngNo) {
+    public ResponseEntity<ProjectDto.Response> getProject(@PathVariable("prjMngNo") String prjMngNo) {
         ProjectDto.Response response = projectService.getProject(prjMngNo);
         return ResponseEntity.ok(response);
     }
@@ -28,13 +34,13 @@ public class ProjectController {
     }
 
     @PutMapping("/{prjMngNo}")
-    public ResponseEntity<String> updateProject(@PathVariable String prjMngNo, @RequestBody ProjectDto.UpdateRequest request) {
+    public ResponseEntity<String> updateProject(@PathVariable("prjMngNo") String prjMngNo, @RequestBody ProjectDto.UpdateRequest request) {
         String updatedPrjMngNo = projectService.updateProject(prjMngNo, request);
         return ResponseEntity.ok(updatedPrjMngNo);
     }
 
     @DeleteMapping("/{prjMngNo}")
-    public ResponseEntity<Void> deleteProject(@PathVariable String prjMngNo) {
+    public ResponseEntity<Void> deleteProject(@PathVariable("prjMngNo") String prjMngNo) {
         projectService.deleteProject(prjMngNo);
         return ResponseEntity.noContent().build();
     }

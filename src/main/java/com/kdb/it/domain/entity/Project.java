@@ -109,12 +109,15 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_PUL_PTT", nullable = false, length = 2)
     private String prjPulPtt; // 프로젝트추진가능성
 
+    @Column(name = "PRJ_STS", nullable = false, length = 32)
+    private String prjSts; // 프로젝트상태
+
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
                        LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
                        String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
                        String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
                        String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-                       LocalDate lblFsgTlm, String rprSts, String prjPulPtt) {
+                       LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts) {
         this.prjNm = prjNm;
         this.prjTp = prjTp;
         this.svnDpm = svnDpm;
@@ -143,5 +146,6 @@ public class Project extends BaseEntity {
         this.lblFsgTlm = lblFsgTlm;
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
+        this.prjSts = prjSts;
     }
 }

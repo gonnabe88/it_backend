@@ -3,6 +3,7 @@ package com.kdb.it.service;
 import com.kdb.it.domain.entity.Project;
 import com.kdb.it.dto.ProjectDto;
 import com.kdb.it.repository.ProjectRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+
+    public List<ProjectDto.Response> getProjectList() {
+        return projectRepository.findAllByDelYn("N").stream()
+                .map(ProjectDto.Response::fromEntity)
+                .toList();
+    }
 
     public ProjectDto.Response getProject(String prjMngNo) {
         Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
@@ -42,7 +49,7 @@ public class ProjectService {
                 request.getPrjDes(), request.getPulRsn(), request.getSaf(), request.getNcs(),
                 request.getXptEff(), request.getPlm(), request.getPrjRng(), request.getPulPsg(),
                 request.getHrfPln(), request.getBzDtt(), request.getTchnTp(), request.getMnUsr(),
-                request.getDplYn(), request.getLblFsgTlm(), request.getRprSts(), request.getPrjPulPtt());
+                request.getDplYn(), request.getLblFsgTlm(), request.getRprSts(), request.getPrjPulPtt(), request.getPrjSts());
 
         return project.getPrjMngNo();
     }

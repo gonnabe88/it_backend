@@ -47,6 +47,7 @@ public class ProjectDto {
         private LocalDate lblFsgTlm;
         private String rprSts;
         private String prjPulPtt;
+        private String prjSts;
 
         public Project toEntity() {
             return Project.builder()
@@ -79,6 +80,7 @@ public class ProjectDto {
                     .lblFsgTlm(lblFsgTlm)
                     .rprSts(rprSts)
                     .prjPulPtt(prjPulPtt)
+                    .prjSts(prjSts)
                     .build();
         }
     }
@@ -117,6 +119,7 @@ public class ProjectDto {
         private LocalDate lblFsgTlm;
         private String rprSts;
         private String prjPulPtt;
+        private String prjSts;
     }
 
     @Getter
@@ -154,6 +157,7 @@ public class ProjectDto {
         private LocalDate lblFsgTlm;
         private String rprSts;
         private String prjPulPtt;
+        private String prjSts;
         private String delYn;
 
         public static Response fromEntity(Project project) {
@@ -187,6 +191,7 @@ public class ProjectDto {
                     .lblFsgTlm(project.getLblFsgTlm())
                     .rprSts(project.getRprSts())
                     .prjPulPtt(project.getPrjPulPtt())
+                    .prjSts(project.getPrjSts())
                     .delYn(project.getDelYn())
                     .build();
         }

@@ -68,4 +68,8 @@ tasks.named('asciidoctor') {
 	dependsOn test
 }
 
+tasks.withType(JavaCompile) {
+	options.compilerArgs.add("-parameters")
+}
+
 
