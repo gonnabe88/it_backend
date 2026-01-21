@@ -63,4 +63,8 @@ public abstract class BaseEntity {
             this.guidPrgSno = 1;
         }
     }
+
+    public void delete() {
+        this.delYn = "Y";
+    }
 }
