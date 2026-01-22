@@ -30,6 +30,7 @@ public class ProjectDto {
         private String itDpmCgpr;
         private String svnDpmTlr;
         private String itDpmTlr;
+        private String svnHdq;
         private String edrt;
         private String prjDes;
         private String pulRsn;
@@ -48,6 +49,7 @@ public class ProjectDto {
         private String rprSts;
         private String prjPulPtt;
         private String prjSts;
+        private String bgYy;
 
         public Project toEntity() {
             return Project.builder()
@@ -61,6 +63,7 @@ public class ProjectDto {
                     .endDt(endDt)
                     .svnDpmCgpr(svnDpmCgpr)
                     .itDpmCgpr(itDpmCgpr)
+                    .svnHdq(svnHdq)
                     .svnDpmTlr(svnDpmTlr)
                     .itDpmTlr(itDpmTlr)
                     .edrt(edrt)
@@ -81,6 +84,7 @@ public class ProjectDto {
                     .rprSts(rprSts)
                     .prjPulPtt(prjPulPtt)
                     .prjSts(prjSts)
+                    .bgYy(bgYy)
                     .build();
         }
     }
@@ -101,6 +105,7 @@ public class ProjectDto {
         private String svnDpmCgpr;
         private String itDpmCgpr;
         private String svnDpmTlr;
+        private String svnHdq;
         private String itDpmTlr;
         private String edrt;
         private String prjDes;
@@ -120,6 +125,7 @@ public class ProjectDto {
         private String rprSts;
         private String prjPulPtt;
         private String prjSts;
+        private String bgYy;
     }
 
     @Getter
@@ -138,6 +144,7 @@ public class ProjectDto {
         private LocalDate endDt;
         private String svnDpmCgpr;
         private String itDpmCgpr;
+        private String svnHdq;
         private String svnDpmTlr;
         private String itDpmTlr;
         private String edrt;
@@ -159,6 +166,7 @@ public class ProjectDto {
         private String prjPulPtt;
         private String prjSts;
         private String delYn;
+        private String bgYy;
 
         public static Response fromEntity(Project project) {
             return Response.builder()
@@ -170,6 +178,7 @@ public class ProjectDto {
                     .prjBg(project.getPrjBg())
                     .sttDt(project.getSttDt())
                     .endDt(project.getEndDt())
+                    .svnHdq(project.getSvnHdq())
                     .svnDpmCgpr(project.getSvnDpmCgpr())
                     .itDpmCgpr(project.getItDpmCgpr())
                     .svnDpmTlr(project.getSvnDpmTlr())
@@ -193,6 +202,7 @@ public class ProjectDto {
                     .prjPulPtt(project.getPrjPulPtt())
                     .prjSts(project.getPrjSts())
                     .delYn(project.getDelYn())
+                    .bgYy(project.getBgYy())
                     .build();
         }
     }

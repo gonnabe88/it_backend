@@ -49,7 +49,8 @@ public class ProjectService {
                 request.getPrjDes(), request.getPulRsn(), request.getSaf(), request.getNcs(),
                 request.getXptEff(), request.getPlm(), request.getPrjRng(), request.getPulPsg(),
                 request.getHrfPln(), request.getBzDtt(), request.getTchnTp(), request.getMnUsr(),
-                request.getDplYn(), request.getLblFsgTlm(), request.getRprSts(), request.getPrjPulPtt(), request.getPrjSts());
+                request.getDplYn(), request.getLblFsgTlm(), request.getRprSts(), request.getPrjPulPtt(),
+                request.getPrjSts(), request.getBgYy(), request.getSvnHdq());
 
         return project.getPrjMngNo();
     }

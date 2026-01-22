@@ -112,12 +112,18 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_STS", nullable = false, length = 32)
     private String prjSts; // 프로젝트상태
 
+    @Column(name = "BG_YY", nullable = false, precision = 4)
+    private String bgYy; // 예산년도
+
+    @Column(name = "SVN_HDQ", nullable = false, length = 32)
+    private String svnHdq; // 주관본부/부문
+
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
-                       LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
-                       String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
-                       String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
-                       String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-                       LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts) {
+            LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
+            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
+            String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
+            String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
+            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String bgYy, String svnHdq) {
         this.prjNm = prjNm;
         this.prjTp = prjTp;
         this.svnDpm = svnDpm;
@@ -147,5 +153,7 @@ public class Project extends BaseEntity {
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
         this.prjSts = prjSts;
+        this.bgYy = bgYy;
+        this.svnHdq = svnHdq;
     }
 }
