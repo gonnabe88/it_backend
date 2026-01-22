@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class ProjectDto {
 
@@ -167,6 +168,10 @@ public class ProjectDto {
         private String prjSts;
         private String delYn;
         private String bgYy;
+        private LocalDateTime fstEnrDtm;
+        private String fstEnrUsid;
+        private LocalDateTime lstChgDtm;
+        private String lstChgUsid;
 
         public static Response fromEntity(Project project) {
             return Response.builder()
@@ -203,6 +208,11 @@ public class ProjectDto {
                     .prjSts(project.getPrjSts())
                     .delYn(project.getDelYn())
                     .bgYy(project.getBgYy())
+
+                    .fstEnrDtm(project.getFstEnrDtm())
+                    .fstEnrUsid(project.getFstEnrUsid())
+                    .lstChgDtm(project.getLstChgDtm())
+                    .lstChgUsid(project.getLstChgUsid())
                     .build();
         }
     }

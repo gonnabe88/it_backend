@@ -11,4 +11,7 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
     Optional<Project> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
     List<Project> findAllByDelYn(String delYn);
+
+    @org.springframework.data.jpa.repository.Query(value = "SELECT S_PRJ.NEXTVAL FROM DUAL", nativeQuery = true)
+    Long getNextSequenceValue();
 }

@@ -29,9 +29,26 @@ public class ProjectService {
 
     @Transactional
     public String createProject(ProjectDto.CreateRequest request) {
-        if (projectRepository.existsById(request.getPrjMngNo())) {
-            throw new IllegalArgumentException("Project already exists with id: " + request.getPrjMngNo());
+        String prjMngNo = request.getPrjMngNo();
+
+        if (prjMngNo == null || prjMngNo.isEmpty()) {
+            Long nextVal = projectRepository.getNextSequenceValue();
+            
+            String year = request.getBgYy();
+            if (year == null || year.isEmpty()) {
+                year = String.valueOf(java.time.LocalDate.now().getYear());
+                request.setBgYy(year);
+            }
+            
+            // Format: PRJ-{bgYy}-{sequence} (padded to 4 digits)
+            prjMngNo = String.format("PRJ-%s-%04d", year, nextVal);
+            request.setPrjMngNo(prjMngNo);
+        } else {
+             if (projectRepository.existsById(prjMngNo)) {
+                throw new IllegalArgumentException("Project already exists with id: " + prjMngNo);
+            }
         }
+
         Project project = request.toEntity();
         projectRepository.save(project);
         return project.getPrjMngNo();
