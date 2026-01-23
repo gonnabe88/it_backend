@@ -18,6 +18,7 @@ public class ProjectDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @io.swagger.v3.oas.annotations.media.Schema(name = "ProjectCreateRequest")
     public static class CreateRequest {
         private String prjMngNo;
         private String prjNm;
@@ -95,6 +96,7 @@ public class ProjectDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @io.swagger.v3.oas.annotations.media.Schema(name = "ProjectUpdateRequest")
     public static class UpdateRequest {
         private String prjNm;
         private String prjTp;
@@ -134,6 +136,7 @@ public class ProjectDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @io.swagger.v3.oas.annotations.media.Schema(name = "ProjectResponse")
     public static class Response {
         private String prjMngNo;
         private String prjNm;
