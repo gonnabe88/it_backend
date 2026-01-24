@@ -22,14 +22,14 @@ public class ApplicationController {
     }
 
     @PostMapping("/{apfMngNo}/approve")
-    public ResponseEntity<Void> approve(@PathVariable String apfMngNo,
+    public ResponseEntity<Void> approve(@PathVariable("apfMngNo") String apfMngNo,
             @RequestBody ApplicationDto.ApproveRequest request) {
         applicationService.approve(apfMngNo, request);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{apfMngNo}")
-    public ResponseEntity<ApplicationDto.Response> getApplication(@PathVariable String apfMngNo) {
+    public ResponseEntity<ApplicationDto.Response> getApplication(@PathVariable("apfMngNo") String apfMngNo) {
         ApplicationDto.Response response = applicationService.getApplication(apfMngNo);
         return ResponseEntity.ok(response);
     }
