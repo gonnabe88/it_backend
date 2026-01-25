@@ -25,8 +25,54 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_MNG_NO", nullable = false, length = 32)
     private String prjMngNo; // 프로젝트관리번호
 
+    @Column(name = "PRJ_SNO", nullable = false)
+    private Integer prjSno; // 프로젝트순번
+
     @Column(name = "PRJ_NM", nullable = false, length = 200)
     private String prjNm; // 프로젝트명
+
+    // ... (중략) ...
+
+    public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
+            LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
+            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
+            String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
+            String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
+            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String bgYy, String svnHdq, Integer prjSno) {
+        this.prjSno = prjSno;
+        this.prjNm = prjNm;
+        // ... (나머지 필드 업데이트)
+        this.prjTp = prjTp;
+        this.svnDpm = svnDpm;
+        this.itDpm = itDpm;
+        this.prjBg = prjBg;
+        this.sttDt = sttDt;
+        this.endDt = endDt;
+        this.svnDpmCgpr = svnDpmCgpr;
+        this.itDpmCgpr = itDpmCgpr;
+        this.svnDpmTlr = svnDpmTlr;
+        this.itDpmTlr = itDpmTlr;
+        this.edrt = edrt;
+        this.prjDes = prjDes;
+        this.pulRsn = pulRsn;
+        this.saf = saf;
+        this.ncs = ncs;
+        this.xptEff = xptEff;
+        this.plm = plm;
+        this.prjRng = prjRng;
+        this.pulPsg = pulPsg;
+        this.hrfPln = hrfPln;
+        this.bzDtt = bzDtt;
+        this.tchnTp = tchnTp;
+        this.mnUsr = mnUsr;
+        this.dplYn = dplYn;
+        this.lblFsgTlm = lblFsgTlm;
+        this.rprSts = rprSts;
+        this.prjPulPtt = prjPulPtt;
+        this.prjSts = prjSts;
+        this.bgYy = bgYy;
+        this.svnHdq = svnHdq;
+    }
 
     @Column(name = "PRJ_TP", nullable = false, length = 100)
     private String prjTp; // 프로젝트유형

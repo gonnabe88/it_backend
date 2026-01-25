@@ -30,6 +30,15 @@ public class Capplm extends BaseEntity {
     // 신청서상태
     private String apfSts;
 
+    @Column(name = "APF_NM", length = 200)
+    // 신청서명
+    private String apfNm;
+
+    @jakarta.persistence.Lob
+    @Column(name = "APF_DTL_CONE")
+    // 신청서세부내용
+    private String apfDtlCone;
+
     @Column(name = "RQS_ENO", length = 32)
     // 신청 사원번호
     private String rqsEno;
@@ -44,5 +53,9 @@ public class Capplm extends BaseEntity {
 
     public void updateStatus(String status) {
         this.apfSts = status;
+    }
+
+    public void updateDetailContent(String detailContent) {
+        this.apfDtlCone = detailContent;
     }
 }

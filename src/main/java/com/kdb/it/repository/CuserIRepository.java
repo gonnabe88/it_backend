@@ -8,6 +8,10 @@ import java.util.Optional;
 
 @Repository
 public interface CuserIRepository extends JpaRepository<CuserI, String>, CuserIRepositoryCustom {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "organization")
+    java.util.List<CuserI> findByBbrC(String bbrC);
+    
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "organization")
     Optional<CuserI> findByEno(String eno);
 
     boolean existsByEno(String eno);

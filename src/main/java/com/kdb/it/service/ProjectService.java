@@ -14,18 +14,31 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final com.kdb.it.repository.CapplaRepository capplaRepository;
+    private final com.kdb.it.repository.CapplmRepository capplmRepository;
 
     public List<ProjectDto.Response> getProjectList() {
         return projectRepository.findAllByDelYn("N").stream()
-                .map(ProjectDto.Response::fromEntity)
+                .map(project -> {
+                    ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
+                    setApplicationInfo(response, project.getPrjMngNo(), project.getPrjSno());
+                    return response;
+                })
                 .toList();
     }
 
     public ProjectDto.Response getProject(String prjMngNo) {
         Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
-        return ProjectDto.Response.fromEntity(project);
+        
+        ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
+        setApplicationInfo(response, prjMngNo, project.getPrjSno());
+        return response;
     }
+
+    // ... (중략) ...
+
+
 
     @Transactional
     public String createProject(ProjectDto.CreateRequest request) {
@@ -77,5 +90,34 @@ public class ProjectService {
         Project project = projectRepository.findById(prjMngNo)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
         project.delete();
+    }
+
+    // 일괄 조회 (여러 프로젝트를 한 번에 조회)
+    public List<ProjectDto.Response> getProjectsByIds(ProjectDto.BulkGetRequest request) {
+        return request.getPrjMngNos().stream()
+                .map(prjMngNo -> {
+                    try {
+                        return getProject(prjMngNo);
+                    } catch (IllegalArgumentException e) {
+                        // 존재하지 않는 프로젝트는 결과에서 제외
+                        return null;
+                    }
+                })
+                .filter(response -> response != null) // null 제거
+                .toList();
+    }
+
+    private void setApplicationInfo(ProjectDto.Response response, String prjMngNo, Integer prjSno) {
+        // TAAABB_BPRJTM 테이블 코드와 프로젝트 관리번호, 순번으로 신청서 조회
+        List<com.kdb.it.domain.entity.Cappla> capplas = capplaRepository
+                .findByOrcTbCdAndOrcPkVlAndOrcSnoVlOrderByApfRelSnoDesc("BPRJTM", prjMngNo, prjSno);
+        
+        if (!capplas.isEmpty()) {
+            com.kdb.it.domain.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
+            response.setApfMngNo(cappla.getApfMngNo());
+            
+            capplmRepository.findById(cappla.getApfMngNo())
+                    .ifPresent(capplm -> response.setApfSts(capplm.getApfSts()));
+        }
     }
 }

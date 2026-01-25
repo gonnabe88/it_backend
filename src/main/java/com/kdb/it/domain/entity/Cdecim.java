@@ -45,12 +45,17 @@ public class Cdecim extends BaseEntity {
     // 결재의견
     private String dcdOpnn;
 
+    @Column(name = "DCD_STS", length = 32)
+    // 결재상태 (승인/반려)
+    private String dcdSts;
+
     @Column(name = "LST_DCD_YN", length = 1)
     // 최종결재자여부
     private String lstDcdYn;
 
-    public void approve(String opinion) {
-        this.dcdTp = "승인"; // 승인 상태 코드
+    public void approve(String opinion, String status) {
+        this.dcdTp = "결재"; // 결재 행위 자체는 완료됨
+        this.dcdSts = status; // 승인 or 반려
         this.dcdDt = LocalDate.now();
         this.dcdOpnn = opinion;
     }

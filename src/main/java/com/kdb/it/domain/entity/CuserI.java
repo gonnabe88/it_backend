@@ -23,6 +23,14 @@ public class CuserI extends BaseEntity {
     @Column(name = "BBR_C", length = 3)
     private String bbrC; // 부서코드
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "BBR_C", referencedColumnName = "PRLM_OGZ_C_CONE", insertable = false, updatable = false)
+    private CorgnI organization;
+
+    public String getBbrNm() {
+        return organization != null ? organization.getBbrNm() : null;
+    }
+
     @Column(name = "CADR_TPN", length = 20)
     private String cadrTpn; // 회사번호
 
