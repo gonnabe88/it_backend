@@ -31,6 +31,21 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplications());
     }
 
+    @GetMapping("/{apfMngNo}")
+    @Operation(summary = "특정 신청서 조회", description = "특정 신청서를 조회합니다.")
+    public ResponseEntity<ApplicationDto.Response> getApplication(@PathVariable("apfMngNo") String apfMngNo) {
+        ApplicationDto.Response response = applicationService.getApplication(apfMngNo);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/bulk-get")
+    @Operation(summary = "신청서 일괄 조회", description = "여러 개의 신청서를 한 번에 조회합니다. 존재하지 않는 신청서는 결과에서 제외됩니다.")
+    public ResponseEntity<java.util.List<ApplicationDto.Response>> bulkGetApplications(
+            @RequestBody ApplicationDto.BulkGetRequest request) {
+        java.util.List<ApplicationDto.Response> responses = applicationService.getApplicationsByIds(request);
+        return ResponseEntity.ok(responses);
+    }
+
     @PostMapping
     @Operation(summary = "신규 신청서 생성", description = "신규 신청서를 생성합니다.")
     public ResponseEntity<String> submit(@RequestBody ApplicationDto.CreateRequest request) {
@@ -54,18 +69,4 @@ public class ApplicationController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{apfMngNo}")
-    @Operation(summary = "특정 신청서 조회", description = "특정 신청서를 조회합니다.")
-    public ResponseEntity<ApplicationDto.Response> getApplication(@PathVariable("apfMngNo") String apfMngNo) {
-        ApplicationDto.Response response = applicationService.getApplication(apfMngNo);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/bulk-get")
-    @Operation(summary = "신청서 일괄 조회", description = "여러 개의 신청서를 한 번에 조회합니다. 존재하지 않는 신청서는 결과에서 제외됩니다.")
-    public ResponseEntity<java.util.List<ApplicationDto.Response>> bulkGetApplications(
-            @RequestBody ApplicationDto.BulkGetRequest request) {
-        java.util.List<ApplicationDto.Response> responses = applicationService.getApplicationsByIds(request);
-        return ResponseEntity.ok(responses);
-    }
 }

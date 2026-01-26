@@ -26,7 +26,7 @@ public class ApplicationService {
 
     // 결재
     @Transactional
-    private void updateApprovalLineInDetail(Capplm capplm, String dcdEno) {
+    private void updateApprovalLineInDetail(Capplm capplm, List<Cdecim> allApprovers, List<Cdecim> approvedItems) {
         String detailJson = capplm.getApfDtlCone();
         if (detailJson == null || detailJson.isEmpty()) {
             return;
@@ -40,17 +40,53 @@ public class ApplicationService {
                 return;
             }
 
+            // 1. Target Occurrences 계산
+            // 각 사원번호(ID)별로 승인된 항목이 몇 번째 등장인지(Occurrence Index)를 저장
+            // Map<EmployeeID, Set<OccurrenceIndex>>
+            java.util.Map<String, java.util.Set<Integer>> targetOccurrences = new java.util.HashMap<>();
+            java.util.Map<String, Integer> globalOccurrenceCounters = new java.util.HashMap<>();
+
+            // 전체 결재자 목록을 순회하며 각 항목의 등장 순서를 계산
+            for (Cdecim approver : allApprovers) {
+                String eno = approver.getDcdEno();
+                int currentOccurrence = globalOccurrenceCounters.getOrDefault(eno, 0) + 1;
+                globalOccurrenceCounters.put(eno, currentOccurrence);
+
+                // 현재 항목이 승인 대상 목록에 포함되어 있다면, Target Occurrences에 추가
+                // approvedItems는 DB 엔티티이므로 equals()로 비교 가능 (혹은 ID/Seq로 비교)
+                boolean isApprovedItem = approvedItems.stream()
+                        .anyMatch(item -> item.getDcdSqn().equals(approver.getDcdSqn())); // dcdSqn은 유니크하다고 가정
+
+                if (isApprovedItem) {
+                    targetOccurrences.computeIfAbsent(eno, k -> new java.util.HashSet<>()).add(currentOccurrence);
+                }
+            }
+
             boolean updated = false;
+            java.util.Map<String, Integer> jsonOccurrenceCounters = new java.util.HashMap<>();
+
+            // 2. JSON 순회 및 업데이트
             java.util.Iterator<String> fieldNames = approvalLineNode.fieldNames();
             while (fieldNames.hasNext()) {
                 String fieldName = fieldNames.next();
                 com.fasterxml.jackson.databind.JsonNode approverNode = approvalLineNode.get(fieldName);
-                if (approverNode.has("id") && dcdEno.equals(approverNode.get("id").asText())) {
-                    if (approverNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-                        ((com.fasterxml.jackson.databind.node.ObjectNode) approverNode)
-                                .put("date", LocalDate.now()
-                                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd")));
-                        updated = true;
+
+                if (approverNode != null && approverNode.isObject() && approverNode.has("id")) {
+                    String id = approverNode.get("id").asText();
+
+                    // JSON 내에서의 해당 ID 등장 횟수 카운트
+                    int currentJsonOccurrence = jsonOccurrenceCounters.getOrDefault(id, 0) + 1;
+                    jsonOccurrenceCounters.put(id, currentJsonOccurrence);
+
+                    // 타겟 등장 횟수와 일치하는지 확인
+                    if (targetOccurrences.containsKey(id)
+                            && targetOccurrences.get(id).contains(currentJsonOccurrence)) {
+                        if (approverNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+                            ((com.fasterxml.jackson.databind.node.ObjectNode) approverNode)
+                                    .put("date", LocalDate.now()
+                                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd")));
+                            updated = true;
+                        }
                     }
                 }
             }
@@ -161,15 +197,35 @@ public class ApplicationService {
         currentApprover.approve(request.getDcdOpnn(), status);
         cdecimRepository.save(currentApprover);
 
+        // 연속된 동일 결재자 일괄 승인 처리
+        Cdecim lastApproved = currentApprover;
+        List<Cdecim> approvedList = new java.util.ArrayList<>();
+        approvedList.add(currentApprover);
+
+        if ("승인".equals(status)) {
+            int currentIndex = approvers.indexOf(currentApprover);
+            for (int i = currentIndex + 1; i < approvers.size(); i++) {
+                Cdecim nextApprover = approvers.get(i);
+                if (nextApprover.getDcdEno().equals(currentApprover.getDcdEno())) {
+                    nextApprover.approve(request.getDcdOpnn(), status);
+                    cdecimRepository.save(nextApprover);
+                    lastApproved = nextApprover;
+                    approvedList.add(nextApprover);
+                } else {
+                    break;
+                }
+            }
+        }
+
         // 신청서 상세 내용(JSON) 내 결재 정보 업데이트
-        updateApprovalLineInDetail(capplm, request.getDcdEno());
+        updateApprovalLineInDetail(capplm, approvers, approvedList);
 
         if ("반려".equals(status)) {
             // 반려인 경우 신청서 상태도 반려로 변경
             capplm.updateStatus("반려");
         } else if ("승인".equals(status)) {
             // 승인인 경우 리스트의 마지막 요소가 방금 결재한 사람인지 확인하여 최종 완료 처리
-            if ("Y".equals(currentApprover.getLstDcdYn())) {
+            if ("Y".equals(lastApproved.getLstDcdYn())) {
                 capplm.updateStatus("결재완료"); // 결재완료
             }
         }
@@ -187,9 +243,9 @@ public class ApplicationService {
             try {
                 // 개별 승인 요청 생성
                 ApplicationDto.ApproveRequest approveRequest = new ApplicationDto.ApproveRequest();
-                approveRequest.setDcdEno(item.getDcdEno());
-                approveRequest.setDcdOpnn(item.getDcdOpnn());
-                approveRequest.setDcdSts(item.getDcdSts());
+                approveRequest.setDcdEno(item.getDcdEno()); // 승인자 사원번호
+                approveRequest.setDcdOpnn(item.getDcdOpnn()); // 승인 의견
+                approveRequest.setDcdSts(item.getDcdSts()); // 승인 상태 (승인, 반려)
 
                 // 승인 처리
                 approve(item.getApfMngNo(), approveRequest);
