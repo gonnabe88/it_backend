@@ -137,6 +137,7 @@ public class ProjectService {
                                 .infPrtYn(itemDto.getInfPrtYn() == null ? "N" : itemDto.getInfPrtYn())
                                 .itrInfrYn(itemDto.getItrInfrYn() == null ? "N" : itemDto.getItrInfrYn())
                                 .lstYn("Y")
+                                .gclAmt(itemDto.getGclAmt())
                                 // BaseEntity 필드는 유지됨 (Auditing)
                                 .build();
                         bitemmRepository.save(updatedItem);
@@ -164,6 +165,7 @@ public class ProjectService {
                             .infPrtYn(itemDto.getInfPrtYn() == null ? "N" : itemDto.getInfPrtYn())
                             .itrInfrYn(itemDto.getItrInfrYn() == null ? "N" : itemDto.getItrInfrYn())
                             .lstYn("Y")
+                            .gclAmt(itemDto.getGclAmt())
                             .build();
                     bitemmRepository.save(newItem);
                 }

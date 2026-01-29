@@ -485,6 +485,9 @@ public class ProjectDto {
         @Schema(description = "최종여부")
         private String lstYn;
 
+        @Schema(description = "품목금액")
+        private BigDecimal gclAmt;
+
         public static BitemmDto fromEntity(com.kdb.it.domain.entity.Bitemm bitemm) {
             return BitemmDto.builder()
                     .gclMngNo(bitemm.getGclMngNo())
@@ -501,6 +504,7 @@ public class ProjectDto {
                     .infPrtYn(bitemm.getInfPrtYn())
                     .itrInfrYn(bitemm.getItrInfrYn())
                     .lstYn(bitemm.getLstYn())
+                    .gclAmt(bitemm.getGclAmt())
                     .build();
         }
     }

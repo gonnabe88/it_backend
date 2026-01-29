@@ -72,4 +72,7 @@ public class Bitemm extends BaseEntity {
 
     @Column(name = "LST_YN", length = 1)
     private String lstYn; // 최종여부
+
+    @Column(name = "GCL_AMT", precision = 15)
+    private BigDecimal gclAmt; // 품목금액
 }

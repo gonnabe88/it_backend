@@ -17,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 public class Cappla extends BaseEntity {
 
     @Id
-    @Column(name = "APF_REL_SNO", nullable = false, length = 32)
+    @Column(name = "APF_REL_SNO", nullable = false, length = 36)
     // 신청서관계일련번호
     private String apfRelSno;
 
