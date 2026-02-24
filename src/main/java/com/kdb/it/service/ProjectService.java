@@ -83,6 +83,14 @@ public class ProjectService {
         Project project = projectRepository.findById(prjMngNo)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
+        // 결재 상태 확인 (결재중, 결재완료 상태인 경우 수정 불가)
+        boolean isProcessingOrApproved = capplaRepository.existsByOrcTbCdAndOrcPkVlAndOrcSnoVlAndApfStsIn(
+                "BPRJTM", prjMngNo, project.getPrjSno(), java.util.List.of("결재중", "결재완료"));
+
+        if (isProcessingOrApproved) {
+            throw new IllegalStateException("결재중이거나 결재완료된 프로젝트는 수정할 수 없습니다.");
+        }
+
         project.update(
                 request.getPrjNm(), request.getPrjTp(), request.getSvnDpm(), request.getItDpm(),
                 request.getPrjBg(), request.getSttDt(), request.getEndDt(), request.getSvnDpmCgpr(),
