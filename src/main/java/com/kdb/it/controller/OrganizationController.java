@@ -12,14 +12,42 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/organizations")
-@RequiredArgsConstructor
-@Tag(name = "Organization", description = "조직 관리 API")
+/**
+ * 조직(부점) 관리 REST 컨트롤러
+ *
+ * <p>조직 정보(TAAABB_CORGNI 테이블)를 조회합니다.
+ * 부점 코드, 상위 조직 코드, 부점명을 반환합니다.</p>
+ *
+ * <p>기본 URL: {@code /api/organizations}</p>
+ *
+ * <p>조직 구조: 계층형(트리) 구조로, {@code PRLM_HRK_OGZ_C_CONE}(상위 조직 코드)를
+ * 통해 부모-자식 관계를 표현합니다.</p>
+ *
+ * <p>보안: JWT 토큰 인증 필요</p>
+ */
+@RestController                              // REST API 컨트롤러로 등록
+@RequestMapping("/api/organizations")        // 기본 URL 경로 설정
+@RequiredArgsConstructor                     // final 필드 생성자 자동 주입 (Lombok)
+@Tag(name = "Organization", description = "조직 관리 API") // Swagger UI 그룹 태그
 public class OrganizationController {
 
+    /** 조직 비즈니스 로직 서비스 */
     private final OrganizationService organizationService;
 
+    /**
+     * 전체 조직 목록 조회
+     *
+     * <p>DB에 등록된 모든 조직(부점) 정보를 반환합니다.
+     * 조직 코드, 상위 조직 코드, 부점명을 포함합니다.</p>
+     *
+     * <p>활용 예:</p>
+     * <ul>
+     *   <li>사용자 등록/수정 시 조직 선택 드롭다운</li>
+     *   <li>조직별 사용자 조회 시 조직 코드 참조</li>
+     * </ul>
+     *
+     * @return HTTP 200 + 전체 조직 목록 ({@link OrganizationDto.Response} 리스트)
+     */
     @GetMapping
     @Operation(summary = "전체 조직 조회", description = "모든 조직 정보를 조회합니다.")
     public ResponseEntity<List<OrganizationDto.Response>> getOrganizations() {

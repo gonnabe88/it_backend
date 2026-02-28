@@ -77,4 +77,8 @@ tasks.withType(JavaCompile) {
 	options.compilerArgs.add("-parameters")
 }
 
+tasks.withType(Javadoc) {
+	options.encoding = 'UTF-8'
+}
+
 

@@ -10,26 +10,68 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
+/**
+ * 사용자(직원) 조회 서비스
+ *
+ * <p>사용자 정보(TAAABB_CUSERI) 조회 비즈니스 로직을 처리합니다.</p>
+ *
+ * <p>부점코드({@code BBR_C})별 사용자 목록과 사번({@code ENO})별 사용자 상세 정보를
+ * 제공합니다.</p>
+ *
+ * <p>부점명({@code bbrNm})은 {@link CuserI} 엔티티의 {@code @ManyToOne} 관계
+ * ({@link com.kdb.it.domain.entity.CorgnI})에서 조회합니다.
+ * {@code @EntityGraph}로 N+1 문제를 방지합니다.</p>
+ *
+ * <p>현재는 조회 기능만 제공합니다. 사용자 생성/수정은 {@link AuthService#signup}에서 처리합니다.</p>
+ *
+ * <p>{@code @Transactional(readOnly = true)}: 읽기 전용 트랜잭션으로 성능을 최적화합니다.</p>
+ */
+@Service                              // Spring 서비스 빈으로 등록
+@RequiredArgsConstructor              // final 필드 생성자 자동 주입 (Lombok)
+@Transactional(readOnly = true)       // 읽기 전용 트랜잭션
 public class UserService {
 
+    /** 사용자 정보 데이터 접근 리포지토리 (TAAABB_CUSERI) */
     private final CuserIRepository cuserIRepository;
 
+    /**
+     * 부점코드별 사용자 목록 조회
+     *
+     * <p>특정 부점({@code orgCode})에 소속된 모든 사용자를 조회합니다.
+     * {@code @EntityGraph}를 사용하여 {@link com.kdb.it.domain.entity.CorgnI} 관계를
+     * 즉시 로딩(Eager)하여 N+1 문제를 방지합니다.</p>
+     *
+     * <p>응답에는 사번, 부점명, 팀명, 사용자명, 직위명이 포함됩니다.</p>
+     *
+     * @param orgCode 조회할 부점코드 ({@code BBR_C})
+     * @return 해당 부점의 사용자 목록 DTO ({@link UserDto.ListResponse} 리스트)
+     */
     public List<UserDto.ListResponse> getUsersByOrganization(String orgCode) {
+        // 부점코드로 사용자 목록 조회 (CorgnI JOIN FETCH로 N+1 방지)
         List<CuserI> users = cuserIRepository.findByBbrC(orgCode);
 
-        // Name is fetched via relationship
+        // 각 사용자 엔티티를 DTO로 변환 (부점명은 연관관계에서 조회)
         return users.stream()
-                .map(user -> UserDto.ListResponse.fromEntity(user, user.getBbrNm()))
+                .map(user -> UserDto.ListResponse.fromEntity(user, user.getBbrNm())) // getBbrNm(): CorgnI.bbrNm
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 사번별 사용자 상세 조회
+     *
+     * <p>특정 사번({@code eno})의 사용자 상세 정보를 조회합니다.
+     * 목록 조회보다 더 많은 정보(내선번호, 휴대폰번호, 상세직무)를 포함합니다.</p>
+     *
+     * @param eno 조회할 사번
+     * @return 사용자 상세 응답 DTO ({@link UserDto.DetailResponse})
+     * @throws IllegalArgumentException 해당 사번의 사용자가 없는 경우
+     */
     public UserDto.DetailResponse getUser(String eno) {
+        // 사번으로 사용자 조회 (없으면 예외)
         CuserI user = cuserIRepository.findByEno(eno)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with eno: " + eno));
 
+        // 엔티티를 DTO로 변환 (부점명은 연관관계에서 조회)
         return UserDto.DetailResponse.fromEntity(user, user.getBbrNm());
     }
 }

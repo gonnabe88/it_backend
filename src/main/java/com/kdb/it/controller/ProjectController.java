@@ -20,20 +20,55 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-@RestController
-@RequestMapping("/api/projects")
-@RequiredArgsConstructor
-@Tag(name = "Project", description = "정보화사업 API")
+/**
+ * 정보화사업(프로젝트) 관리 REST 컨트롤러
+ *
+ * <p>정보화사업(TAAABB_BPRJTM 테이블)의 CRUD 및 일괄 조회 기능을 담당합니다.</p>
+ *
+ * <p>기본 URL: {@code /api/projects}</p>
+ *
+ * <p>정보화사업은 IT 부문의 신규 사업/시스템 도입 프로젝트를 관리하는 도메인으로,
+ * 품목 정보(TAAABB_BITEMM)와 신청서 정보(TAAABB_CAPPLM)와 연관됩니다.</p>
+ *
+ * <p>결재 제약 사항:</p>
+ * <ul>
+ *   <li>결재중/결재완료 상태인 프로젝트는 수정/삭제 불가</li>
+ * </ul>
+ *
+ * <p>보안: JWT 토큰 인증 필요</p>
+ */
+@RestController                          // REST API 컨트롤러로 등록
+@RequestMapping("/api/projects")         // 기본 URL 경로 설정
+@RequiredArgsConstructor                 // final 필드 생성자 자동 주입 (Lombok)
+@Tag(name = "Project", description = "정보화사업 API") // Swagger UI 그룹 태그
 public class ProjectController {
 
+    /** 정보화사업 비즈니스 로직 서비스 */
     private final ProjectService projectService;
 
+    /**
+     * 전체 정보화사업 목록 조회
+     *
+     * <p>DEL_YN='N'인 삭제되지 않은 모든 정보화사업 목록을 반환합니다.
+     * 각 프로젝트의 최신 신청서 정보(신청서관리번호, 신청서상태)도 포함됩니다.</p>
+     *
+     * @return HTTP 200 + 정보화사업 목록 ({@link ProjectDto.Response} 리스트)
+     */
     @GetMapping
     @Operation(summary = "전체 정보화사업 조회", description = "모든 정보화사업 목록을 조회합니다.")
     public ResponseEntity<List<ProjectDto.Response>> getProjects() {
         return ResponseEntity.ok(projectService.getProjectList());
     }
 
+    /**
+     * 특정 정보화사업 단건 조회
+     *
+     * <p>프로젝트 관리번호(PRJ_MNG_NO)로 정보화사업 상세 정보를 조회합니다.
+     * 품목 목록(TAAABB_BITEMM)과 최신 신청서 정보도 함께 반환됩니다.</p>
+     *
+     * @param prjMngNo 프로젝트 관리번호 (예: {@code PRJ-2026-0001})
+     * @return HTTP 200 + 정보화사업 상세 정보 ({@link ProjectDto.Response})
+     */
     @GetMapping("/{prjMngNo}")
     @Operation(summary = "특정 정보화사업 조회", description = "특정 정보화사업을 조회합니다.")
     public ResponseEntity<ProjectDto.Response> getProject(@PathVariable("prjMngNo") String prjMngNo) {
@@ -41,20 +76,64 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 신규 정보화사업 생성
+     *
+     * <p>새로운 정보화사업을 등록합니다.</p>
+     *
+     * <p>관리번호 생성 규칙:</p>
+     * <ul>
+     *   <li>요청에 prjMngNo가 없으면 시퀀스(S_PRJ)로 자동 생성</li>
+     *   <li>형식: {@code PRJ-{예산연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})</li>
+     * </ul>
+     *
+     * @param request 정보화사업 생성 요청 ({@link ProjectDto.CreateRequest})
+     * @return HTTP 201 Created + 생성된 프로젝트 관리번호 (Location 헤더 포함)
+     */
     @PostMapping
     @Operation(summary = "신규 정보화사업 생성", description = "신규 정보화사업을 생성합니다.")
     public ResponseEntity<String> createProject(@RequestBody ProjectDto.CreateRequest request) {
         String prjMngNo = projectService.createProject(request);
+        // 201 Created 응답 + Location 헤더에 생성된 리소스 URL 포함
         return ResponseEntity.created(URI.create("/api/projects/" + prjMngNo)).body(prjMngNo);
     }
 
+    /**
+     * 정보화사업 정보 수정
+     *
+     * <p>정보화사업 정보를 수정합니다. 품목 목록도 함께 동기화됩니다.</p>
+     *
+     * <p>품목 동기화 규칙:</p>
+     * <ul>
+     *   <li>요청에 있는 기존 품목 → 수정</li>
+     *   <li>요청에 있는 신규 품목 (gclMngNo 없음) → 추가</li>
+     *   <li>요청에 없는 기존 품목 → Soft Delete (DEL_YN='Y')</li>
+     * </ul>
+     *
+     * <p>⚠ 결재중/결재완료 상태인 경우 수정 불가 (400 에러 반환)</p>
+     *
+     * @param prjMngNo 수정할 프로젝트 관리번호
+     * @param request  수정 요청 데이터 ({@link ProjectDto.UpdateRequest})
+     * @return HTTP 200 + 수정된 프로젝트 관리번호
+     */
     @PutMapping("/{prjMngNo}")
     @Operation(summary = "정보화사업 수정", description = "정보화사업을 수정합니다.")
-    public ResponseEntity<String> updateProject(@PathVariable("prjMngNo") String prjMngNo, @RequestBody ProjectDto.UpdateRequest request) {
+    public ResponseEntity<String> updateProject(@PathVariable("prjMngNo") String prjMngNo,
+            @RequestBody ProjectDto.UpdateRequest request) {
         String updatedPrjMngNo = projectService.updateProject(prjMngNo, request);
         return ResponseEntity.ok(updatedPrjMngNo);
     }
 
+    /**
+     * 정보화사업 삭제 (Soft Delete)
+     *
+     * <p>정보화사업과 관련 품목을 논리 삭제(DEL_YN='Y')합니다.</p>
+     *
+     * <p>⚠ 결재중/결재완료 상태인 경우 삭제 불가 (400 에러 반환)</p>
+     *
+     * @param prjMngNo 삭제할 프로젝트 관리번호
+     * @return HTTP 204 No Content
+     */
     @DeleteMapping("/{prjMngNo}")
     @Operation(summary = "정보화사업 삭제", description = "정보화사업을 삭제합니다.")
     public ResponseEntity<Void> deleteProject(@PathVariable("prjMngNo") String prjMngNo) {
@@ -62,6 +141,15 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 정보화사업 일괄 조회
+     *
+     * <p>여러 프로젝트 관리번호를 한 번에 조회합니다.
+     * 존재하지 않는 프로젝트 관리번호는 결과에서 제외됩니다.</p>
+     *
+     * @param request 조회할 프로젝트 관리번호 목록 ({@link ProjectDto.BulkGetRequest})
+     * @return HTTP 200 + 정보화사업 목록 (존재하는 프로젝트만 포함)
+     */
     @PostMapping("/bulk-get")
     @Operation(summary = "정보화사업 일괄 조회", description = "여러 개의 정보화사업을 한 번에 조회합니다. 존재하지 않는 프로젝트는 결과에서 제외됩니다.")
     public ResponseEntity<List<ProjectDto.Response>> bulkGetProjects(

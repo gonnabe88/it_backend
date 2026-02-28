@@ -6,12 +6,51 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-@Repository
+/**
+ * 정보화사업(Project) 데이터 접근 리포지토리
+ *
+ * <p>Spring Data JPA의 {@link JpaRepository}를 상속하여
+ * 정보화사업 테이블(TAAABB_BPRJTM)에 대한 CRUD 기능을 제공합니다.</p>
+ *
+ * <p>기본키 타입: {@link String} (prjMngNo: 프로젝트관리번호)</p>
+ *
+ * <p>Soft Delete 패턴 적용: 조회 시 항상 {@code delYn='N'} 조건을 사용합니다.</p>
+ */
+@Repository // Spring 리포지토리 빈으로 등록
 public interface ProjectRepository extends JpaRepository<Project, String> {
+
+    /**
+     * 프로젝트 관리번호와 삭제여부로 단건 조회
+     *
+     * <p>삭제되지 않은 특정 프로젝트를 조회합니다.
+     * 프로젝트 상세 조회 시 사용됩니다.</p>
+     *
+     * @param prjMngNo 프로젝트 관리번호 (예: PRJ-2026-0001)
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @return 조건에 맞는 프로젝트 (없으면 {@link Optional#empty()})
+     */
     Optional<Project> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
+    /**
+     * 전체 정보화사업 목록 조회 (삭제 여부 조건)
+     *
+     * <p>DEL_YN 조건으로 삭제된 항목을 제외한 모든 프로젝트를 반환합니다.</p>
+     *
+     * @param delYn 삭제 여부 ('N'=미삭제, 'Y'=삭제)
+     * @return 조건에 맞는 정보화사업 목록
+     */
     List<Project> findAllByDelYn(String delYn);
 
+    /**
+     * Oracle 시퀀스(S_PRJ) 다음 값 조회
+     *
+     * <p>새로운 프로젝트 생성 시 관리번호 채번에 사용합니다.
+     * 형식: {@code PRJ-{예산연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})</p>
+     *
+     * <p>Oracle DB 전용 Native Query입니다.</p>
+     *
+     * @return Oracle 시퀀스(S_PRJ)의 다음 값 (Long)
+     */
     @org.springframework.data.jpa.repository.Query(value = "SELECT S_PRJ.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
 }

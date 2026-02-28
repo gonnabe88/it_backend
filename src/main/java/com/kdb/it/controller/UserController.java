@@ -14,20 +14,59 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/users")
-@RequiredArgsConstructor
-@Tag(name = "User", description = "사용자 관리 API")
+/**
+ * 사용자 관리 REST 컨트롤러
+ *
+ * <p>사용자(TAAABB_CUSERI 테이블) 정보를 조회합니다.</p>
+ *
+ * <p>기본 URL: {@code /api/users}</p>
+ *
+ * <p>조회 기능:</p>
+ * <ul>
+ *   <li>조직 코드(BBR_C)별 사용자 목록 조회</li>
+ *   <li>사번(ENO)으로 사용자 상세 정보 조회</li>
+ * </ul>
+ *
+ * <p>보안: JWT 토큰 인증 필요</p>
+ */
+@RestController                        // REST API 컨트롤러로 등록
+@RequestMapping("/api/users")          // 기본 URL 경로 설정
+@RequiredArgsConstructor               // final 필드 생성자 자동 주입 (Lombok)
+@Tag(name = "User", description = "사용자 관리 API") // Swagger UI 그룹 태그
 public class UserController {
 
+    /** 사용자 비즈니스 로직 서비스 */
     private final UserService userService;
 
+    /**
+     * 조직별 사용자 목록 조회
+     *
+     * <p>특정 조직 코드(BBR_C)에 해당하는 사용자 목록을 반환합니다.
+     * EntityGraph를 사용하여 조직 정보(CorgnI)를 즉시 로딩합니다.</p>
+     *
+     * <p>반환 데이터: 사번, 부점명, 팀명, 사용자명, 직위명</p>
+     *
+     * @param orgCode 조직 코드 (BBR_C 컬럼 값, 예: {@code "001"})
+     * @return HTTP 200 + 해당 조직의 사용자 목록 ({@link UserDto.ListResponse} 리스트)
+     */
     @GetMapping
     @Operation(summary = "조직별 사용자 조회", description = "특정 조직코드에 해당하는 사용자 목록을 조회합니다.")
-    public ResponseEntity<List<UserDto.ListResponse>> getUsersByOrganization(@RequestParam("orgCode") String orgCode) {
+    public ResponseEntity<List<UserDto.ListResponse>> getUsersByOrganization(
+            @RequestParam("orgCode") String orgCode) {
         return ResponseEntity.ok(userService.getUsersByOrganization(orgCode));
     }
 
+    /**
+     * 사용자 상세 정보 단건 조회
+     *
+     * <p>사번(ENO)으로 사용자의 상세 정보를 조회합니다.
+     * EntityGraph를 사용하여 조직 정보(CorgnI)를 즉시 로딩합니다.</p>
+     *
+     * <p>반환 데이터: 사번, 부점명, 팀명, 사용자명, 직위명, 내선번호, 휴대폰번호, 상세직무내용</p>
+     *
+     * @param eno 사번(행번, ENO 컬럼 값)
+     * @return HTTP 200 + 사용자 상세 정보 ({@link UserDto.DetailResponse})
+     */
     @GetMapping("/{eno}")
     @Operation(summary = "사용자 상세 조회", description = "행번으로 사용자 상세 정보를 조회합니다.")
     public ResponseEntity<UserDto.DetailResponse> getUser(@PathVariable("eno") String eno) {

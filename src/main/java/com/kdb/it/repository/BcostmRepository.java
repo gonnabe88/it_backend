@@ -8,22 +8,74 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * 전산관리비(Bcostm) 데이터 접근 리포지토리
+ *
+ * <p>Spring Data JPA의 {@link JpaRepository}를 상속하여 기본 CRUD 기능을 제공하며,
+ * 전산관리비 도메인에 특화된 조회 메서드를 추가로 정의합니다.</p>
+ *
+ * <p>복합키 타입: {@link BcostmId} (itMngcNo + itMngcSno)</p>
+ *
+ * <p>Soft Delete 패턴 적용: 조회 시 항상 {@code delYn='N'} 조건을 사용합니다.</p>
+ */
 public interface BcostmRepository extends JpaRepository<Bcostm, BcostmId> {
 
-    // 특정 전산관리비 조회 (삭제되지 않은 항목)
+    /**
+     * 특정 전산관리비 단건 조회 (삭제되지 않은 항목)
+     *
+     * <p>관리번호 + 일련번호 + 삭제여부의 조합으로 단 하나의 레코드를 조회합니다.</p>
+     *
+     * @param itMngcNo  전산관리비 관리번호 (예: COST_2026_0001)
+     * @param itMngcSno 전산관리비 일련번호 (예: 1)
+     * @param delYn     삭제 여부 ('N'=미삭제, 'Y'=삭제)
+     * @return 조건에 맞는 전산관리비 (없으면 {@link Optional#empty()})
+     */
     Optional<Bcostm> findByItMngcNoAndItMngcSnoAndDelYn(String itMngcNo, Integer itMngcSno, String delYn);
 
-    // 전산관리비 목록 조회 (삭제되지 않은 항목)
+    /**
+     * 전체 전산관리비 목록 조회 (삭제되지 않은 항목)
+     *
+     * <p>DEL_YN 조건으로 삭제된 항목을 제외한 모든 목록을 반환합니다.</p>
+     *
+     * @param delYn 삭제 여부 ('N'=미삭제)
+     * @return 삭제되지 않은 전산관리비 목록
+     */
     List<Bcostm> findAllByDelYn(String delYn);
 
-    // IT 관리비 관리번호로 조회 (삭제되지 않은 항목, 일련번호 무관하게 모두 조회 시 사용 가능)
+    /**
+     * 관리번호별 전산관리비 목록 조회 (삭제되지 않은 항목)
+     *
+     * <p>동일한 IT_MNGC_NO를 가진 여러 일련번호(SNO) 레코드를 모두 조회합니다.
+     * 주로 수정·삭제 시 해당 관리번호의 모든 유효 레코드를 찾는 데 사용됩니다.</p>
+     *
+     * @param itMngcNo 전산관리비 관리번호 (예: COST_2026_0001)
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @return 해당 관리번호의 삭제되지 않은 전산관리비 목록
+     */
     List<Bcostm> findByItMngcNoAndDelYn(String itMngcNo, String delYn);
 
-    // 시퀀스 채번 (S_IT_MNGC)
+    /**
+     * Oracle 시퀀스(S_IT_MNGC) 다음 값 조회
+     *
+     * <p>새로운 전산관리비 생성 시 관리번호용 시퀀스 값을 채번합니다.
+     * Oracle DB 전용 Native Query입니다.</p>
+     *
+     * @return 시퀀스의 다음 값 (Long)
+     */
     @Query(value = "SELECT S_IT_MNGC.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
 
-    // 시퀀스 생성을 위한 쿼리 (필요시 구현, 여기서는 예시로 남겨둠)
+    /**
+     * 특정 관리번호 내 다음 일련번호(SNO) 계산
+     *
+     * <p>동일한 IT_MNGC_NO에서 현재 최대 일련번호 + 1을 반환합니다.
+     * 새로운 버전의 레코드 저장 시 SNO를 채번하는 데 사용됩니다.</p>
+     *
+     * <p>Oracle DB 전용 Native Query (NVL로 첫 번째 항목인 경우 1 반환)</p>
+     *
+     * @param itMngcNo 전산관리비 관리번호
+     * @return 다음 일련번호 (기존 레코드가 없으면 1)
+     */
     @Query(value = "SELECT NVL(MAX(IT_MNGC_SNO), 0) + 1 FROM TAAABB_BCOSTM WHERE IT_MNGC_NO = :itMngcNo", nativeQuery = true)
     Integer getNextSnoValue(@Param("itMngcNo") String itMngcNo);
 }
