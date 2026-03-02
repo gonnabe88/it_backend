@@ -17,22 +17,30 @@ import lombok.experimental.SuperBuilder;
 /**
  * 정보화사업 품목 엔티티
  *
- * <p>DB 테이블: {@code TAAABB_BITEMM}</p>
+ * <p>
+ * DB 테이블: {@code TAAABB_BITEMM}
+ * </p>
  *
- * <p>정보화사업({@link Project})에 속하는 개별 도입 품목(소프트웨어, 하드웨어, 서비스 등)을
- * 관리합니다. 하나의 사업에 여러 품목이 존재할 수 있습니다.</p>
+ * <p>
+ * 정보화사업({@link Project})에 속하는 개별 도입 품목(소프트웨어, 하드웨어, 서비스 등)을
+ * 관리합니다. 하나의 사업에 여러 품목이 존재할 수 있습니다.
+ * </p>
  *
- * <p>복합키 구조: ({@code GCL_MNG_NO}, {@code GCL_SNO})</p>
+ * <p>
+ * 복합키 구조: ({@code GCL_MNG_NO}, {@code GCL_SNO})
+ * </p>
  *
- * <p>연관 관계: {@code PRJ_MNG_NO} + {@code PRJ_SNO}로 {@link Project}와 연결됩니다.</p>
+ * <p>
+ * 연관 관계: {@code PRJ_MNG_NO} + {@code PRJ_SNO}로 {@link Project}와 연결됩니다.
+ * </p>
  */
-@Entity                                              // JPA 엔티티로 등록
-@Table(name = "TAAABB_BITEMM")                       // 매핑할 DB 테이블명
-@IdClass(BitemmId.class)                             // 복합키 클래스 지정
-@Getter                                              // 모든 필드의 getter 자동 생성 (Lombok)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)   // protected 기본 생성자 (JPA 요구사항)
-@AllArgsConstructor                                  // 전체 필드 생성자 자동 생성
-@SuperBuilder                                        // 상속 구조에서 Builder 패턴 지원
+@Entity // JPA 엔티티로 등록
+@Table(name = "TAAABB_BITEMM") // 매핑할 DB 테이블명
+@IdClass(BitemmId.class) // 복합키 클래스 지정
+@Getter // 모든 필드의 getter 자동 생성 (Lombok)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
+@AllArgsConstructor // 전체 필드 생성자 자동 생성
+@SuperBuilder // 상속 구조에서 Builder 패턴 지원
 public class Bitemm extends BaseEntity {
 
     /** 품목관리번호: 복합 기본키의 첫 번째 컬럼 (형식: GCL-{연도}-{4자리 시퀀스}, 예: GCL-2026-0001) */
@@ -69,8 +77,8 @@ public class Bitemm extends BaseEntity {
     @Column(name = "CUR", length = 10)
     private String cur;
 
-    /** 환율: 외화 품목의 적용 환율 (최대 9자리) */
-    @Column(name = "XCR", precision = 9)
+    /** 환율: 외화 품목의 적용 환율 (최대 15자리 수, 소수점 이하 4자리) */
+    @Column(name = "XCR", precision = 15, scale = 4)
     private BigDecimal xcr;
 
     /** 환율기준일자: 환율 적용 기준일 */

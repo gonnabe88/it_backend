@@ -16,15 +16,19 @@ import lombok.Setter;
 /**
  * 전산관리비(IT 관리비) 관련 DTO 클래스 모음
  *
- * <p>전산관리비(TAAABB_BCOSTM) 엔티티의 생성, 수정, 조회, 일괄 조회에 사용되는
- * Request/Response DTO를 정적 중첩 클래스(Static Nested Class) 형태로 관리합니다.</p>
+ * <p>
+ * 전산관리비(TAAABB_BCOSTM) 엔티티의 생성, 수정, 조회, 일괄 조회에 사용되는
+ * Request/Response DTO를 정적 중첩 클래스(Static Nested Class) 형태로 관리합니다.
+ * </p>
  *
- * <p>포함된 DTO:</p>
+ * <p>
+ * 포함된 DTO:
+ * </p>
  * <ul>
- *   <li>{@link CreateRequest}: 전산관리비 생성 요청</li>
- *   <li>{@link UpdateRequest}: 전산관리비 수정 요청</li>
- *   <li>{@link Response}: 전산관리비 조회 응답</li>
- *   <li>{@link BulkGetRequest}: 일괄 조회 요청</li>
+ * <li>{@link CreateRequest}: 전산관리비 생성 요청</li>
+ * <li>{@link UpdateRequest}: 전산관리비 수정 요청</li>
+ * <li>{@link Response}: 전산관리비 조회 응답</li>
+ * <li>{@link BulkGetRequest}: 일괄 조회 요청</li>
  * </ul>
  */
 public class CostDto {
@@ -32,11 +36,17 @@ public class CostDto {
     /**
      * 전산관리비 생성 요청 DTO
      *
-     * <p>신규 전산관리비 항목을 등록할 때 사용합니다.</p>
+     * <p>
+     * 신규 전산관리비 항목을 등록할 때 사용합니다.
+     * </p>
      *
-     * <p>{@code itMngcNo}가 null 또는 빈 문자열이면 서비스에서 Oracle 시퀀스로 자동 채번합니다.</p>
+     * <p>
+     * {@code itMngcNo}가 null 또는 빈 문자열이면 서비스에서 Oracle 시퀀스로 자동 채번합니다.
+     * </p>
      *
-     * <p>{@link #toEntity(Integer)} 메서드로 엔티티로 변환할 수 있습니다.</p>
+     * <p>
+     * {@link #toEntity(Integer)} 메서드로 엔티티로 변환할 수 있습니다.
+     * </p>
      */
     @Getter
     @Setter
@@ -47,8 +57,10 @@ public class CostDto {
     public static class CreateRequest {
         /**
          * 전산관리비관리번호 (IT_MNGC_NO)
-         * <p>null 또는 빈 문자열이면 서비스에서 자동 채번됩니다.
-         * 형식: {@code COST_{yyyy}_{seq:04d}} (예: "COST_2026_0001")</p>
+         * <p>
+         * null 또는 빈 문자열이면 서비스에서 자동 채번됩니다.
+         * 형식: {@code COST_{yyyy}_{seq:04d}} (예: "COST_2026_0001")
+         * </p>
          */
         @Schema(description = "전산업무비코드 (IT관리비관리번호)", example = "COST_2026_0001")
         private String itMngcNo;
@@ -105,6 +117,10 @@ public class CostDto {
         @Schema(description = "추진담당자", example = "홍길동")
         private String pulCgpr;
 
+        /** 추진부서 (부서코드) */
+        @Schema(description = "추진부서", example = "001")
+        private String pulDpm;
+
         /**
          * 요청 DTO를 {@link Bcostm} 엔티티로 변환합니다.
          *
@@ -113,22 +129,23 @@ public class CostDto {
          */
         public Bcostm toEntity(Integer nextSno) {
             return Bcostm.builder()
-                    .itMngcNo(this.itMngcNo)               // 전산관리비관리번호
-                    .itMngcSno(nextSno)                    // 전산관리비일련번호
-                    .ioeNm(this.ioeNm)                     // 비목명
-                    .cttNm(this.cttNm)                     // 계약명
-                    .cttTp(this.cttTp)                     // 계약구분
-                    .cttOpp(this.cttOpp)                   // 계약상대처
-                    .itMngcBg(this.itMngcBg)               // 전산관리비예산
-                    .dfrCle(this.dfrCle)                   // 지급주기
-                    .fstDfrDt(this.fstDfrDt)               // 최초지급일자
-                    .cur(this.cur)                         // 통화
-                    .xcr(this.xcr)                         // 환율
-                    .xcrBseDt(this.xcrBseDt)               // 환율기준일자
+                    .itMngcNo(this.itMngcNo) // 전산관리비관리번호
+                    .itMngcSno(nextSno) // 전산관리비일련번호
+                    .ioeNm(this.ioeNm) // 비목명
+                    .cttNm(this.cttNm) // 계약명
+                    .cttTp(this.cttTp) // 계약구분
+                    .cttOpp(this.cttOpp) // 계약상대처
+                    .itMngcBg(this.itMngcBg) // 전산관리비예산
+                    .dfrCle(this.dfrCle) // 지급주기
+                    .fstDfrDt(this.fstDfrDt) // 최초지급일자
+                    .cur(this.cur) // 통화
+                    .xcr(this.xcr) // 환율
+                    .xcrBseDt(this.xcrBseDt) // 환율기준일자
                     .infPrtYn(this.infPrtYn == null ? "N" : this.infPrtYn) // 정보보호여부 (기본값 "N")
-                    .indRsn(this.indRsn)                   // 증감사유
-                    .pulCgpr(this.pulCgpr)                 // 추진담당자
-                    .lstYn("Y")                            // 최종여부: 신규는 항상 최신
+                    .indRsn(this.indRsn) // 증감사유
+                    .pulCgpr(this.pulCgpr) // 추진담당자
+                    .pulDpm(this.pulDpm) // 추진부서
+                    .lstYn("Y") // 최종여부: 신규는 항상 최신
                     .build();
         }
     }
@@ -136,8 +153,10 @@ public class CostDto {
     /**
      * 전산관리비 수정 요청 DTO
      *
-     * <p>기존 전산관리비 항목의 내용을 수정할 때 사용합니다.
-     * {@code IT_MNGC_NO}는 URL PathVariable로 받으므로 이 DTO에는 포함하지 않습니다.</p>
+     * <p>
+     * 기존 전산관리비 항목의 내용을 수정할 때 사용합니다.
+     * {@code IT_MNGC_NO}는 URL PathVariable로 받으므로 이 DTO에는 포함하지 않습니다.
+     * </p>
      */
     @Getter
     @Setter
@@ -197,13 +216,19 @@ public class CostDto {
         /** 추진담당자 */
         @Schema(description = "추진담당자", example = "홍길동")
         private String pulCgpr;
+
+        /** 추진부서 */
+        @Schema(description = "추진부서", example = "001")
+        private String pulDpm;
     }
 
     /**
      * 전산관리비 조회 응답 DTO
      *
-     * <p>{@link Bcostm} 엔티티의 모든 필드를 포함합니다.
-     * {@link #fromEntity(Bcostm)} 정적 팩토리 메서드로 엔티티에서 변환합니다.</p>
+     * <p>
+     * {@link Bcostm} 엔티티의 모든 필드를 포함합니다.
+     * {@link #fromEntity(Bcostm)} 정적 팩토리 메서드로 엔티티에서 변환합니다.
+     * </p>
      */
     @Getter
     @Setter
@@ -276,9 +301,29 @@ public class CostDto {
         @Schema(description = "추진담당자", example = "홍길동")
         private String pulCgpr;
 
+        /** 추진부서 */
+        @Schema(description = "추진부서", example = "001")
+        private String pulDpm;
+
+        /** 추진부서명: pulDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
+        @Schema(description = "추진부서명")
+        private String pulDpmNm;
+
+        /** 추진담당자명: pulCgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 */
+        @Schema(description = "추진담당자명")
+        private String pulCgprNm;
+
         /** 삭제여부 (Soft Delete 상태, "Y": 삭제됨, "N": 정상) */
         @Schema(description = "삭제여부", example = "N")
         private String delYn;
+
+        /** 연결된 신청서관리번호 (서비스에서 설정) */
+        @Schema(description = "신청서관리번호", example = "APPL_2026_0001")
+        private String apfMngNo;
+
+        /** 연결된 신청서 결재상태 (서비스에서 설정) */
+        @Schema(description = "신청서상태", example = "결재중")
+        private String apfSts;
 
         /**
          * {@link Bcostm} 엔티티를 응답 DTO로 변환하는 정적 팩토리 메서드
@@ -288,23 +333,24 @@ public class CostDto {
          */
         public static Response fromEntity(Bcostm entity) {
             return Response.builder()
-                    .itMngcNo(entity.getItMngcNo())     // 전산관리비관리번호
-                    .itMngcSno(entity.getItMngcSno())   // 전산관리비일련번호
-                    .lstYn(entity.getLstYn())           // 최종여부
-                    .ioeNm(entity.getIoeNm())           // 비목명
-                    .cttNm(entity.getCttNm())           // 계약명
-                    .cttTp(entity.getCttTp())           // 계약구분
-                    .cttOpp(entity.getCttOpp())         // 계약상대처
-                    .itMngcBg(entity.getItMngcBg())     // 전산관리비예산
-                    .dfrCle(entity.getDfrCle())         // 지급주기
-                    .fstDfrDt(entity.getFstDfrDt())     // 최초지급일자
-                    .cur(entity.getCur())               // 통화
-                    .xcr(entity.getXcr())               // 환율
-                    .xcrBseDt(entity.getXcrBseDt())     // 환율기준일자
-                    .infPrtYn(entity.getInfPrtYn())     // 정보보호여부
-                    .indRsn(entity.getIndRsn())         // 증감사유
-                    .pulCgpr(entity.getPulCgpr())       // 추진담당자
-                    .delYn(entity.getDelYn())           // 삭제여부
+                    .itMngcNo(entity.getItMngcNo()) // 전산관리비관리번호
+                    .itMngcSno(entity.getItMngcSno()) // 전산관리비일련번호
+                    .lstYn(entity.getLstYn()) // 최종여부
+                    .ioeNm(entity.getIoeNm()) // 비목명
+                    .cttNm(entity.getCttNm()) // 계약명
+                    .cttTp(entity.getCttTp()) // 계약구분
+                    .cttOpp(entity.getCttOpp()) // 계약상대처
+                    .itMngcBg(entity.getItMngcBg()) // 전산관리비예산
+                    .dfrCle(entity.getDfrCle()) // 지급주기
+                    .fstDfrDt(entity.getFstDfrDt()) // 최초지급일자
+                    .cur(entity.getCur()) // 통화
+                    .xcr(entity.getXcr()) // 환율
+                    .xcrBseDt(entity.getXcrBseDt()) // 환율기준일자
+                    .infPrtYn(entity.getInfPrtYn()) // 정보보호여부
+                    .indRsn(entity.getIndRsn()) // 증감사유
+                    .pulCgpr(entity.getPulCgpr()) // 추진담당자
+                    .pulDpm(entity.getPulDpm()) // 추진부서
+                    .delYn(entity.getDelYn()) // 삭제여부
                     .build();
         }
     }
@@ -312,8 +358,10 @@ public class CostDto {
     /**
      * 전산관리비 일괄 조회 요청 DTO
      *
-     * <p>여러 전산관리비관리번호를 한 번에 조회할 때 사용합니다.
-     * 존재하지 않는 항목은 결과에서 자동 제외됩니다.</p>
+     * <p>
+     * 여러 전산관리비관리번호를 한 번에 조회할 때 사용합니다.
+     * 존재하지 않는 항목은 결과에서 자동 제외됩니다.
+     * </p>
      */
     @Getter
     @Setter

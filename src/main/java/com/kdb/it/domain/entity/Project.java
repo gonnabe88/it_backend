@@ -16,22 +16,30 @@ import java.time.LocalDate;
 /**
  * 정보화사업(IT 프로젝트) 마스터 엔티티
  *
- * <p>DB 테이블: {@code TAAABB_BPRJTM}</p>
+ * <p>
+ * DB 테이블: {@code TAAABB_BPRJTM}
+ * </p>
  *
- * <p>IT 부문의 정보화사업(신규 시스템 도입, 인프라 구축 등) 계획 및 현황을 관리합니다.
- * 품목 정보({@link Bitemm})와 신청서({@link Capplm})와 연관됩니다.</p>
+ * <p>
+ * IT 부문의 정보화사업(신규 시스템 도입, 인프라 구축 등) 계획 및 현황을 관리합니다.
+ * 품목 정보({@link Bitemm})와 신청서({@link Capplm})와 연관됩니다.
+ * </p>
  *
- * <p>관리번호 형식: {@code PRJ-{예산연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})</p>
+ * <p>
+ * 관리번호 형식: {@code PRJ-{사업연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})
+ * </p>
  *
- * <p>주의: {@code update()} 메서드가 두 개 존재합니다 (오버로딩).
- * 하나는 {@code prjSno}를 포함하고, 다른 하나는 포함하지 않습니다.</p>
+ * <p>
+ * 주의: {@code update()} 메서드가 두 개 존재합니다 (오버로딩).
+ * 하나는 {@code prjSno}를 포함하고, 다른 하나는 포함하지 않습니다.
+ * </p>
  */
-@Entity                                              // JPA 엔티티로 등록
-@Table(name = "TAAABB_BPRJTM")                       // 매핑할 DB 테이블명
-@Getter                                              // 모든 필드의 getter 자동 생성 (Lombok)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)   // protected 기본 생성자 (JPA 요구사항)
-@AllArgsConstructor                                  // 전체 필드 생성자 자동 생성
-@SuperBuilder                                        // 상속 구조에서 Builder 패턴 지원
+@Entity // JPA 엔티티로 등록
+@Table(name = "TAAABB_BPRJTM") // 매핑할 DB 테이블명
+@Getter // 모든 필드의 getter 자동 생성 (Lombok)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
+@AllArgsConstructor // 전체 필드 생성자 자동 생성
+@SuperBuilder // 상속 구조에서 Builder 패턴 지원
 public class Project extends BaseEntity {
 
     /** 프로젝트관리번호: 기본키 (예: PRJ-2026-0001) */
@@ -159,9 +167,9 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_STS", nullable = false, length = 32)
     private String prjSts;
 
-    /** 예산년도: 사업 예산이 편성된 연도 (4자리 숫자, 예: "2026") */
-    @Column(name = "BG_YY", nullable = false, precision = 4)
-    private String bgYy;
+    /** 사업연도: 사업 연도 (4자리 숫자, 예: "2026") */
+    @Column(name = "PRJ_YY", nullable = false, precision = 4)
+    private String prjYy;
 
     /** 주관본부/부문: 사업을 총괄하는 본부 또는 부문 명칭 (최대 32자) */
     @Column(name = "SVN_HDQ", nullable = false, length = 32)
@@ -170,48 +178,51 @@ public class Project extends BaseEntity {
     /**
      * 정보화사업 정보 업데이트 메서드 (prjSno 포함)
      *
-     * <p>JPA Dirty Checking을 활용하여 트랜잭션 내에서 모든 필드를 변경합니다.
-     * 프로젝트 순번(prjSno)도 함께 변경합니다.</p>
+     * <p>
+     * JPA Dirty Checking을 활용하여 트랜잭션 내에서 모든 필드를 변경합니다.
+     * 프로젝트 순번(prjSno)도 함께 변경합니다.
+     * </p>
      *
-     * @param prjNm     프로젝트명
-     * @param prjTp     프로젝트유형
-     * @param svnDpm    주관부서
-     * @param itDpm     IT부서
-     * @param prjBg     프로젝트예산
-     * @param sttDt     시작일자
-     * @param endDt     종료일자
+     * @param prjNm      프로젝트명
+     * @param prjTp      프로젝트유형
+     * @param svnDpm     주관부서
+     * @param itDpm      IT부서
+     * @param prjBg      프로젝트예산
+     * @param sttDt      시작일자
+     * @param endDt      종료일자
      * @param svnDpmCgpr 주관부서담당자
-     * @param itDpmCgpr IT부서담당자
-     * @param svnDpmTlr 주관부서담당팀장
-     * @param itDpmTlr  IT부서담당팀장
-     * @param edrt      전결권
-     * @param prjDes    사업설명
-     * @param pulRsn    추진사유
-     * @param saf       현황
-     * @param ncs       필요성
-     * @param xptEff    기대효과
-     * @param plm       문제
-     * @param prjRng    사업범위
-     * @param pulPsg    추진경과
-     * @param hrfPln    향후계획
-     * @param bzDtt     업무구분
-     * @param tchnTp    기술유형
-     * @param mnUsr     주요사용자
-     * @param dplYn     중복여부
-     * @param lblFsgTlm 의무완료기한
-     * @param rprSts    보고상태
-     * @param prjPulPtt 프로젝트추진가능성
-     * @param prjSts    프로젝트상태
-     * @param bgYy      예산년도
-     * @param svnHdq    주관본부/부문
-     * @param prjSno    프로젝트순번
+     * @param itDpmCgpr  IT부서담당자
+     * @param svnDpmTlr  주관부서담당팀장
+     * @param itDpmTlr   IT부서담당팀장
+     * @param edrt       전결권
+     * @param prjDes     사업설명
+     * @param pulRsn     추진사유
+     * @param saf        현황
+     * @param ncs        필요성
+     * @param xptEff     기대효과
+     * @param plm        문제
+     * @param prjRng     사업범위
+     * @param pulPsg     추진경과
+     * @param hrfPln     향후계획
+     * @param bzDtt      업무구분
+     * @param tchnTp     기술유형
+     * @param mnUsr      주요사용자
+     * @param dplYn      중복여부
+     * @param lblFsgTlm  의무완료기한
+     * @param rprSts     보고상태
+     * @param prjPulPtt  프로젝트추진가능성
+     * @param prjSts     프로젝트상태
+     * @param prjYy      사업연도
+     * @param svnHdq     주관본부/부문
+     * @param prjSno     프로젝트순번
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String bgYy, String svnHdq, Integer prjSno) {
+            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String prjYy, String svnHdq,
+            Integer prjSno) {
         this.prjSno = prjSno;
         this.prjNm = prjNm;
         // ... (나머지 필드 업데이트)
@@ -243,54 +254,56 @@ public class Project extends BaseEntity {
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
         this.prjSts = prjSts;
-        this.bgYy = bgYy;
+        this.prjYy = prjYy;
         this.svnHdq = svnHdq;
     }
 
     /**
      * 정보화사업 정보 업데이트 메서드 (prjSno 제외)
      *
-     * <p>프로젝트 순번(prjSno)은 변경하지 않고 나머지 필드만 업데이트합니다.
-     * 일반적인 수정 API에서 사용됩니다.</p>
+     * <p>
+     * 프로젝트 순번(prjSno)은 변경하지 않고 나머지 필드만 업데이트합니다.
+     * 일반적인 수정 API에서 사용됩니다.
+     * </p>
      *
-     * @param prjNm     프로젝트명
-     * @param prjTp     프로젝트유형
-     * @param svnDpm    주관부서
-     * @param itDpm     IT부서
-     * @param prjBg     프로젝트예산
-     * @param sttDt     시작일자
-     * @param endDt     종료일자
+     * @param prjNm      프로젝트명
+     * @param prjTp      프로젝트유형
+     * @param svnDpm     주관부서
+     * @param itDpm      IT부서
+     * @param prjBg      프로젝트예산
+     * @param sttDt      시작일자
+     * @param endDt      종료일자
      * @param svnDpmCgpr 주관부서담당자
-     * @param itDpmCgpr IT부서담당자
-     * @param svnDpmTlr 주관부서담당팀장
-     * @param itDpmTlr  IT부서담당팀장
-     * @param edrt      전결권
-     * @param prjDes    사업설명
-     * @param pulRsn    추진사유
-     * @param saf       현황
-     * @param ncs       필요성
-     * @param xptEff    기대효과
-     * @param plm       문제
-     * @param prjRng    사업범위
-     * @param pulPsg    추진경과
-     * @param hrfPln    향후계획
-     * @param bzDtt     업무구분
-     * @param tchnTp    기술유형
-     * @param mnUsr     주요사용자
-     * @param dplYn     중복여부
-     * @param lblFsgTlm 의무완료기한
-     * @param rprSts    보고상태
-     * @param prjPulPtt 프로젝트추진가능성
-     * @param prjSts    프로젝트상태
-     * @param bgYy      예산년도
-     * @param svnHdq    주관본부/부문
+     * @param itDpmCgpr  IT부서담당자
+     * @param svnDpmTlr  주관부서담당팀장
+     * @param itDpmTlr   IT부서담당팀장
+     * @param edrt       전결권
+     * @param prjDes     사업설명
+     * @param pulRsn     추진사유
+     * @param saf        현황
+     * @param ncs        필요성
+     * @param xptEff     기대효과
+     * @param plm        문제
+     * @param prjRng     사업범위
+     * @param pulPsg     추진경과
+     * @param hrfPln     향후계획
+     * @param bzDtt      업무구분
+     * @param tchnTp     기술유형
+     * @param mnUsr      주요사용자
+     * @param dplYn      중복여부
+     * @param lblFsgTlm  의무완료기한
+     * @param rprSts     보고상태
+     * @param prjPulPtt  프로젝트추진가능성
+     * @param prjSts     프로젝트상태
+     * @param prjYy      사업연도
+     * @param svnHdq     주관본부/부문
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String bgYy, String svnHdq) {
+            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String prjYy, String svnHdq) {
         this.prjNm = prjNm;
         this.prjTp = prjTp;
         this.svnDpm = svnDpm;
@@ -320,7 +333,7 @@ public class Project extends BaseEntity {
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
         this.prjSts = prjSts;
-        this.bgYy = bgYy;
+        this.prjYy = prjYy;
         this.svnHdq = svnHdq;
     }
 }

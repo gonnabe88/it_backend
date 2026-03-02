@@ -17,24 +17,32 @@ import lombok.experimental.SuperBuilder;
 /**
  * 전산관리비(IT 관리비) 마스터 엔티티
  *
- * <p>DB 테이블: {@code TAAABB_BCOSTM}</p>
+ * <p>
+ * DB 테이블: {@code TAAABB_BCOSTM}
+ * </p>
  *
- * <p>전산관리비는 IT 인프라 유지보수, 소프트웨어 라이선스, 클라우드 서비스 등
- * IT 운영과 관련된 정기 지출 항목을 관리합니다.</p>
+ * <p>
+ * 전산관리비는 IT 인프라 유지보수, 소프트웨어 라이선스, 클라우드 서비스 등
+ * IT 운영과 관련된 정기 지출 항목을 관리합니다.
+ * </p>
  *
- * <p>복합키 구조: ({@code IT_MNGC_NO}, {@code IT_MNGC_SNO})
+ * <p>
+ * 복합키 구조: ({@code IT_MNGC_NO}, {@code IT_MNGC_SNO})
  * 동일 관리번호에 여러 버전(일련번호)이 존재할 수 있으며, {@code LST_YN='Y'}인
- * 레코드가 현재 유효한 버전입니다.</p>
+ * 레코드가 현재 유효한 버전입니다.
+ * </p>
  *
- * <p>공통 감사 정보({@link BaseEntity})를 상속하여 생성일시, 수정일시 등을 자동 관리합니다.</p>
+ * <p>
+ * 공통 감사 정보({@link BaseEntity})를 상속하여 생성일시, 수정일시 등을 자동 관리합니다.
+ * </p>
  */
-@Entity                                              // JPA 엔티티로 등록
-@Table(name = "TAAABB_BCOSTM")                       // 매핑할 DB 테이블명
-@IdClass(BcostmId.class)                             // 복합키 클래스 지정
-@Getter                                              // 모든 필드의 getter 자동 생성 (Lombok)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)   // protected 기본 생성자 (JPA 요구사항)
-@AllArgsConstructor                                  // 전체 필드 생성자 자동 생성
-@SuperBuilder                                        // 상속 구조에서 Builder 패턴 지원
+@Entity // JPA 엔티티로 등록
+@Table(name = "TAAABB_BCOSTM") // 매핑할 DB 테이블명
+@IdClass(BcostmId.class) // 복합키 클래스 지정
+@Getter // 모든 필드의 getter 자동 생성 (Lombok)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
+@AllArgsConstructor // 전체 필드 생성자 자동 생성
+@SuperBuilder // 상속 구조에서 Builder 패턴 지원
 public class Bcostm extends BaseEntity {
 
     /** 전산업무비코드(IT관리비관리번호): 복합 기본키의 첫 번째 컬럼 (예: COST_2026_0001) */
@@ -103,29 +111,36 @@ public class Bcostm extends BaseEntity {
     @Column(name = "PUL_CGPR", length = 32)
     private String pulCgpr;
 
+    /** 추진부서: 해당 비용 항목의 추진 부서 코드 */
+    @Column(name = "PUL_DPM", length = 100)
+    private String pulDpm;
+
     /**
      * 전산관리비 정보 업데이트 메서드
      *
-     * <p>JPA Dirty Checking을 활용하여 트랜잭션 내에서 필드를 변경합니다.
-     * 변경된 필드는 트랜잭션 종료 시 자동으로 DB에 반영됩니다.</p>
+     * <p>
+     * JPA Dirty Checking을 활용하여 트랜잭션 내에서 필드를 변경합니다.
+     * 변경된 필드는 트랜잭션 종료 시 자동으로 DB에 반영됩니다.
+     * </p>
      *
-     * @param ioeNm     비목명
-     * @param cttNm     계약명
-     * @param cttTp     계약구분
-     * @param cttOpp    계약상대처
-     * @param itMngcBg  전산업무비예산
-     * @param dfrCle    지급주기
-     * @param fstDfrDt  지급예정월(최초지급일자)
-     * @param cur       통화
-     * @param xcr       환율
-     * @param xcrBseDt  환율기준일자
-     * @param infPrtYn  정보보호여부
-     * @param indRsn    증감사유
-     * @param pulCgpr   추진담당자
+     * @param ioeNm    비목명
+     * @param cttNm    계약명
+     * @param cttTp    계약구분
+     * @param cttOpp   계약상대처
+     * @param itMngcBg 전산업무비예산
+     * @param dfrCle   지급주기
+     * @param fstDfrDt 지급예정월(최초지급일자)
+     * @param cur      통화
+     * @param xcr      환율
+     * @param xcrBseDt 환율기준일자
+     * @param infPrtYn 정보보호여부
+     * @param indRsn   증감사유
+     * @param pulCgpr  추진담당자
+     * @param pulDpm   추진부서
      */
     public void update(String ioeNm, String cttNm, String cttTp, String cttOpp, BigDecimal itMngcBg,
             String dfrCle, LocalDate fstDfrDt, String cur, BigDecimal xcr, LocalDate xcrBseDt,
-            String infPrtYn, String indRsn, String pulCgpr) {
+            String infPrtYn, String indRsn, String pulCgpr, String pulDpm) {
         this.ioeNm = ioeNm;
         this.cttNm = cttNm;
         this.cttTp = cttTp;
@@ -139,5 +154,6 @@ public class Bcostm extends BaseEntity {
         this.infPrtYn = infPrtYn;
         this.indRsn = indRsn;
         this.pulCgpr = pulCgpr;
+        this.pulDpm = pulDpm;
     }
 }

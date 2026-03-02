@@ -11,31 +11,42 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 정보화사업(IT 프로젝트) 서비스
  *
- * <p>정보화사업(TAAABB_BPRJTM) 엔티티의 CRUD 및 품목({@link com.kdb.it.domain.entity.Bitemm}) 동기화
- * 비즈니스 로직을 처리합니다.</p>
+ * <p>
+ * 정보화사업(TAAABB_BPRJTM) 엔티티의 CRUD 및 품목({@link com.kdb.it.domain.entity.Bitemm})
+ * 동기화
+ * 비즈니스 로직을 처리합니다.
+ * </p>
  *
- * <p>결재 연동:</p>
+ * <p>
+ * 결재 연동:
+ * </p>
  * <ul>
- *   <li>수정/삭제 시 해당 프로젝트에 연결된 신청서(CAPPLA)의 결재 상태를 확인합니다</li>
- *   <li>"결재중" 또는 "결재완료" 상태인 경우 수정/삭제가 불가합니다</li>
- *   <li>원본 테이블 코드: {@code "BPRJTM"}</li>
+ * <li>수정/삭제 시 해당 프로젝트에 연결된 신청서(CAPPLA)의 결재 상태를 확인합니다</li>
+ * <li>"결재중" 또는 "결재완료" 상태인 경우 수정/삭제가 불가합니다</li>
+ * <li>원본 테이블 코드: {@code "BPRJTM"}</li>
  * </ul>
  *
- * <p>품목(Bitemm) 동기화 로직 (수정 시):</p>
+ * <p>
+ * 품목(Bitemm) 동기화 로직 (수정 시):
+ * </p>
  * <ol>
- *   <li>요청의 {@code gclMngNo}가 있으면 기존 항목 수정</li>
- *   <li>요청의 {@code gclMngNo}가 없으면 신규 항목 추가</li>
- *   <li>요청에 없는 기존 항목은 Soft Delete</li>
+ * <li>요청의 {@code gclMngNo}가 있으면 기존 항목 수정</li>
+ * <li>요청의 {@code gclMngNo}가 없으면 신규 항목 추가</li>
+ * <li>요청에 없는 기존 항목은 Soft Delete</li>
  * </ol>
  *
- * <p>Soft Delete 패턴: {@code DEL_YN='Y'}로 논리 삭제합니다.</p>
+ * <p>
+ * Soft Delete 패턴: {@code DEL_YN='Y'}로 논리 삭제합니다.
+ * </p>
  *
- * <p>{@code @Transactional(readOnly = true)}: 조회 메서드의 기본값.
- * 쓰기 메서드는 {@code @Transactional}로 오버라이드합니다.</p>
+ * <p>
+ * {@code @Transactional(readOnly = true)}: 조회 메서드의 기본값.
+ * 쓰기 메서드는 {@code @Transactional}로 오버라이드합니다.
+ * </p>
  */
-@Service                              // Spring 서비스 빈으로 등록
-@RequiredArgsConstructor              // final 필드 생성자 자동 주입 (Lombok)
-@Transactional(readOnly = true)       // 기본 읽기 전용 트랜잭션
+@Service // Spring 서비스 빈으로 등록
+@RequiredArgsConstructor // final 필드 생성자 자동 주입 (Lombok)
+@Transactional(readOnly = true) // 기본 읽기 전용 트랜잭션
 public class ProjectService {
 
     /** 정보화사업 데이터 접근 리포지토리 (TAAABB_BPRJTM) */
@@ -50,13 +61,23 @@ public class ProjectService {
     /** 품목 데이터 접근 리포지토리 (TAAABB_BITEMM) */
     private final com.kdb.it.repository.BitemmRepository bitemmRepository;
 
+    /** 조직(부점) 정보 리포지토리 (TAAABB_CORGNI): 부서코드→부서명 조회용 */
+    private final com.kdb.it.repository.CorgnIRepository corgnIRepository;
+
+    /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
+    private final com.kdb.it.repository.CuserIRepository cuserIRepository;
+
     /**
      * 전체 정보화사업 목록 조회
      *
-     * <p>삭제되지 않은({@code DEL_YN='N'}) 모든 프로젝트를 조회합니다.
-     * 각 프로젝트에 연결된 최신 신청서 정보(신청관리번호, 결재상태)를 포함합니다.</p>
+     * <p>
+     * 삭제되지 않은({@code DEL_YN='N'}) 모든 프로젝트를 조회합니다.
+     * 각 프로젝트에 연결된 최신 신청서 정보(신청관리번호, 결재상태)를 포함합니다.
+     * </p>
      *
-     * <p>목록 조회에서는 품목(Bitemm) 정보를 포함하지 않습니다 (성능 최적화).</p>
+     * <p>
+     * 목록 조회에서는 품목(Bitemm) 정보를 포함하지 않습니다 (성능 최적화).
+     * </p>
      *
      * @return 전체 정보화사업 응답 DTO 목록 (신청서 정보 포함, 품목 제외)
      */
@@ -66,6 +87,10 @@ public class ProjectService {
                     ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
                     // 각 프로젝트의 최신 신청서 정보(신청관리번호, 결재상태) 조회 및 설정
                     setApplicationInfo(response, project.getPrjMngNo(), project.getPrjSno());
+                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
+                    setCodeNames(response);
+                    // 품목 기준 자본예산/일반관리비 합계 계산 및 설정
+                    setBudgetSummary(response, project.getPrjMngNo(), project.getPrjSno());
                     return response;
                 })
                 .toList();
@@ -74,8 +99,10 @@ public class ProjectService {
     /**
      * 단건 정보화사업 상세 조회
      *
-     * <p>프로젝트관리번호로 삭제되지 않은 프로젝트를 조회합니다.
-     * 신청서 정보와 품목({@link com.kdb.it.domain.entity.Bitemm}) 목록을 포함합니다.</p>
+     * <p>
+     * 프로젝트관리번호로 삭제되지 않은 프로젝트를 조회합니다.
+     * 신청서 정보와 품목({@link com.kdb.it.domain.entity.Bitemm}) 목록을 포함합니다.
+     * </p>
      *
      * @param prjMngNo 조회할 프로젝트관리번호
      * @return 정보화사업 상세 응답 DTO (신청서 정보, 품목 목록 포함)
@@ -89,6 +116,8 @@ public class ProjectService {
         ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
         // 최신 신청서 정보 조회 및 설정
         setApplicationInfo(response, prjMngNo, project.getPrjSno());
+        // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
+        setCodeNames(response);
 
         // 품목 정보 조회 및 설정 (삭제되지 않은 항목만)
         // PRJ_MNG_NO(프로젝트관리번호), PRJ_SNO(프로젝트일련번호) 기준, DEL_YN='N'인 품목 조회
@@ -101,17 +130,31 @@ public class ProjectService {
                 .toList();
         response.setItems(itemDtos);
 
+        // 품목 기준 자본예산/일반관리비 합계 계산 및 설정 (이미 조회한 bitemms 재활용)
+        setBudgetSummaryFromItems(response, bitemms);
+
         return response;
     }
 
     /**
      * 신규 정보화사업 생성
      *
-     * <p>프로젝트관리번호({@code PRJ_MNG_NO})가 없으면 Oracle 시퀀스로 자동 채번합니다.
-     * 제공된 경우 중복 여부를 확인합니다.</p>
+     * <p>
+     * 프로젝트관리번호({@code PRJ_MNG_NO})가 없으면 Oracle 시퀀스로 자동 채번합니다.
+     * 제공된 경우 중복 여부를 확인합니다.
+     * </p>
      *
-     * <p>관리번호 자동 생성 형식: {@code PRJ-{bgYy}-{seq:04d}}</p>
-     * <p>예: {@code PRJ-2026-0001}</p>
+     * <p>
+     * 자동 채번 로직:
+     * </p>
+     * <ul>
+     * <li>요청 객체에 사업연도({@code prjYy})가 없으면 현재 연도를 사용합니다.</li>
+     * <li>데이터베이스 시퀀스({@code SQ_PRJMNGNO})에서 다음 값을 가져옵니다.</li>
+     * <li>관리번호 자동 생성 형식: {@code PRJ-{prjYy}-{seq:04d}}
+     * (예: {@code PRJ-2026-0001})</li>
+     * </ul>
+     * 예: {@code PRJ-2026-0001}
+     * </p>
      *
      * @param request 정보화사업 생성 요청 DTO (프로젝트명, 예산, 기간, 담당자 등)
      * @return 생성된 프로젝트관리번호
@@ -125,14 +168,14 @@ public class ProjectService {
         if (prjMngNo == null || prjMngNo.isEmpty()) {
             Long nextVal = projectRepository.getNextSequenceValue(); // Oracle 시퀀스 채번
 
-            // 예산년도 결정 (요청값 없으면 현재 연도 사용)
-            String year = request.getBgYy();
+            // 사업연도 결정 (요청값 없으면 현재 연도 사용)
+            String year = request.getPrjYy();
             if (year == null || year.isEmpty()) {
                 year = String.valueOf(java.time.LocalDate.now().getYear());
-                request.setBgYy(year);
+                request.setPrjYy(year);
             }
 
-            // 형식: PRJ-{bgYy}-{seq:04d}
+            // 형식: PRJ-{prjYy}-{seq:04d}
             prjMngNo = String.format("PRJ-%s-%04d", year, nextVal);
             request.setPrjMngNo(prjMngNo);
 
@@ -152,20 +195,26 @@ public class ProjectService {
     /**
      * 정보화사업 수정
      *
-     * <p>프로젝트 기본 정보를 수정하고, 품목(Bitemm) 목록을 동기화합니다.</p>
+     * <p>
+     * 프로젝트 기본 정보를 수정하고, 품목(Bitemm) 목록을 동기화합니다.
+     * </p>
      *
-     * <p>결재 상태 확인: "결재중" 또는 "결재완료" 상태인 경우 수정이 불가합니다.</p>
+     * <p>
+     * 결재 상태 확인: "결재중" 또는 "결재완료" 상태인 경우 수정이 불가합니다.
+     * </p>
      *
-     * <p>품목 동기화 로직:</p>
+     * <p>
+     * 품목 동기화 로직:
+     * </p>
      * <ol>
-     *   <li>기존 품목 목록 조회 (DEL_YN='N')</li>
-     *   <li>요청 품목 처리:
-     *     <ul>
-     *       <li>{@code gclMngNo}가 있는 경우: 기존 항목 찾아 수정 (새 빌더로 생성 후 save → JPA merge)</li>
-     *       <li>{@code gclMngNo}가 없는 경우: 신규 항목으로 시퀀스 채번 후 추가</li>
-     *     </ul>
-     *   </li>
-     *   <li>요청에 없는 기존 항목: Soft Delete ({@code DEL_YN='Y'})</li>
+     * <li>기존 품목 목록 조회 (DEL_YN='N')</li>
+     * <li>요청 품목 처리:
+     * <ul>
+     * <li>{@code gclMngNo}가 있는 경우: 기존 항목 찾아 수정 (새 빌더로 생성 후 save → JPA merge)</li>
+     * <li>{@code gclMngNo}가 없는 경우: 신규 항목으로 시퀀스 채번 후 추가</li>
+     * </ul>
+     * </li>
+     * <li>요청에 없는 기존 항목: Soft Delete ({@code DEL_YN='Y'})</li>
      * </ol>
      *
      * @param prjMngNo 수정할 프로젝트관리번호
@@ -191,37 +240,37 @@ public class ProjectService {
 
         // 프로젝트 기본 정보 수정 (JPA Dirty Checking으로 자동 반영)
         project.update(
-                request.getPrjNm(),      // 프로젝트명
-                request.getPrjTp(),      // 프로젝트유형
-                request.getSvnDpm(),     // 주관부서
-                request.getItDpm(),      // IT부서
-                request.getPrjBg(),      // 프로젝트예산
-                request.getSttDt(),      // 시작일자
-                request.getEndDt(),      // 종료일자
+                request.getPrjNm(), // 프로젝트명
+                request.getPrjTp(), // 프로젝트유형
+                request.getSvnDpm(), // 주관부서
+                request.getItDpm(), // IT부서
+                request.getPrjBg(), // 프로젝트예산
+                request.getSttDt(), // 시작일자
+                request.getEndDt(), // 종료일자
                 request.getSvnDpmCgpr(), // 주관부서담당자
-                request.getItDpmCgpr(),  // IT부서담당자
-                request.getSvnDpmTlr(),  // 주관부서담당팀장
-                request.getItDpmTlr(),   // IT부서담당팀장
-                request.getEdrt(),       // 전결권
-                request.getPrjDes(),     // 사업설명
-                request.getPulRsn(),     // 추진사유
-                request.getSaf(),        // 현황
-                request.getNcs(),        // 필요성
-                request.getXptEff(),     // 기대효과
-                request.getPlm(),        // 문제
-                request.getPrjRng(),     // 사업범위
-                request.getPulPsg(),     // 추진경과
-                request.getHrfPln(),     // 향후계획
-                request.getBzDtt(),      // 업무구분
-                request.getTchnTp(),     // 기술유형
-                request.getMnUsr(),      // 주요사용자
-                request.getDplYn(),      // 중복여부
-                request.getLblFsgTlm(),  // 의무완료기한
-                request.getRprSts(),     // 보고상태
-                request.getPrjPulPtt(),  // 프로젝트추진가능성
-                request.getPrjSts(),     // 프로젝트상태
-                request.getBgYy(),       // 예산년도
-                request.getSvnHdq());    // 주관본부/부문
+                request.getItDpmCgpr(), // IT부서담당자
+                request.getSvnDpmTlr(), // 주관부서담당팀장
+                request.getItDpmTlr(), // IT부서담당팀장
+                request.getEdrt(), // 전결권
+                request.getPrjDes(), // 사업설명
+                request.getPulRsn(), // 추진사유
+                request.getSaf(), // 현황
+                request.getNcs(), // 필요성
+                request.getXptEff(), // 기대효과
+                request.getPlm(), // 문제
+                request.getPrjRng(), // 사업범위
+                request.getPulPsg(), // 추진경과
+                request.getHrfPln(), // 향후계획
+                request.getBzDtt(), // 업무구분
+                request.getTchnTp(), // 기술유형
+                request.getMnUsr(), // 주요사용자
+                request.getDplYn(), // 중복여부
+                request.getLblFsgTlm(), // 의무완료기한
+                request.getRprSts(), // 보고상태
+                request.getPrjPulPtt(), // 프로젝트추진가능성
+                request.getPrjSts(), // 프로젝트상태
+                request.getPrjYy(), // 사업연도
+                request.getSvnHdq()); // 주관본부/부문
 
         // ===== 품목 정보 동기화 (CUD) =====
         if (request.getItems() != null) {
@@ -251,23 +300,23 @@ public class ProjectService {
                         // Bitemm 엔티티에 update 메서드가 없으므로,
                         // 동일 PK(gclMngNo, gclSno)로 새 Builder 생성 후 save → JPA merge 수행
                         com.kdb.it.domain.entity.Bitemm updatedItem = com.kdb.it.domain.entity.Bitemm.builder()
-                                .gclMngNo(existingItem.getGclMngNo())   // PK 유지
-                                .gclSno(existingItem.getGclSno())       // PK 유지
-                                .prjMngNo(existingItem.getPrjMngNo())   // 프로젝트관리번호 유지
-                                .prjSno(existingItem.getPrjSno())       // 프로젝트순번 유지
-                                .gclDtt(itemDto.getGclDtt())            // 품목구분
-                                .gclNm(itemDto.getGclNm())              // 품목명
-                                .gclQtt(itemDto.getGclQtt())            // 품목수량
-                                .cur(itemDto.getCur())                  // 통화
-                                .xcr(itemDto.getXcr())                  // 환율
-                                .xcrBseDt(itemDto.getXcrBseDt())        // 환율기준일자
-                                .bgFdtn(itemDto.getBgFdtn())            // 예산근거
-                                .itdDt(itemDto.getItdDt())              // 도입시기
-                                .dfrCle(itemDto.getDfrCle())            // 지급주기
+                                .gclMngNo(existingItem.getGclMngNo()) // PK 유지
+                                .gclSno(existingItem.getGclSno()) // PK 유지
+                                .prjMngNo(existingItem.getPrjMngNo()) // 프로젝트관리번호 유지
+                                .prjSno(existingItem.getPrjSno()) // 프로젝트순번 유지
+                                .gclDtt(itemDto.getGclDtt()) // 품목구분
+                                .gclNm(itemDto.getGclNm()) // 품목명
+                                .gclQtt(itemDto.getGclQtt()) // 품목수량
+                                .cur(itemDto.getCur()) // 통화
+                                .xcr(itemDto.getXcr()) // 환율
+                                .xcrBseDt(itemDto.getXcrBseDt()) // 환율기준일자
+                                .bgFdtn(itemDto.getBgFdtn()) // 예산근거
+                                .itdDt(itemDto.getItdDt()) // 도입시기
+                                .dfrCle(itemDto.getDfrCle()) // 지급주기
                                 .infPrtYn(itemDto.getInfPrtYn() == null ? "N" : itemDto.getInfPrtYn()) // 정보보호여부
                                 .itrInfrYn(itemDto.getItrInfrYn() == null ? "N" : itemDto.getItrInfrYn()) // 통합인프라여부
-                                .lstYn("Y")                             // 최종여부
-                                .gclAmt(itemDto.getGclAmt())            // 품목금액
+                                .lstYn("Y") // 최종여부
+                                .gclAmt(itemDto.getGclAmt()) // 품목금액
                                 .build();
                         bitemmRepository.save(updatedItem); // JPA save → ID 있으므로 merge
                         processedGclMngNos.add(existingItem.getGclMngNo()); // 처리 완료 표시
@@ -279,23 +328,23 @@ public class ProjectService {
                     String gclMngNo = String.format("GCL-%s-%04d", java.time.LocalDate.now().getYear(), gclSeq);
 
                     com.kdb.it.domain.entity.Bitemm newItem = com.kdb.it.domain.entity.Bitemm.builder()
-                            .gclMngNo(gclMngNo)                         // 품목관리번호 (신규 채번)
-                            .gclSno(++maxGclSno)                        // 품목일련번호 (MAX+1)
-                            .prjMngNo(prjMngNo)                         // 프로젝트관리번호
-                            .prjSno(project.getPrjSno())                // 프로젝트순번
-                            .gclDtt(itemDto.getGclDtt())                // 품목구분
-                            .gclNm(itemDto.getGclNm())                  // 품목명
-                            .gclQtt(itemDto.getGclQtt())                // 품목수량
-                            .cur(itemDto.getCur())                      // 통화
-                            .xcr(itemDto.getXcr())                      // 환율
-                            .xcrBseDt(itemDto.getXcrBseDt())            // 환율기준일자
-                            .bgFdtn(itemDto.getBgFdtn())                // 예산근거
-                            .itdDt(itemDto.getItdDt())                  // 도입시기
-                            .dfrCle(itemDto.getDfrCle())                // 지급주기
+                            .gclMngNo(gclMngNo) // 품목관리번호 (신규 채번)
+                            .gclSno(++maxGclSno) // 품목일련번호 (MAX+1)
+                            .prjMngNo(prjMngNo) // 프로젝트관리번호
+                            .prjSno(project.getPrjSno()) // 프로젝트순번
+                            .gclDtt(itemDto.getGclDtt()) // 품목구분
+                            .gclNm(itemDto.getGclNm()) // 품목명
+                            .gclQtt(itemDto.getGclQtt()) // 품목수량
+                            .cur(itemDto.getCur()) // 통화
+                            .xcr(itemDto.getXcr()) // 환율
+                            .xcrBseDt(itemDto.getXcrBseDt()) // 환율기준일자
+                            .bgFdtn(itemDto.getBgFdtn()) // 예산근거
+                            .itdDt(itemDto.getItdDt()) // 도입시기
+                            .dfrCle(itemDto.getDfrCle()) // 지급주기
                             .infPrtYn(itemDto.getInfPrtYn() == null ? "N" : itemDto.getInfPrtYn()) // 정보보호여부
                             .itrInfrYn(itemDto.getItrInfrYn() == null ? "N" : itemDto.getItrInfrYn()) // 통합인프라여부
-                            .lstYn("Y")                                 // 최종여부
-                            .gclAmt(itemDto.getGclAmt())                // 품목금액
+                            .lstYn("Y") // 최종여부
+                            .gclAmt(itemDto.getGclAmt()) // 품목금액
                             .build();
                     bitemmRepository.save(newItem);
                 }
@@ -316,10 +365,14 @@ public class ProjectService {
     /**
      * 정보화사업 삭제 (Soft Delete)
      *
-     * <p>프로젝트와 연결된 품목({@link com.kdb.it.domain.entity.Bitemm}) 모두를
-     * {@code DEL_YN='Y'}로 논리 삭제합니다.</p>
+     * <p>
+     * 프로젝트와 연결된 품목({@link com.kdb.it.domain.entity.Bitemm}) 모두를
+     * {@code DEL_YN='Y'}로 논리 삭제합니다.
+     * </p>
      *
-     * <p>결재 상태 확인: "결재중" 또는 "결재완료" 상태인 경우 삭제가 불가합니다.</p>
+     * <p>
+     * 결재 상태 확인: "결재중" 또는 "결재완료" 상태인 경우 삭제가 불가합니다.
+     * </p>
      *
      * @param prjMngNo 삭제할 프로젝트관리번호
      * @throws IllegalArgumentException 해당 관리번호의 프로젝트가 없는 경우
@@ -353,8 +406,10 @@ public class ProjectService {
     /**
      * 정보화사업 일괄 조회
      *
-     * <p>여러 프로젝트관리번호를 한 번에 조회합니다.
-     * 존재하지 않는 항목은 결과에서 제외합니다 (null 필터링).</p>
+     * <p>
+     * 여러 프로젝트관리번호를 한 번에 조회합니다.
+     * 존재하지 않는 항목은 결과에서 제외합니다 (null 필터링).
+     * </p>
      *
      * @param request 일괄 조회 요청 DTO (프로젝트관리번호 목록)
      * @return 존재하는 프로젝트의 응답 DTO 목록 (품목 정보 포함, 없는 항목 제외)
@@ -375,15 +430,19 @@ public class ProjectService {
     /**
      * 프로젝트 응답 DTO에 신청서 정보 설정 (내부 헬퍼 메서드)
      *
-     * <p>프로젝트관리번호와 순번으로 연결된 신청서(CAPPLA) 중 가장 최신 신청서를 조회하여
-     * 응답 DTO에 신청관리번호({@code apfMngNo})와 결재상태({@code apfSts})를 설정합니다.</p>
+     * <p>
+     * 프로젝트관리번호와 순번으로 연결된 신청서(CAPPLA) 중 가장 최신 신청서를 조회하여
+     * 응답 DTO에 신청관리번호({@code apfMngNo})와 결재상태({@code apfSts})를 설정합니다.
+     * </p>
      *
-     * <p>조회 기준:</p>
+     * <p>
+     * 조회 기준:
+     * </p>
      * <ul>
-     *   <li>{@code ORC_TB_CD = 'BPRJTM'}: 프로젝트 원본 테이블 코드</li>
-     *   <li>{@code ORC_PK_VL = prjMngNo}: 프로젝트관리번호</li>
-     *   <li>{@code ORC_SNO_VL = prjSno}: 프로젝트순번</li>
-     *   <li>최신순 정렬 ({@code APF_REL_SNO DESC})</li>
+     * <li>{@code ORC_TB_CD = 'BPRJTM'}: 프로젝트 원본 테이블 코드</li>
+     * <li>{@code ORC_PK_VL = prjMngNo}: 프로젝트관리번호</li>
+     * <li>{@code ORC_SNO_VL = prjSno}: 프로젝트순번</li>
+     * <li>최신순 정렬 ({@code APF_REL_SNO DESC})</li>
      * </ul>
      *
      * @param response 신청서 정보를 설정할 응답 DTO
@@ -403,5 +462,126 @@ public class ProjectService {
             capplmRepository.findById(cappla.getApfMngNo())
                     .ifPresent(capplm -> response.setApfSts(capplm.getApfSts()));
         }
+    }
+
+    /**
+     * 프로젝트 응답 DTO에 부서명/사용자명 설정 (내부 헬퍼 메서드)
+     *
+     * <p>
+     * 부서코드(itDpm, svnDpm)로 TAAABB_CORGNI에서 부서명(BBR_NM)을 조회하고,
+     * 사원번호(itDpmCgpr, itDpmTlr, svnDpmCgpr, svnDpmTlr)로
+     * TAAABB_CUSERI에서 사용자명(USR_NM)을 조회하여 응답 DTO에 설정합니다.
+     * </p>
+     *
+     * <p>
+     * 코드 값이 null 또는 빈 문자열이면 조회를 건너뛰고,
+     * 조회 결과가 없으면 해당 이름 필드는 null로 유지됩니다.
+     * </p>
+     *
+     * @param response 코드명을 설정할 응답 DTO
+     */
+    private void setCodeNames(ProjectDto.Response response) {
+        // === 부서코드 → 부서명 변환 (TAAABB_CORGNI) ===
+
+        // IT부서코드 → IT부서명
+        if (response.getItDpm() != null && !response.getItDpm().isEmpty()) {
+            corgnIRepository.findById(response.getItDpm())
+                    .ifPresent(org -> response.setItDpmNm(org.getBbrNm()));
+        }
+
+        // 주관부서코드 → 주관부서명
+        if (response.getSvnDpm() != null && !response.getSvnDpm().isEmpty()) {
+            corgnIRepository.findById(response.getSvnDpm())
+                    .ifPresent(org -> response.setSvnDpmNm(org.getBbrNm()));
+        }
+
+        // === 사원번호 → 사용자명 변환 (TAAABB_CUSERI) ===
+
+        // IT담당자 사번 → IT담당자명
+        if (response.getItDpmCgpr() != null && !response.getItDpmCgpr().isEmpty()) {
+            cuserIRepository.findById(response.getItDpmCgpr())
+                    .ifPresent(user -> response.setItDpmCgprNm(user.getUsrNm()));
+        }
+
+        // IT담당팀장 사번 → IT담당팀장명
+        if (response.getItDpmTlr() != null && !response.getItDpmTlr().isEmpty()) {
+            cuserIRepository.findById(response.getItDpmTlr())
+                    .ifPresent(user -> response.setItDpmTlrNm(user.getUsrNm()));
+        }
+
+        // 주관부서담당자 사번 → 주관부서담당자명
+        if (response.getSvnDpmCgpr() != null && !response.getSvnDpmCgpr().isEmpty()) {
+            cuserIRepository.findById(response.getSvnDpmCgpr())
+                    .ifPresent(user -> response.setSvnDpmCgprNm(user.getUsrNm()));
+        }
+
+        // 주관부서담당팀장 사번 → 주관부서담당팀장명
+        if (response.getSvnDpmTlr() != null && !response.getSvnDpmTlr().isEmpty()) {
+            cuserIRepository.findById(response.getSvnDpmTlr())
+                    .ifPresent(user -> response.setSvnDpmTlrNm(user.getUsrNm()));
+        }
+    }
+
+    /**
+     * 프로젝트 응답 DTO에 자본예산/일반관리비 합계 설정 (품목 조회 포함)
+     *
+     * <p>
+     * 프로젝트의 품목(Bitemm)을 조회하여 gclDtt(품목구분) 기준으로
+     * 자본예산과 일반관리비를 계산합니다.
+     * </p>
+     *
+     * @param response 예산 합계를 설정할 응답 DTO
+     * @param prjMngNo 프로젝트관리번호
+     * @param prjSno   프로젝트순번
+     */
+    private void setBudgetSummary(ProjectDto.Response response, String prjMngNo, Integer prjSno) {
+        // 삭제되지 않은 품목 목록 조회
+        List<com.kdb.it.domain.entity.Bitemm> bitemms = bitemmRepository
+                .findByPrjMngNoAndPrjSnoAndDelYn(prjMngNo, prjSno, "N");
+        setBudgetSummaryFromItems(response, bitemms);
+    }
+
+    /**
+     * 품목 목록으로부터 자본예산/일반관리비 합계를 계산하여 응답 DTO에 설정
+     *
+     * <p>
+     * 자본예산(assetBg): gclDtt가 "개발비", "기계장치", "기타무형자산"인 품목의 gclAmt 합계
+     * </p>
+     * <p>
+     * 일반관리비(costBg): gclDtt가 "전산임차료", "전산제비"인 품목의 gclAmt 합계
+     * </p>
+     *
+     * @param response 예산 합계를 설정할 응답 DTO
+     * @param bitemms  합계 계산 대상 품목 목록
+     */
+    private void setBudgetSummaryFromItems(ProjectDto.Response response,
+            List<com.kdb.it.domain.entity.Bitemm> bitemms) {
+        // 자본예산 대상 품목구분
+        java.util.Set<String> assetTypes = java.util.Set.of("개발비", "기계장치", "기타무형자산");
+        // 일반관리비 대상 품목구분
+        java.util.Set<String> costTypes = java.util.Set.of("전산임차료", "전산제비");
+
+        // 자본예산 합계 계산 (gclAmt × xcr, xcr이 null이면 1로 간주)
+        java.math.BigDecimal assetBg = bitemms.stream()
+                .filter(item -> item.getGclDtt() != null && assetTypes.contains(item.getGclDtt()))
+                .filter(item -> item.getGclAmt() != null)
+                .map(item -> {
+                    java.math.BigDecimal xcr = item.getXcr() != null ? item.getXcr() : java.math.BigDecimal.ONE;
+                    return item.getGclAmt().multiply(xcr);
+                })
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        // 일반관리비 합계 계산 (gclAmt × xcr, xcr이 null이면 1로 간주)
+        java.math.BigDecimal costBg = bitemms.stream()
+                .filter(item -> item.getGclDtt() != null && costTypes.contains(item.getGclDtt()))
+                .filter(item -> item.getGclAmt() != null)
+                .map(item -> {
+                    java.math.BigDecimal xcr = item.getXcr() != null ? item.getXcr() : java.math.BigDecimal.ONE;
+                    return item.getGclAmt().multiply(xcr);
+                })
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        response.setAssetBg(assetBg);
+        response.setCostBg(costBg);
     }
 }

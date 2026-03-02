@@ -96,7 +96,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 접근 가능한 엔드포인트
                         .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/refresh",
-                                "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/error")
+                                "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**",
+                                "/swagger-ui.html", "/error")
                         .permitAll()
                         // 나머지는 인증 필요 (유효한 JWT 토큰 필수)
                         .anyRequest().authenticated())

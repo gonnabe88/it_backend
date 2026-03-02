@@ -45,7 +45,7 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
      * Oracle 시퀀스(S_PRJ) 다음 값 조회
      *
      * <p>새로운 프로젝트 생성 시 관리번호 채번에 사용합니다.
-     * 형식: {@code PRJ-{예산연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})</p>
+     * 형식: {@code PRJ-{사업연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})</p>
      *
      * <p>Oracle DB 전용 Native Query입니다.</p>
      *
