@@ -185,6 +185,7 @@ public class JwtUtil {
      * @return true이면 유효한 토큰, false이면 유효하지 않은 토큰
      */
     public boolean validateToken(String token) {
+        // TODO: System.err.println 대신 SLF4J Logger(log.warn/log.error)를 사용하도록 개선 필요
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
