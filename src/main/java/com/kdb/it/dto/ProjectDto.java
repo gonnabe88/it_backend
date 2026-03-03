@@ -217,6 +217,7 @@ public class ProjectDto {
         public Project toEntity() {
             return Project.builder()
                     .prjMngNo(prjMngNo) // 프로젝트관리번호
+                    .prjSno(1) // 프로젝트순번 (신규 생성 시 1로 고정)
                     .prjNm(prjNm) // 프로젝트명
                     .prjTp(prjTp) // 프로젝트유형
                     .svnDpm(svnDpm) // 주관부서

@@ -15,26 +15,35 @@ import java.time.LocalDate;
 /**
  * 신청서 마스터 엔티티
  *
- * <p>DB 테이블: {@code TAAABB_CAPPLM}</p>
+ * <p>
+ * DB 테이블: {@code TAAABB_CAPPLM}
+ * </p>
  *
- * <p>결재 신청서의 헤더 정보를 관리합니다.
+ * <p>
+ * 결재 신청서의 헤더 정보를 관리합니다.
  * 신청서와 원본 데이터 연결({@link Cappla}),
- * 결재선({@link Cdecim})과 연관됩니다.</p>
+ * 결재선({@link Cdecim})과 연관됩니다.
+ * </p>
  *
- * <p>신청서 상태({@code APF_STS}) 흐름:</p>
+ * <p>
+ * 신청서 상태({@code APF_STS}) 흐름:
+ * </p>
+ * 
  * <pre>
  *   "결재중" → (모든 결재자 승인 시) → "결재완료"
  *           → (중간 반려 시)       → "반려"
  * </pre>
  *
- * <p>관리번호 형식: {@code APF_{연도}{8자리 시퀀스}} (예: {@code APF_202600000001})</p>
+ * <p>
+ * 관리번호 형식: {@code APF_{연도}{8자리 시퀀스}} (예: {@code APF_202600000001})
+ * </p>
  */
-@Entity                                              // JPA 엔티티로 등록
-@Table(name = "TAAABB_CAPPLM")                       // 매핑할 DB 테이블명
-@Getter                                              // 모든 필드의 getter 자동 생성 (Lombok)
-@SuperBuilder                                        // 상속 구조에서 Builder 패턴 지원
-@NoArgsConstructor(access = AccessLevel.PROTECTED)   // protected 기본 생성자 (JPA 요구사항)
-@AllArgsConstructor                                  // 전체 필드 생성자 자동 생성
+@Entity // JPA 엔티티로 등록
+@Table(name = "TAAABB_CAPPLM") // 매핑할 DB 테이블명
+@Getter // 모든 필드의 getter 자동 생성 (Lombok)
+@SuperBuilder // 상속 구조에서 Builder 패턴 지원
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
+@AllArgsConstructor // 전체 필드 생성자 자동 생성
 public class Capplm extends BaseEntity {
 
     /**
@@ -52,8 +61,8 @@ public class Capplm extends BaseEntity {
     @Column(name = "APF_STS", length = 32)
     private String apfSts;
 
-    /** 신청서명: 신청서의 제목 (최대 200자) */
-    @Column(name = "APF_NM", length = 200)
+    /** 신청서명: 신청서의 제목 (최대 800자) */
+    @Column(name = "APF_NM", length = 800)
     private String apfNm;
 
     /**
@@ -79,8 +88,10 @@ public class Capplm extends BaseEntity {
     /**
      * 신청서 상태 변경 메서드
      *
-     * <p>결재 처리 후 신청서의 상태를 업데이트합니다.
-     * (예: "결재중" → "결재완료" 또는 "반려")</p>
+     * <p>
+     * 결재 처리 후 신청서의 상태를 업데이트합니다.
+     * (예: "결재중" → "결재완료" 또는 "반려")
+     * </p>
      *
      * @param status 변경할 상태 값 ("결재완료" | "반려")
      */
@@ -91,8 +102,10 @@ public class Capplm extends BaseEntity {
     /**
      * 신청서 세부내용 업데이트 메서드
      *
-     * <p>결재 처리 후 신청서 세부내용(JSON) 내의 결재 정보를 갱신합니다.
-     * 결재일자 등의 정보가 JSON 내 approvalLine 항목에 반영됩니다.</p>
+     * <p>
+     * 결재 처리 후 신청서 세부내용(JSON) 내의 결재 정보를 갱신합니다.
+     * 결재일자 등의 정보가 JSON 내 approvalLine 항목에 반영됩니다.
+     * </p>
      *
      * @param detailContent 업데이트할 신청서 세부내용 JSON 문자열
      */

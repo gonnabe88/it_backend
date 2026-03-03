@@ -180,8 +180,8 @@ public class ProjectService {
             request.setPrjMngNo(prjMngNo);
 
         } else {
-            // 제공된 관리번호 중복 확인
-            if (projectRepository.existsById(prjMngNo)) {
+            // 제공된 관리번호 중복 확인 (복합키이므로 prjMngNo 기준으로 조회)
+            if (projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N").isPresent()) {
                 throw new IllegalArgumentException("Project already exists with id: " + prjMngNo);
             }
         }
@@ -225,8 +225,8 @@ public class ProjectService {
      */
     @Transactional
     public String updateProject(String prjMngNo, ProjectDto.UpdateRequest request) {
-        // 프로젝트 조회 (삭제 여부 무관)
-        Project project = projectRepository.findById(prjMngNo)
+        // 프로젝트 조회 (삭제되지 않은 항목만)
+        Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
         // 결재 상태 확인 (BPRJTM 테이블 코드로 신청서 연결 여부 조회)
@@ -381,8 +381,8 @@ public class ProjectService {
      */
     @Transactional
     public void deleteProject(String prjMngNo) {
-        // 프로젝트 조회
-        Project project = projectRepository.findById(prjMngNo)
+        // 프로젝트 조회 (삭제되지 않은 항목만)
+        Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
         // 결재 상태 확인 (결재중/결재완료이면 삭제 불가)

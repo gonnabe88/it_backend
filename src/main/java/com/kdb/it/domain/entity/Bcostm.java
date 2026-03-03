@@ -47,7 +47,7 @@ public class Bcostm extends BaseEntity {
 
     /** 전산업무비코드(IT관리비관리번호): 복합 기본키의 첫 번째 컬럼 (예: COST_2026_0001) */
     @Id
-    @Column(name = "IT_MNGC_NO", nullable = false, length = 32)
+    @Column(name = "IT_MNGC_NO", nullable = false, length = 128)
     private String itMngcNo;
 
     /** 전산업무비일련번호(IT관리비일련번호): 복합 기본키의 두 번째 컬럼 (버전 구분용, 1부터 시작) */
@@ -56,23 +56,23 @@ public class Bcostm extends BaseEntity {
     private Integer itMngcSno;
 
     /** 최종여부: 'Y'=현재 유효한 레코드, 'N'=이전 버전 레코드 */
-    @Column(name = "LST_YN", length = 1)
+    @Column(name = "LST_YN", length = 4)
     private String lstYn;
 
     /** 비목명: 전산관리비 항목의 대분류명 (예: 서버 유지보수, 네트워크 장비) */
-    @Column(name = "IOE_NM", length = 100)
+    @Column(name = "IOE_NM", length = 400)
     private String ioeNm;
 
     /** 계약명: 실제 계약서상의 명칭 (예: 2026년 서버 유지보수 계약) */
-    @Column(name = "CTT_NM", length = 200)
+    @Column(name = "CTT_NM", length = 800)
     private String cttNm;
 
     /** 계약구분: 계약의 성격 구분 (예: 유지보수, 임차, 구독) */
-    @Column(name = "CTT_TP", length = 100)
+    @Column(name = "CTT_TP", length = 400)
     private String cttTp;
 
     /** 계약상대처: 계약 상대방 업체명 (예: (주)IT솔루션) */
-    @Column(name = "CTT_OPP", length = 100)
+    @Column(name = "CTT_OPP", length = 400)
     private String cttOpp;
 
     /** 전산업무비예산: 해당 항목의 연간 예산 금액 (최대 15자리, 소수점 2자리) */
@@ -80,7 +80,7 @@ public class Bcostm extends BaseEntity {
     private BigDecimal itMngcBg;
 
     /** 지급주기: 비용 지급 주기 (예: 매월, 분기, 반기, 연간) */
-    @Column(name = "DFR_CLE", length = 10)
+    @Column(name = "DFR_CLE", length = 40)
     private String dfrCle;
 
     /** 지급예정월(최초지급일자): 첫 번째 지급 예정 날짜 */
@@ -88,7 +88,7 @@ public class Bcostm extends BaseEntity {
     private LocalDate fstDfrDt;
 
     /** 통화: 비용 통화 코드 (예: KRW, USD, EUR) */
-    @Column(name = "CUR", length = 10)
+    @Column(name = "CUR", length = 40)
     private String cur;
 
     /** 환율: 외화 계약 시 적용 환율 (최대 9자리) */
@@ -100,15 +100,15 @@ public class Bcostm extends BaseEntity {
     private LocalDate xcrBseDt;
 
     /** 정보보호여부: 정보보호 관련 항목 여부 (Y/N) */
-    @Column(name = "INF_PRT_YN", length = 1)
+    @Column(name = "INF_PRT_YN", length = 4)
     private String infPrtYn;
 
-    /** 증감사유: 전년 대비 예산 증감 이유 (최대 1000자) */
-    @Column(name = "IND_RSN", length = 1000)
+    /** 증감사유: 전년 대비 예산 증감 이유 (최대 4000자) */
+    @Column(name = "IND_RSN", length = 4000)
     private String indRsn;
 
     /** 추진담당자: 해당 비용 항목의 담당자 사번 또는 이름 */
-    @Column(name = "PUL_CGPR", length = 32)
+    @Column(name = "PUL_CGPR", length = 128)
     private String pulCgpr;
 
     /** 추진부서: 해당 비용 항목의 추진 부서 코드 */
