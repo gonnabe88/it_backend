@@ -41,6 +41,20 @@ public interface ProjectRepository extends JpaRepository<Project, ProjectId> {
     Optional<Project> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
     /**
+     * 프로젝트 관리번호와 삭제여부로 존재 여부 확인
+     *
+     * <p>
+     * 중복 생성 방지를 위한 효율적인 존재 여부 확인 메서드입니다.
+     * {@code COUNT(*)} 쿼리를 사용하여 엔티티 전체를 로드하지 않습니다.
+     * </p>
+     *
+     * @param prjMngNo 프로젝트 관리번호 (예: PRJ-2026-0001)
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @return 존재하면 {@code true}
+     */
+    boolean existsByPrjMngNoAndDelYn(String prjMngNo, String delYn);
+
+    /**
      * 전체 정보화사업 목록 조회 (삭제 여부 조건)
      *
      * <p>

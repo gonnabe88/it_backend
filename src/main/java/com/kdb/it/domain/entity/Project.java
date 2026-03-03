@@ -174,8 +174,8 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_STS", length = 32)
     private String prjSts;
 
-    /** 사업연도: 사업 연도 (최대 1020자) */
-    @Column(name = "PRJ_YY", length = 1020)
+    /** 사업연도: 사업 연도 (4자리 숫자, 예: "2026") */
+    @Column(name = "PRJ_YY", length = 4)
     private String prjYy;
 
     /** 주관본부/부문: 사업을 총괄하는 본부 또는 부문 명칭 (최대 32자) */

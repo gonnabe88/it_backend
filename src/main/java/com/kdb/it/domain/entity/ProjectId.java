@@ -1,75 +1,34 @@
 package com.kdb.it.domain.entity;
 
 import java.io.Serializable;
-import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * 정보화사업(Project) 엔티티의 복합 기본키 클래스
  *
- * <p>
- * {@link Project} 엔티티의 복합키를 정의합니다.
- * JPA {@code @IdClass}로 사용됩니다.
- * </p>
+ * <p>JPA의 {@code @IdClass} 방식으로 복합키를 정의합니다.
+ * {@link Project} 엔티티의 {@code @Id} 필드({@code prjMngNo}, {@code prjSno})와
+ * 동일한 이름과 타입을 가져야 합니다.</p>
  *
- * <p>
- * 복합키 구성:
- * </p>
+ * <p>JPA 복합키 클래스 요구사항:</p>
  * <ul>
- * <li>{@code prjMngNo}: 프로젝트관리번호 (예: PRJ-2026-0001)</li>
- * <li>{@code prjSno}: 프로젝트순번 (동일 관리번호 내 버전 구분)</li>
- * </ul>
- *
- * <p>
- * JPA 복합키 클래스 요구사항:
- * </p>
- * <ul>
- * <li>{@link Serializable} 구현 필수</li>
- * <li>{@link #equals(Object)}, {@link #hashCode()} 오버라이드 필수</li>
- * <li>기본 생성자 필수</li>
- * <li>필드명이 엔티티의 {@code @Id} 필드명과 정확히 일치해야 함</li>
+ *   <li>{@link Serializable} 구현 필수</li>
+ *   <li>기본 생성자({@code @NoArgsConstructor}) 필수</li>
+ *   <li>{@code equals()} 및 {@code hashCode()} 재정의 필수 ({@code @EqualsAndHashCode})</li>
  * </ul>
  */
+@Getter             // getter 자동 생성 (Lombok)
+@NoArgsConstructor  // JPA 요구사항: 기본 생성자 필수
+@AllArgsConstructor // 모든 필드를 받는 생성자 (테스트 및 직접 생성용)
+@EqualsAndHashCode  // equals(), hashCode() 자동 생성 (JPA 요구사항: 동등성 비교)
 public class ProjectId implements Serializable {
 
-    /** 프로젝트관리번호 (예: PRJ-2026-0001) */
+    /** 프로젝트관리번호 (예: PRJ-2026-0001): Project.prjMngNo와 이름/타입 일치 필수 */
     private String prjMngNo;
 
-    /** 프로젝트순번 (동일 관리번호 내 버전 구분, 1부터 시작) */
+    /** 프로젝트순번 (동일 관리번호 내 버전 구분, 1부터 시작): Project.prjSno와 이름/타입 일치 필수 */
     private Integer prjSno;
-
-    /** 기본 생성자 (JPA 필수) */
-    public ProjectId() {
-    }
-
-    /**
-     * 전체 필드 생성자
-     *
-     * @param prjMngNo 프로젝트관리번호
-     * @param prjSno   프로젝트순번
-     */
-    public ProjectId(String prjMngNo, Integer prjSno) {
-        this.prjMngNo = prjMngNo;
-        this.prjSno = prjSno;
-    }
-
-    /**
-     * 동등성 비교: 두 복합키의 prjMngNo와 prjSno가 모두 같으면 동일한 키
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        ProjectId that = (ProjectId) o;
-        return Objects.equals(prjMngNo, that.prjMngNo) && Objects.equals(prjSno, that.prjSno);
-    }
-
-    /**
-     * 해시코드: prjMngNo와 prjSno 기반 해시 생성
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(prjMngNo, prjSno);
-    }
 }

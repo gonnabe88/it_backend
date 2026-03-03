@@ -128,6 +128,10 @@ public class UserDto {
         @Schema(description = "행번")
         private String eno;
 
+        /** 부점코드 (BBR_C) - 소속 부점 코드 */
+        @Schema(description = "부점코드")
+        private String bbrC;
+
         /** 부점명 (연관관계의 CorgnI.bbrNm) */
         @Schema(description = "부점명")
         private String bbrNm;
@@ -166,6 +170,7 @@ public class UserDto {
         public static DetailResponse fromEntity(CuserI user, String bbrNm) {
             return DetailResponse.builder()
                     .eno(user.getEno()) // 행번(사번)
+                    .bbrC(user.getBbrC()) // 부점코드
                     .bbrNm(bbrNm) // 부점명 (연관관계에서 조회)
                     .temNm(user.getTemNm()) // 팀명
                     .usrNm(user.getUsrNm()) // 사용자명

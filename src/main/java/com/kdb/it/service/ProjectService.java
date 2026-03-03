@@ -180,8 +180,8 @@ public class ProjectService {
             request.setPrjMngNo(prjMngNo);
 
         } else {
-            // 제공된 관리번호 중복 확인 (복합키이므로 prjMngNo 기준으로 조회)
-            if (projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N").isPresent()) {
+            // 제공된 관리번호 중복 확인 (복합키이므로 prjMngNo 기준으로 존재 여부 확인)
+            if (projectRepository.existsByPrjMngNoAndDelYn(prjMngNo, "N")) {
                 throw new IllegalArgumentException("Project already exists with id: " + prjMngNo);
             }
         }
