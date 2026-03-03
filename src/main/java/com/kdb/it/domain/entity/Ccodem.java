@@ -32,11 +32,11 @@ public class Ccodem extends BaseEntity {
 
     /** 코드ID: 기본키 */
     @Id
-    @Column(name = "CD_ID", nullable = false, length = 32)
+    @Column(name = "C_ID", nullable = false, length = 32)
     private String cdId;
 
     /** 코드명 */
-    @Column(name = "CD_NM", length = 100)
+    @Column(name = "C_NM", length = 100)
     private String cdNm;
 
     /** 코드값 */
@@ -44,7 +44,7 @@ public class Ccodem extends BaseEntity {
     private String cdva;
 
     /** 코드설명 */
-    @Column(name = "CD_DES", length = 500)
+    @Column(name = "C_DES", length = 500)
     private String cdDes;
 
     /** 코드값구분 */
@@ -56,7 +56,7 @@ public class Ccodem extends BaseEntity {
     private String cttTpDes;
 
     /** 코드순서 */
-    @Column(name = "CD_SQN")
+    @Column(name = "C_SQN")
     private Integer cdSqn;
 
     /** 시작일자 */

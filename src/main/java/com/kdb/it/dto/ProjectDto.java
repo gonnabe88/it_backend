@@ -87,6 +87,10 @@ public class ProjectDto {
         @Schema(description = "프로젝트예산")
         private BigDecimal prjBg;
 
+        /** 익년프로젝트예산 (다음 해 예산 금액) */
+        @Schema(description = "익년프로젝트예산")
+        private BigDecimal nyyPrjBg;
+
         /** 시작일자 */
         @Schema(description = "시작일자")
         private LocalDate sttDt;
@@ -218,6 +222,7 @@ public class ProjectDto {
                     .svnDpm(svnDpm) // 주관부서
                     .itDpm(itDpm) // IT부서
                     .prjBg(prjBg) // 프로젝트예산
+                    .nyyPrjBg(nyyPrjBg) // 익년프로젝트예산
                     .sttDt(sttDt) // 시작일자
                     .endDt(endDt) // 종료일자
                     .svnDpmCgpr(svnDpmCgpr) // 주관부서담당자
@@ -287,6 +292,10 @@ public class ProjectDto {
         /** 프로젝트예산 */
         @Schema(description = "프로젝트예산")
         private BigDecimal prjBg;
+
+        /** 익년프로젝트예산 (다음 해 예산 금액) */
+        @Schema(description = "익년프로젝트예산")
+        private BigDecimal nyyPrjBg;
 
         /** 시작일자 */
         @Schema(description = "시작일자")
@@ -454,6 +463,10 @@ public class ProjectDto {
         /** 프로젝트예산 */
         @Schema(description = "프로젝트예산")
         private BigDecimal prjBg;
+
+        /** 익년프로젝트예산 (다음 해 예산 금액) */
+        @Schema(description = "익년프로젝트예산")
+        private BigDecimal nyyPrjBg;
 
         /** 시작일자 */
         @Schema(description = "시작일자")
@@ -660,6 +673,7 @@ public class ProjectDto {
                     .svnDpm(project.getSvnDpm()) // 주관부서
                     .itDpm(project.getItDpm()) // IT부서
                     .prjBg(project.getPrjBg()) // 프로젝트예산
+                    .nyyPrjBg(project.getNyyPrjBg()) // 익년프로젝트예산
                     .sttDt(project.getSttDt()) // 시작일자
                     .endDt(project.getEndDt()) // 종료일자
                     .svnHdq(project.getSvnHdq()) // 주관본부/부문

@@ -245,6 +245,7 @@ public class ProjectService {
                 request.getSvnDpm(), // 주관부서
                 request.getItDpm(), // IT부서
                 request.getPrjBg(), // 프로젝트예산
+                request.getNyyPrjBg(), // 익년프로젝트예산
                 request.getSttDt(), // 시작일자
                 request.getEndDt(), // 종료일자
                 request.getSvnDpmCgpr(), // 주관부서담당자

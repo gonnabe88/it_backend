@@ -71,6 +71,10 @@ public class Project extends BaseEntity {
     @Column(name = "PRJ_BG", nullable = false, precision = 15, scale = 2)
     private BigDecimal prjBg;
 
+    /** 익년프로젝트예산: 익년(다음 해) 사업 예산 금액 (최대 15자리, 소수점 2자리) */
+    @Column(name = "NYY_PRJ_BG", precision = 15, scale = 2)
+    private BigDecimal nyyPrjBg;
+
     /** 시작일자: 사업 개시 예정일 */
     @Column(name = "STT_DT", nullable = false)
     private LocalDate sttDt;
@@ -188,6 +192,7 @@ public class Project extends BaseEntity {
      * @param svnDpm     주관부서
      * @param itDpm      IT부서
      * @param prjBg      프로젝트예산
+     * @param nyyPrjBg   익년프로젝트예산
      * @param sttDt      시작일자
      * @param endDt      종료일자
      * @param svnDpmCgpr 주관부서담당자
@@ -217,7 +222,7 @@ public class Project extends BaseEntity {
      * @param prjSno     프로젝트순번
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
-            LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
+            BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
@@ -230,6 +235,7 @@ public class Project extends BaseEntity {
         this.svnDpm = svnDpm;
         this.itDpm = itDpm;
         this.prjBg = prjBg;
+        this.nyyPrjBg = nyyPrjBg;
         this.sttDt = sttDt;
         this.endDt = endDt;
         this.svnDpmCgpr = svnDpmCgpr;
@@ -271,6 +277,7 @@ public class Project extends BaseEntity {
      * @param svnDpm     주관부서
      * @param itDpm      IT부서
      * @param prjBg      프로젝트예산
+     * @param nyyPrjBg   익년프로젝트예산
      * @param sttDt      시작일자
      * @param endDt      종료일자
      * @param svnDpmCgpr 주관부서담당자
@@ -299,7 +306,7 @@ public class Project extends BaseEntity {
      * @param svnHdq     주관본부/부문
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
-            LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
+            BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
@@ -309,6 +316,7 @@ public class Project extends BaseEntity {
         this.svnDpm = svnDpm;
         this.itDpm = itDpm;
         this.prjBg = prjBg;
+        this.nyyPrjBg = nyyPrjBg;
         this.sttDt = sttDt;
         this.endDt = endDt;
         this.svnDpmCgpr = svnDpmCgpr;
