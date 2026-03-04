@@ -3,6 +3,7 @@ package com.kdb.it.service;
 import com.kdb.it.domain.entity.Project;
 import com.kdb.it.dto.ProjectDto;
 import com.kdb.it.repository.ProjectRepository;
+import com.kdb.it.util.HtmlSanitizer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -186,6 +187,10 @@ public class ProjectService {
             }
         }
 
+        // Rich Text 필드 XSS 새니타이징 (서버 측 방어)
+        request.setPrjDes(HtmlSanitizer.sanitize(request.getPrjDes()));
+        request.setPrjRng(HtmlSanitizer.sanitize(request.getPrjRng()));
+
         // 엔티티 생성 및 저장
         Project project = request.toEntity();
         projectRepository.save(project);
@@ -237,6 +242,10 @@ public class ProjectService {
         if (isProcessingOrApproved) {
             throw new IllegalStateException("결재중이거나 결재완료된 프로젝트는 수정할 수 없습니다.");
         }
+
+        // Rich Text 필드 XSS 새니타이징 (서버 측 방어)
+        request.setPrjDes(HtmlSanitizer.sanitize(request.getPrjDes()));
+        request.setPrjRng(HtmlSanitizer.sanitize(request.getPrjRng()));
 
         // 프로젝트 기본 정보 수정 (JPA Dirty Checking으로 자동 반영)
         project.update(

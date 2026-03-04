@@ -3,6 +3,8 @@ package com.kdb.it.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +46,8 @@ import java.util.Date;
  */
 @Component // Spring 컴포넌트 빈으로 등록
 public class JwtUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     /**
      * HMAC-SHA256 서명에 사용할 비밀키
@@ -185,7 +189,6 @@ public class JwtUtil {
      * @return true이면 유효한 토큰, false이면 유효하지 않은 토큰
      */
     public boolean validateToken(String token) {
-        // TODO: System.err.println 대신 SLF4J Logger(log.warn/log.error)를 사용하도록 개선 필요
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
@@ -194,20 +197,19 @@ public class JwtUtil {
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | io.jsonwebtoken.MalformedJwtException e) {
             // 잘못된 서명 또는 JWT 형식 오류
-            System.err.println("JWT 토큰 검증 실패 - 잘못된 서명 또는 형식: " + e.getMessage());
+            log.warn("JWT 토큰 검증 실패 - 잘못된 서명 또는 형식: {}", e.getMessage());
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
             // 토큰 만료: exp 클레임의 시각이 현재 시각보다 이전
-            System.err.println("JWT 토큰 검증 실패 - 만료된 토큰: " + e.getMessage());
+            log.warn("JWT 토큰 검증 실패 - 만료된 토큰: {}", e.getMessage());
         } catch (io.jsonwebtoken.UnsupportedJwtException e) {
             // JWE(암호화) 등 지원하지 않는 JWT 유형
-            System.err.println("JWT 토큰 검증 실패 - 지원하지 않는 토큰: " + e.getMessage());
+            log.warn("JWT 토큰 검증 실패 - 지원하지 않는 토큰: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             // 빈 문자열 또는 null 토큰
-            System.err.println("JWT 토큰 검증 실패 - 빈 토큰: " + e.getMessage());
+            log.warn("JWT 토큰 검증 실패 - 빈 토큰: {}", e.getMessage());
         } catch (Exception e) {
             // 기타 예상치 못한 예외
-            System.err.println("JWT 토큰 검증 실패 - 알 수 없는 오류: " + e.getMessage());
-            e.printStackTrace();
+            log.error("JWT 토큰 검증 실패 - 알 수 없는 오류: {}", e.getMessage(), e);
         }
         return false; // 예외 발생 시 유효하지 않은 토큰으로 처리
     }

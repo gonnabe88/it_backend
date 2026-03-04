@@ -45,13 +45,8 @@ public class LoginHistoryService {
      * @return 로그인 이력 DTO 목록 (최신순, 최대 50건)
      */
     public List<LoginHistoryDto.Response> getLoginHistory(String eno) {
-        // DB에서 해당 사번의 이력을 최신순으로 전체 조회
-        List<LoginHistory> histories = loginHistoryRepository.findByEnoOrderByLoginTimeDesc(eno);
-
-        // 최대 50개로 제한 (메모리에서 잘라내기)
-        if (histories.size() > 50) {
-            histories = histories.subList(0, 50);
-        }
+        // DB 레벨에서 최신순 50건만 조회 (메모리 처리 불필요)
+        List<LoginHistory> histories = loginHistoryRepository.findTop50ByEnoOrderByLoginTimeDesc(eno);
 
         // 엔티티 목록을 DTO 목록으로 변환하여 반환
         return LoginHistoryDto.Response.fromEntities(histories);

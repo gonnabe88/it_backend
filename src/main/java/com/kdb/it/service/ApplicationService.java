@@ -9,6 +9,8 @@ import com.kdb.it.dto.ApplicationDto;
 import com.kdb.it.repository.CapplmRepository;
 import com.kdb.it.repository.CdecimRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,15 @@ import lombok.RequiredArgsConstructor;
 /**
  * 신청서(결재) 관리 서비스
  *
- * <p>정보화사업·전산관리비 등 각종 신청서의 등록, 조회, 결재(승인/반려), 일괄 결재를
- * 처리하는 비즈니스 로직을 담당합니다.</p>
+ * <p>
+ * 정보화사업·전산관리비 등 각종 신청서의 등록, 조회, 결재(승인/반려), 일괄 결재를
+ * 처리하는 비즈니스 로직을 담당합니다.
+ * </p>
  *
- * <p>신청서 상태 흐름:</p>
+ * <p>
+ * 신청서 상태 흐름:
+ * </p>
+ * 
  * <pre>
  *   [신청서 등록] → 결재중
  *                      ↓ (모든 결재자 순차 승인)
@@ -29,28 +36,36 @@ import lombok.RequiredArgsConstructor;
  *                    반려
  * </pre>
  *
- * <p>결재선(Approval Line):</p>
+ * <p>
+ * 결재선(Approval Line):
+ * </p>
  * <ul>
- *   <li>등록 시 결재자 사번 목록({@code approverEnos})을 순서대로 받아 {@link Cdecim}으로 저장</li>
- *   <li>순차 결재: 앞 순번이 승인해야 다음 순번이 결재 가능</li>
- *   <li>동일 결재자 연속 등장 시 일괄 승인 처리</li>
+ * <li>등록 시 결재자 사번 목록({@code approverEnos})을 순서대로 받아 {@link Cdecim}으로 저장</li>
+ * <li>순차 결재: 앞 순번이 승인해야 다음 순번이 결재 가능</li>
+ * <li>동일 결재자 연속 등장 시 일괄 승인 처리</li>
  * </ul>
  *
- * <p>원본 데이터 연결:</p>
+ * <p>
+ * 원본 데이터 연결:
+ * </p>
  * <ul>
- *   <li>신청서는 원본 테이블(예: BPRJTM)과 {@link com.kdb.it.domain.entity.Cappla}로 연결</li>
- *   <li>{@code orcTbCd}: 원본 테이블 코드 (예: "BPRJTM")</li>
- *   <li>{@code orcPkVl}: 원본 테이블의 PK 값 (예: 프로젝트관리번호)</li>
- *   <li>{@code orcSnoVl}: 원본 테이블의 SNO 값 (예: 프로젝트순번)</li>
+ * <li>신청서는 원본 테이블(예: BPRJTM)과 {@link com.kdb.it.domain.entity.Cappla}로 연결</li>
+ * <li>{@code orcTbCd}: 원본 테이블 코드 (예: "BPRJTM")</li>
+ * <li>{@code orcPkVl}: 원본 테이블의 PK 값 (예: 프로젝트관리번호)</li>
+ * <li>{@code orcSnoVl}: 원본 테이블의 SNO 값 (예: 프로젝트순번)</li>
  * </ul>
  *
- * <p>{@code @Transactional(readOnly = true)}: 조회 메서드의 기본값.
- * 쓰기 메서드는 {@code @Transactional}로 오버라이드합니다.</p>
+ * <p>
+ * {@code @Transactional(readOnly = true)}: 조회 메서드의 기본값.
+ * 쓰기 메서드는 {@code @Transactional}로 오버라이드합니다.
+ * </p>
  */
-@Service                              // Spring 서비스 빈으로 등록
-@RequiredArgsConstructor              // final 필드 생성자 자동 주입 (Lombok)
-@Transactional(readOnly = true)       // 기본 읽기 전용 트랜잭션
+@Service // Spring 서비스 빈으로 등록
+@RequiredArgsConstructor // final 필드 생성자 자동 주입 (Lombok)
+@Transactional(readOnly = true) // 기본 읽기 전용 트랜잭션
 public class ApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ApplicationService.class);
 
     /** 신청서 마스터 데이터 접근 리포지토리 (TAAABB_CAPPLM) */
     private final CapplmRepository capplmRepository;
@@ -67,13 +82,20 @@ public class ApplicationService {
     /**
      * 신청서 상세 내용(JSON)의 결재선 정보 업데이트
      *
-     * <p>신청서 본문({@code APF_DTL_CONE})에 저장된 JSON 내의 {@code approvalLine} 객체를 탐색하여
-     * 승인된 결재자 항목에 결재 일자({@code date})를 현재 날짜로 기록합니다.</p>
+     * <p>
+     * 신청서 본문({@code APF_DTL_CONE})에 저장된 JSON 내의 {@code approvalLine} 객체를 탐색하여
+     * 승인된 결재자 항목에 결재 일자({@code date})를 현재 날짜로 기록합니다.
+     * </p>
      *
-     * <p>동일 결재자(ID)가 결재선에 여러 번 등장할 수 있으므로, 등장 순서(Occurrence Index)를
-     * 추적하여 정확한 위치만 업데이트합니다.</p>
+     * <p>
+     * 동일 결재자(ID)가 결재선에 여러 번 등장할 수 있으므로, 등장 순서(Occurrence Index)를
+     * 추적하여 정확한 위치만 업데이트합니다.
+     * </p>
      *
-     * <p>처리 흐름:</p>
+     * <p>
+     * 처리 흐름:
+     * </p>
+     * 
      * <pre>
      *   1. allApprovers 전체 순회 → 각 사원번호별 등장 횟수(Occurrence) 계산
      *      → approvedItems에 포함된 항목의 Occurrence를 targetOccurrences에 저장
@@ -83,8 +105,8 @@ public class ApplicationService {
      *   3. 변경된 경우 JSON을 문자열로 직렬화하여 엔티티에 반영
      * </pre>
      *
-     * @param capplm       결재 처리 중인 신청서 마스터 엔티티
-     * @param allApprovers 해당 신청서의 전체 결재자 목록 (순번 오름차순)
+     * @param capplm        결재 처리 중인 신청서 마스터 엔티티
+     * @param allApprovers  해당 신청서의 전체 결재자 목록 (순번 오름차순)
      * @param approvedItems 이번에 승인된 결재 항목 목록 (동일인 연속 승인 포함)
      */
     @Transactional
@@ -166,27 +188,35 @@ public class ApplicationService {
             }
 
         } catch (Exception e) {
-            // JSON 파싱 실패 시 비즈니스 로직 중단을 막기 위해 예외를 삼키고 로그만 출력
-            // TODO: SLF4J 로거 사용으로 전환 권장 (log.warn("...", e))
-            e.printStackTrace();
+            // JSON 파싱 실패 시 비즈니스 로직 중단을 막기 위해 예외를 삼키고 경고 로그만 출력
+            log.warn("신청서 상세 내용(JSON) 결재선 업데이트 실패 - 신청관리번호: {}", capplm.getApfMngNo(), e);
         }
     }
 
     /**
      * 신청서 등록 (결재 요청)
      *
-     * <p>신청서 마스터({@link Capplm})를 생성하고, 원본 데이터 연결({@link com.kdb.it.domain.entity.Cappla})
-     * 및 결재선({@link Cdecim})을 함께 저장합니다.</p>
+     * <p>
+     * 신청서 마스터({@link Capplm})를 생성하고, 원본 데이터
+     * 연결({@link com.kdb.it.domain.entity.Cappla})
+     * 및 결재선({@link Cdecim})을 함께 저장합니다.
+     * </p>
      *
-     * <p>신청관리번호 생성 규칙: {@code APF_{yyyy}{시퀀스8자리}}</p>
-     * <p>예: {@code APF_202600000001}</p>
+     * <p>
+     * 신청관리번호 생성 규칙: {@code APF_{yyyy}{시퀀스8자리}}
+     * </p>
+     * <p>
+     * 예: {@code APF_202600000001}
+     * </p>
      *
-     * <p>처리 순서:</p>
+     * <p>
+     * 처리 순서:
+     * </p>
      * <ol>
-     *   <li>Oracle 시퀀스로 신청관리번호 채번</li>
-     *   <li>신청서 마스터 저장 (상태: "결재중")</li>
-     *   <li>원본 데이터 연결 저장 (orcTbCd가 있는 경우)</li>
-     *   <li>결재선 생성 (승인자 순서대로, 마지막 승인자는 lstDcdYn='Y')</li>
+     * <li>Oracle 시퀀스로 신청관리번호 채번</li>
+     * <li>신청서 마스터 저장 (상태: "결재중")</li>
+     * <li>원본 데이터 연결 저장 (orcTbCd가 있는 경우)</li>
+     * <li>결재선 생성 (승인자 순서대로, 마지막 승인자는 lstDcdYn='Y')</li>
      * </ol>
      *
      * @param request 신청서 생성 요청 DTO (신청서명, 세부내용, 신청자, 결재자 목록 등)
@@ -202,13 +232,13 @@ public class ApplicationService {
 
         // 1. 신청서 마스터 생성 (초기 상태: "결재중")
         Capplm capplm = Capplm.builder()
-                .apfMngNo(apfMngNo)              // 신청관리번호 (PK)
-                .apfNm(request.getApfNm())       // 신청서명
+                .apfMngNo(apfMngNo) // 신청관리번호 (PK)
+                .apfNm(request.getApfNm()) // 신청서명
                 .apfDtlCone(request.getApfDtlCone()) // 신청서세부내용 (JSON)
-                .apfSts("결재중")                  // 초기 결재상태
-                .rqsEno(request.getRqsEno())     // 신청자 사원번호
-                .rqsDt(LocalDate.now())          // 신청일자 = 오늘
-                .rqsOpnn(request.getRqsOpnn())   // 신청의견
+                .apfSts("결재중") // 초기 결재상태
+                .rqsEno(request.getRqsEno()) // 신청자 사원번호
+                .rqsDt(LocalDate.now()) // 신청일자 = 오늘
+                .rqsOpnn(request.getRqsOpnn()) // 신청의견
                 .build();
         capplmRepository.save(capplm);
 
@@ -219,10 +249,10 @@ public class ApplicationService {
             String apfRelSno = "APPL_" + String.format("%028d", seq); // 신청서관계일련번호
 
             com.kdb.it.domain.entity.Cappla cappla = com.kdb.it.domain.entity.Cappla.builder()
-                    .apfRelSno(apfRelSno)                          // 신청서관계일련번호 (PK)
-                    .apfMngNo(apfMngNo)                            // 신청관리번호 (FK)
-                    .orcTbCd(request.getOrcTbCd())                 // 원본 테이블코드
-                    .orcPkVl(request.getOrcPkVl())                 // 원본 테이블 PK 값
+                    .apfRelSno(apfRelSno) // 신청서관계일련번호 (PK)
+                    .apfMngNo(apfMngNo) // 신청관리번호 (FK)
+                    .orcTbCd(request.getOrcTbCd()) // 원본 테이블코드
+                    .orcPkVl(request.getOrcPkVl()) // 원본 테이블 PK 값
                     .orcSnoVl(request.getOrcSnoVl() != null ? Integer.parseInt(request.getOrcSnoVl()) : null) // 원본 SNO
                     .build();
             capplaRepository.save(cappla);
@@ -232,10 +262,10 @@ public class ApplicationService {
         List<String> approverEnos = request.getApproverEnos();
         for (int i = 0; i < approverEnos.size(); i++) {
             Cdecim cdecim = Cdecim.builder()
-                    .dcdMngNo(apfMngNo)                                         // 결재관리번호 (FK)
-                    .dcdSqn(i + 1)                                              // 결재순번 (1부터 시작)
-                    .dcdEno(approverEnos.get(i))                                // 결재자 사원번호
-                    .lstDcdYn(i == approverEnos.size() - 1 ? "Y" : "N")        // 마지막 결재자 여부
+                    .dcdMngNo(apfMngNo) // 결재관리번호 (FK)
+                    .dcdSqn(i + 1) // 결재순번 (1부터 시작)
+                    .dcdEno(approverEnos.get(i)) // 결재자 사원번호
+                    .lstDcdYn(i == approverEnos.size() - 1 ? "Y" : "N") // 마지막 결재자 여부
                     .build();
             cdecimRepository.save(cdecim);
         }
@@ -246,19 +276,23 @@ public class ApplicationService {
     /**
      * 결재 처리 (승인 또는 반려)
      *
-     * <p>순차 결재 방식으로, 이전 결재자가 모두 승인한 경우에만 다음 결재자가 결재할 수 있습니다.
-     * 동일 결재자가 연속으로 등장한 경우 한 번의 요청으로 연속 항목 모두 승인합니다.</p>
+     * <p>
+     * 순차 결재 방식으로, 이전 결재자가 모두 승인한 경우에만 다음 결재자가 결재할 수 있습니다.
+     * 동일 결재자가 연속으로 등장한 경우 한 번의 요청으로 연속 항목 모두 승인합니다.
+     * </p>
      *
-     * <p>처리 흐름:</p>
+     * <p>
+     * 처리 흐름:
+     * </p>
      * <ol>
-     *   <li>신청서 존재 확인</li>
-     *   <li>전체 결재자 목록 조회 (순번 오름차순)</li>
-     *   <li>현재 결재 차례(미결재, 이전 모두 승인) 탐색</li>
-     *   <li>요청자가 현재 결재자인지 확인</li>
-     *   <li>결재 상태 저장 (승인/반려)</li>
-     *   <li>동일 결재자 연속 등장 시 일괄 승인</li>
-     *   <li>JSON 결재선 정보 업데이트</li>
-     *   <li>반려: 신청서 상태 → "반려" / 마지막 승인: 신청서 상태 → "결재완료"</li>
+     * <li>신청서 존재 확인</li>
+     * <li>전체 결재자 목록 조회 (순번 오름차순)</li>
+     * <li>현재 결재 차례(미결재, 이전 모두 승인) 탐색</li>
+     * <li>요청자가 현재 결재자인지 확인</li>
+     * <li>결재 상태 저장 (승인/반려)</li>
+     * <li>동일 결재자 연속 등장 시 일괄 승인</li>
+     * <li>JSON 결재선 정보 업데이트</li>
+     * <li>반려: 신청서 상태 → "반려" / 마지막 승인: 신청서 상태 → "결재완료"</li>
      * </ol>
      *
      * @param apfMngNo 결재할 신청관리번호
@@ -276,11 +310,11 @@ public class ApplicationService {
         List<Cdecim> approvers = cdecimRepository.findByDcdMngNoOrderByDcdSqnAsc(apfMngNo);
 
         // ===== 현재 결재 차례 탐색 =====
-        Cdecim currentApprover = null;    // 현재 결재해야 할 결재자
+        Cdecim currentApprover = null; // 현재 결재해야 할 결재자
         boolean isPreviousApproved = true; // 이전 결재자가 모두 승인했는지 여부
 
         for (Cdecim approver : approvers) {
-            String dcdTp = approver.getDcdTp();   // 결재유형 (null이면 미결재)
+            String dcdTp = approver.getDcdTp(); // 결재유형 (null이면 미결재)
             String dcdSts = approver.getDcdSts(); // 결재상태
 
             if (dcdTp == null) {
@@ -355,10 +389,14 @@ public class ApplicationService {
     /**
      * 일괄 결재 (여러 신청서를 하나의 트랜잭션으로 처리)
      *
-     * <p>복수의 신청서에 대해 순차적으로 {@link #approve(String, ApplicationDto.ApproveRequest)}를
-     * 호출합니다. 하나라도 실패하면 전체 트랜잭션이 롤백됩니다.</p>
+     * <p>
+     * 복수의 신청서에 대해 순차적으로 {@link #approve(String, ApplicationDto.ApproveRequest)}를
+     * 호출합니다. 하나라도 실패하면 전체 트랜잭션이 롤백됩니다.
+     * </p>
      *
-     * <p>주의: 예외 발생 시 {@link RuntimeException}을 다시 던져 트랜잭션 롤백을 유발합니다.</p>
+     * <p>
+     * 주의: 예외 발생 시 {@link RuntimeException}을 다시 던져 트랜잭션 롤백을 유발합니다.
+     * </p>
      *
      * @param request 일괄 결재 요청 DTO (처리할 신청서 목록)
      * @return 일괄 결재 결과 DTO (전체/성공/실패 건수, 개별 결과 목록)
@@ -375,9 +413,9 @@ public class ApplicationService {
             try {
                 // 개별 승인 요청 생성 (ApprovalItem → ApproveRequest 변환)
                 ApplicationDto.ApproveRequest approveRequest = new ApplicationDto.ApproveRequest();
-                approveRequest.setDcdEno(item.getDcdEno());   // 승인자 사원번호
+                approveRequest.setDcdEno(item.getDcdEno()); // 승인자 사원번호
                 approveRequest.setDcdOpnn(item.getDcdOpnn()); // 승인 의견
-                approveRequest.setDcdSts(item.getDcdSts());   // 승인 상태 (승인, 반려)
+                approveRequest.setDcdSts(item.getDcdSts()); // 승인 상태 (승인, 반려)
 
                 // 개별 승인 처리
                 approve(item.getApfMngNo(), approveRequest);
@@ -399,16 +437,18 @@ public class ApplicationService {
         // 최종 결과 응답 생성
         return ApplicationDto.BulkApproveResponse.builder()
                 .totalCount(request.getApprovals().size()) // 전체 요청 건수
-                .successCount(successCount)                // 성공 건수
-                .failureCount(failureCount)                // 실패 건수 (롤백 시 항상 0)
-                .results(results)                          // 개별 결과 목록
+                .successCount(successCount) // 성공 건수
+                .failureCount(failureCount) // 실패 건수 (롤백 시 항상 0)
+                .results(results) // 개별 결과 목록
                 .build();
     }
 
     /**
      * 단건 신청서 조회
      *
-     * <p>신청관리번호로 신청서 마스터와 결재자 목록을 조회하여 DTO로 반환합니다.</p>
+     * <p>
+     * 신청관리번호로 신청서 마스터와 결재자 목록을 조회하여 DTO로 반환합니다.
+     * </p>
      *
      * @param apfMngNo 조회할 신청관리번호
      * @return 신청서 상세 응답 DTO (결재자 목록 포함)
@@ -426,7 +466,9 @@ public class ApplicationService {
     /**
      * 전체 신청서 목록 조회
      *
-     * <p>DB의 모든 신청서를 조회하고, 각 신청서의 결재자 목록을 포함하여 반환합니다.</p>
+     * <p>
+     * DB의 모든 신청서를 조회하고, 각 신청서의 결재자 목록을 포함하여 반환합니다.
+     * </p>
      *
      * @return 전체 신청서 응답 DTO 목록 (각각 결재자 목록 포함)
      */
@@ -443,8 +485,10 @@ public class ApplicationService {
     /**
      * 일괄 조회 (여러 신청관리번호로 한 번에 조회)
      *
-     * <p>요청 목록의 각 신청관리번호에 대해 {@link #getApplication(String)}을 호출합니다.
-     * 존재하지 않는 신청서는 결과에서 제외합니다 (null 필터링).</p>
+     * <p>
+     * 요청 목록의 각 신청관리번호에 대해 {@link #getApplication(String)}을 호출합니다.
+     * 존재하지 않는 신청서는 결과에서 제외합니다 (null 필터링).
+     * </p>
      *
      * @param request 일괄 조회 요청 DTO (신청관리번호 목록)
      * @return 존재하는 신청서의 응답 DTO 목록 (없는 항목 제외)

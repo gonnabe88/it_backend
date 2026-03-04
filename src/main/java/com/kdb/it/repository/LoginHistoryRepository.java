@@ -55,6 +55,17 @@ public interface LoginHistoryRepository extends JpaRepository<LoginHistory, Long
     List<LoginHistory> findByLoginTypeOrderByLoginTimeDesc(String loginType);
 
     /**
+     * 특정 사용자의 최근 50개 이력 조회 (최신순)
+     *
+     * <p>로그인 이력 목록 조회 시 DB 레벨에서 50건으로 제한합니다.
+     * {@code findTop50By} 접두사를 통해 Spring Data JPA가 자동으로 LIMIT 50 처리합니다.</p>
+     *
+     * @param eno 조회할 사용자의 사번
+     * @return 해당 사용자의 최근 50개 로그인 이력 (로그인 시간 내림차순)
+     */
+    List<LoginHistory> findTop50ByEnoOrderByLoginTimeDesc(String eno);
+
+    /**
      * 특정 사용자의 최근 10개 이력 조회 (최신순)
      *
      * <p>사용자 대시보드에서 최근 접속 이력을 간략하게 표시하는 데 사용됩니다.

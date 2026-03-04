@@ -37,6 +37,9 @@ dependencies {
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 	
+	// HTML 새니타이징 (XSS 서버 측 방어)
+	implementation 'org.jsoup:jsoup:1.18.3'
+
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'

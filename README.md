@@ -38,12 +38,14 @@ Controller → Service → Repository → DB (Oracle)
 | 결정 | 내용 |
 |------|------|
 | **Soft Delete** | 물리 삭제 대신 `DEL_YN='Y'` 논리 삭제 사용 |
-| **복합키** | `@IdClass` 방식으로 복합 기본키 정의 (`BcostmId`, `BitemmId`, `CdecimId`) |
+| **복합키** | `@IdClass` 방식으로 복합 기본키 정의 (`ProjectId`, `BcostmId`, `BitemmId`, `CdecimId`) |
 | **JPA Auditing** | `BaseEntity`에서 생성/수정 일시·사용자 자동 관리 |
 | **JWT 인증** | Access Token(15분) + Refresh Token(7일) 이중 토큰 전략 |
 | **비밀번호** | SHA-256 + Base64 인코딩 (`CustomPasswordEncoder`) |
 | **Oracle 시퀀스** | 관리번호 채번에 Native Query로 Oracle 시퀀스 사용 |
 | **DTO 패턴** | 정적 중첩 클래스(Static Nested Class)로 관련 DTO 그룹화 |
+| **전역 예외 처리** | `@RestControllerAdvice` 기반 `GlobalExceptionHandler`로 표준 오류 응답 |
+| **CORS** | `application.properties`의 `cors.allowed-origins` 속성으로 환경별 제어 |
 
 ### 3.3 BaseEntity 상속 구조
 
@@ -78,7 +80,7 @@ com.kdb.it
 ├── dto/            # 데이터 전송 객체 (8개)
 ├── security/       # JWT 인증 필터 (1개)
 ├── util/           # JWT 유틸리티 (1개)
-└── exception/      # 커스텀 예외 (1개)
+└── exception/      # 전역 예외 핸들러 + 커스텀 예외 (2개)
 ```
 
 ### 4.2 도메인 모듈 관계
@@ -144,6 +146,14 @@ com.kdb.it
 
 ## 8. 환경 설정
 
-- `application.properties`: DB 접속 정보, JWT 비밀키/유효시간 설정
-- CORS: 개발환경 전체 허용(`*`), 운영 시 도메인 제한 필요
+- `application.properties`: DB 접속 정보, JWT 비밀키/유효시간, CORS 도메인 설정
+- CORS: `cors.allowed-origins` 속성으로 허용 도메인 관리 (기본값 `*`, 운영 시 도메인 지정)
 - CSRF: Stateless JWT 방식으로 비활성화
+
+## 9. 변경 이력
+
+| 날짜 | 변경 내용 |
+|------|----------|
+| 2026-03-04 | `GlobalExceptionHandler` 신규 추가, CORS `properties` 기반 전환, `LoginHistory` DB 페이징 적용, `ProjectId` Lombok 통일, `ApplicationService` SLF4J 로거 전환 |
+| 2026-03-03 | `CcodemDto` Swagger 어노테이션 추가, `CcodemRepositoryImpl` JavaDoc 보강 |
+| 2026-03-02 | `Bcostm` 추진부서(`PUL_DPM`) 필드 추가, `Project` 응답에 부서명/사용자명 포함 |
