@@ -1,6 +1,6 @@
 package com.kdb.it.dto;
 
-import com.kdb.it.domain.entity.Project;
+import com.kdb.it.domain.entity.Bprojm;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * 정보화사업(IT 프로젝트) 관련 DTO 클래스 모음
  *
  * <p>
- * 정보화사업(TAAABB_BPRJTM) 엔티티의 생성, 수정, 조회, 일괄 조회 및
+ * 정보화사업(TAAABB_BPROJM) 엔티티의 생성, 수정, 조회, 일괄 조회 및
  * 연관 품목(TAAABB_BITEMM) 정보 전달에 사용되는 DTO를
  * 정적 중첩 클래스(Static Nested Class) 형태로 관리합니다.
  * </p>
@@ -48,7 +48,7 @@ public class ProjectDto {
      * </p>
      *
      * <p>
-     * {@link #toEntity()} 메서드로 {@link Project} 엔티티로 변환합니다.
+     * {@link #toEntity()} 메서드로 {@link Bprojm} 엔티티로 변환합니다.
      * </p>
      */
     @Getter
@@ -206,16 +206,16 @@ public class ProjectDto {
         private java.util.List<BitemmDto> items;
 
         /**
-         * 요청 DTO를 {@link Project} 엔티티로 변환하는 메서드
+         * 요청 DTO를 {@link Bprojm} 엔티티로 변환하는 메서드
          *
          * <p>
          * {@code dplYn}이 null인 경우 기본값 "N"으로 설정합니다.
          * </p>
          *
-         * @return 변환된 Project 엔티티
+         * @return 변환된 Bprojm 엔티티
          */
-        public Project toEntity() {
-            return Project.builder()
+        public Bprojm toEntity() {
+            return Bprojm.builder()
                     .prjMngNo(prjMngNo) // 프로젝트관리번호
                     .prjSno(1) // 프로젝트순번 (신규 생성 시 1로 고정)
                     .prjNm(prjNm) // 프로젝트명
@@ -417,16 +417,16 @@ public class ProjectDto {
      * 정보화사업 조회 응답 DTO
      *
      * <p>
-     * 프로젝트의 모든 정보를 반환합니다. {@link Project} 엔티티 필드 외에
-     * 신청서 정보({@code apfMngNo}, {@code apfSts})와 품목 목록({@code items})을 포함합니다.
+     * 프로젝트의 모든 정보를 반환합니다. {@link Bprojm} 엔티티 필드 외에
+     * 조직명, 상태 등의 추가 정보를 API 응답에 맞춰 제공합니다.
      * </p>
      *
      * <p>
-     * JPA Auditing 필드(생성/수정 일시, 작성자)도 포함합니다.
+     * 품목 정보({@code items})는 배열 형태로 포함됩니다.
      * </p>
      *
      * <p>
-     * {@link #fromEntity(Project)} 정적 팩토리 메서드로 엔티티에서 변환합니다.
+     * {@link #fromEntity(Bprojm)} 정적 팩토리 메서드로 엔티티에서 변환합니다.
      * 신청서 정보와 품목 목록은 서비스에서 별도로 {@code setApfMngNo()}, {@code setItems()}로 설정합니다.
      * </p>
      */
@@ -654,18 +654,23 @@ public class ProjectDto {
         @Schema(description = "일반관리비")
         private BigDecimal costBg;
 
+        /** 신청서 상세 정보 (신청서명, 신청자, 결재자 목록 등) */
+        @Schema(description = "신청서 상세 정보")
+        private ApplicationInfoDto applicationInfo;
+
         /**
-         * {@link Project} 엔티티를 응답 DTO로 변환하는 정적 팩토리 메서드
+         * {@link Bprojm} 엔티티를 응답 DTO로 변환하는 정적 팩토리 메서드
          *
          * <p>
-         * 신청서 정보({@code apfMngNo}, {@code apfSts})와 품목({@code items})은
-         * 별도로 서비스에서 설정합니다.
+         * 엔티티의 모든 필드를 DTO로 복사합니다.
+         * 연결된 품목 리스트 및 조직, 예산 요약 정보 등은
+         * 서비스 계층에서 추가로 세팅해야 합니다.
          * </p>
          *
-         * @param project 변환할 Project 엔티티
-         * @return 변환된 응답 DTO (신청서 정보, 품목 미포함)
+         * @param project 변환할 Bprojm 엔티티
+         * @return 변환된 ProjectDto.Response DTO
          */
-        public static Response fromEntity(Project project) {
+        public static Response fromEntity(Bprojm project) {
             return Response.builder()
                     .prjMngNo(project.getPrjMngNo()) // 프로젝트관리번호
                     .prjSno(project.getPrjSno()) // 프로젝트순번
@@ -828,6 +833,74 @@ public class ProjectDto {
                     .lstYn(bitemm.getLstYn()) // 최종여부
                     .gclAmt(bitemm.getGclAmt()) // 품목금액
                     .build();
+        }
+    }
+
+    /**
+     * 정보화사업 목록 조회 검색 조건 DTO
+     *
+     * <p>
+     * {@code GET /api/projects} 엔드포인트의 Query Parameter로 전달됩니다.
+     * 모든 필드가 null이면 전체 조회와 동일하게 동작합니다.
+     * </p>
+     *
+     * <p>
+     * {@code apfSts} 값 규칙:
+     * </p>
+     * <ul>
+     * <li>null (파라미터 미입력): 결재상태 필터 없음 → 전체 조회</li>
+     * <li>{@code "none"}: 신청서가 없는 프로젝트 (apfSts IS NULL)</li>
+     * <li>{@code "접수"}, {@code "결재중"}, {@code "결재완료"} 등: 최신 신청서의 결재상태가 해당 값인 프로젝트</li>
+     * </ul>
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @Schema(name = "ProjectSearchCondition", description = "정보화사업 목록 조회 검색 조건")
+    public static class SearchCondition {
+
+        /**
+         * 결재상태 필터
+         * <p>
+         * "none" → 신청서가 없는 프로젝트, 그 외 값 → 최신 신청서의 결재상태가 해당 값인 프로젝트
+         * null 또는 미입력 → 필터 없음 (전체 조회)
+         * </p>
+         */
+        @Schema(description = "결재상태 필터 (none=신청서없음, 접수/결재중/결재완료 등 실제 상태값). 미입력 시 전체 조회")
+        private String apfSts;
+
+        /** 사업연도 필터 (예: "2026"). null이면 전체 연도 조회 */
+        @Schema(description = "사업연도 (예: 2026). 미입력 시 전체 조회")
+        private String prjYy;
+
+        /** 프로젝트상태 필터 (예: "계획", "진행중", "완료"). null이면 전체 상태 조회 */
+        @Schema(description = "프로젝트상태 (예: 계획, 진행중, 완료). 미입력 시 전체 조회")
+        private String prjSts;
+
+        /** 프로젝트유형 필터 (예: "신규", "유지보수", "고도화"). null이면 전체 유형 조회 */
+        @Schema(description = "프로젝트유형 (예: 신규, 유지보수, 고도화). 미입력 시 전체 조회")
+        private String prjTp;
+
+        /** IT부서 코드 필터. null이면 전체 부서 조회 */
+        @Schema(description = "IT부서 코드. 미입력 시 전체 조회")
+        private String itDpm;
+
+        /** 주관부서 코드 필터. null이면 전체 부서 조회 */
+        @Schema(description = "주관부서 코드. 미입력 시 전체 조회")
+        private String svnDpm;
+
+        /**
+         * 모든 조건이 비어있는지 확인 (전체 조회 여부 판단용)
+         *
+         * @return 모든 필드가 null 또는 빈 문자열이면 true
+         */
+        public boolean isEmpty() {
+            return isBlank(apfSts) && isBlank(prjYy) && isBlank(prjSts)
+                    && isBlank(prjTp) && isBlank(itDpm) && isBlank(svnDpm);
+        }
+
+        private boolean isBlank(String value) {
+            return value == null || value.isBlank();
         }
     }
 

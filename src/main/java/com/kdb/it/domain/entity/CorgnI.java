@@ -1,9 +1,6 @@
 package com.kdb.it.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,24 +10,33 @@ import lombok.experimental.SuperBuilder;
 /**
  * 조직(부점) 정보 엔티티
  *
- * <p>DB 테이블: {@code TAAABB_CORGNI}</p>
+ * <p>
+ * DB 테이블: {@code TAAABB_CORGNI}
+ * </p>
  *
- * <p>회사 내 부점(부서/팀)의 조직 정보를 관리합니다.
- * 계층형 구조로 상위 조직과의 관계를 {@code PRLM_HRK_OGZ_C_CONE}으로 표현합니다.</p>
+ * <p>
+ * 회사 내 부점(부서/팀)의 조직 정보를 관리합니다.
+ * 계층형 구조로 상위 조직과의 관계를 {@code PRLM_HRK_OGZ_C_CONE}으로 표현합니다.
+ * </p>
  *
- * <p>연관 관계:</p>
+ * <p>
+ * 연관 관계:
+ * </p>
  * <ul>
- *   <li>{@link CuserI}와 ManyToOne 관계 ({@code BBR_C} → {@code PRLM_OGZ_C_CONE})</li>
+ * <li>{@link CuserI}와 ManyToOne 관계 ({@code BBR_C} →
+ * {@code PRLM_OGZ_C_CONE})</li>
  * </ul>
  *
- * <p>조직 코드는 {@link CuserI#bbrC} 필드와 조인하여 사용자의 소속 부점명을 조회합니다.</p>
+ * <p>
+ * 조직 코드는 {@link CuserI#bbrC} 필드와 조인하여 사용자의 소속 부점명을 조회합니다.
+ * </p>
  */
-@Entity                                              // JPA 엔티티로 등록
-@Table(name = "TAAABB_CORGNI")                       // 매핑할 DB 테이블명
-@Getter                                              // 모든 필드의 getter 자동 생성 (Lombok)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)   // protected 기본 생성자 (JPA 요구사항)
-@AllArgsConstructor                                  // 전체 필드 생성자 자동 생성
-@SuperBuilder                                        // 상속 구조에서 Builder 패턴 지원
+@Entity // JPA 엔티티로 등록
+@Table(name = "TAAABB_CORGNI") // 매핑할 DB 테이블명
+@Getter // 모든 필드의 getter 자동 생성 (Lombok)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
+@AllArgsConstructor // 전체 필드 생성자 자동 생성
+@SuperBuilder // 상속 구조에서 Builder 패턴 지원
 public class CorgnI extends BaseEntity {
 
     /**
@@ -61,4 +67,19 @@ public class CorgnI extends BaseEntity {
     /** 부점명: 조직의 한글 명칭 (예: "IT본부", "인사팀") */
     @Column(name = "BBR_NM", length = 100)
     private String bbrNm;
+
+    /**
+     * 상위조직 엔티티: PRLM_HRK_OGZ_C_CONE으로 자기 참조하여 상위 조직 정보 접근
+     *
+     * <p>
+     * {@code insertable=false, updatable=false}: 이 컬럼을 직접 INSERT/UPDATE하지 않고
+     * {@code prlmHrkOgzCCone} 필드를 통해서만 관리 (읽기 전용 조인)
+     * </p>
+     * <p>
+     * {@code FetchType.LAZY}: 실제 접근 시에만 조회 (EntityGraph로 즉시 로딩 가능)
+     * </p>
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PRLM_HRK_OGZ_C_CONE", referencedColumnName = "PRLM_OGZ_C_CONE", insertable = false, updatable = false)
+    private CorgnI parentOrganization;
 }

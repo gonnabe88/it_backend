@@ -58,6 +58,9 @@ public class CostService {
     /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
     private final com.kdb.it.repository.CuserIRepository cuserIRepository;
 
+    /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
+    private final com.kdb.it.repository.CdecimRepository cdecimRepository;
+
     /**
      * 특정 전산관리비 단건 조회
      *
@@ -100,6 +103,37 @@ public class CostService {
      */
     public List<CostDto.Response> getCostList() {
         return bcostmRepository.findAllByDelYn("N").stream()
+                .map(cost -> {
+                    CostDto.Response response = CostDto.Response.fromEntity(cost);
+                    setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
+                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
+                    setCodeNames(response);
+                    return response;
+                })
+                .toList();
+    }
+
+    /**
+     * 검색 조건으로 전산관리비 목록 조회
+     *
+     * <p>
+     * {@link CostDto.SearchCondition}의 조건이 모두 비어있으면 전체 조회({@link #getCostList()})와 동일합니다.
+     * </p>
+     *
+     * <p>
+     * {@code apfSts} 필터 처리:
+     * </p>
+     * <ul>
+     * <li>{@code "none"}: 신청서가 없는 전산관리비만 조회 (CAPPLA 연결 없음)</li>
+     * <li>그 외 값: 최신 신청서의 결재상태가 해당 값인 전산관리비만 조회</li>
+     * <li>null/미입력: 결재상태 필터 없음</li>
+     * </ul>
+     *
+     * @param condition 검색 조건 DTO (apfSts, cttTp, pulDpm, infPrtYn)
+     * @return 조건에 맞는 전산관리비 응답 DTO 목록
+     */
+    public List<CostDto.Response> searchCostList(CostDto.SearchCondition condition) {
+        return bcostmRepository.searchByCondition(condition).stream()
                 .map(cost -> {
                     CostDto.Response response = CostDto.Response.fromEntity(cost);
                     setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
@@ -296,9 +330,19 @@ public class CostService {
             com.kdb.it.domain.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
             response.setApfMngNo(cappla.getApfMngNo()); // 신청관리번호 설정
 
-            // 신청서 마스터에서 결재상태 조회 및 설정
+            // 신청서 마스터에서 결재상태 및 상세 정보 조회
             capplmRepository.findById(cappla.getApfMngNo())
-                    .ifPresent(capplm -> response.setApfSts(capplm.getApfSts()));
+                    .ifPresent(capplm -> {
+                        response.setApfSts(capplm.getApfSts()); // 결재상태 설정 (하위 호환)
+
+                        // 결재자 목록 조회 (결재순서 오름차순)
+                        List<com.kdb.it.domain.entity.Cdecim> decisions = cdecimRepository
+                                .findByDcdMngNoOrderByDcdSqnAsc(cappla.getApfMngNo());
+
+                        // ApplicationInfoDto 생성 및 설정
+                        response.setApplicationInfo(
+                                com.kdb.it.dto.ApplicationInfoDto.fromEntities(capplm, decisions));
+                    });
         }
     }
 

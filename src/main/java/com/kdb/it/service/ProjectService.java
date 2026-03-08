@@ -1,6 +1,6 @@
 package com.kdb.it.service;
 
-import com.kdb.it.domain.entity.Project;
+import com.kdb.it.domain.entity.Bprojm;
 import com.kdb.it.dto.ProjectDto;
 import com.kdb.it.repository.ProjectRepository;
 import com.kdb.it.util.HtmlSanitizer;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 정보화사업(IT 프로젝트) 서비스
  *
  * <p>
- * 정보화사업(TAAABB_BPRJTM) 엔티티의 CRUD 및 품목({@link com.kdb.it.domain.entity.Bitemm})
+ * 정보화사업(TAAABB_BPROJM) 엔티티의 CRUD 및 품목({@link com.kdb.it.domain.entity.Bitemm})
  * 동기화
  * 비즈니스 로직을 처리합니다.
  * </p>
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  * <li>수정/삭제 시 해당 프로젝트에 연결된 신청서(CAPPLA)의 결재 상태를 확인합니다</li>
  * <li>"결재중" 또는 "결재완료" 상태인 경우 수정/삭제가 불가합니다</li>
- * <li>원본 테이블 코드: {@code "BPRJTM"}</li>
+ * <li>원본 테이블 코드: {@code "BPROJM"}</li>
  * </ul>
  *
  * <p>
@@ -50,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true) // 기본 읽기 전용 트랜잭션
 public class ProjectService {
 
-    /** 정보화사업 데이터 접근 리포지토리 (TAAABB_BPRJTM) */
+    /** 정보화사업 데이터 접근 리포지토리 (TAAABB_BPROJM) */
     private final ProjectRepository projectRepository;
 
     /** 신청서-원본 데이터 연결 리포지토리 (TAAABB_CAPPLA): 결재 상태 확인용 */
@@ -67,6 +67,9 @@ public class ProjectService {
 
     /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
     private final com.kdb.it.repository.CuserIRepository cuserIRepository;
+
+    /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
+    private final com.kdb.it.repository.CdecimRepository cdecimRepository;
 
     /**
      * 전체 정보화사업 목록 조회
@@ -98,6 +101,44 @@ public class ProjectService {
     }
 
     /**
+     * 검색 조건으로 정보화사업 목록 조회
+     *
+     * <p>
+     * {@link ProjectDto.SearchCondition}의 조건이 모두 비어있으면 전체 조회({@link #getProjectList()})와 동일합니다.
+     * </p>
+     *
+     * <p>
+     * {@code apfSts} 필터 처리:
+     * </p>
+     * <ul>
+     * <li>{@code "none"}: 신청서가 없는 프로젝트만 조회 (CAPPLA 연결 없음)</li>
+     * <li>그 외 값: 최신 신청서의 결재상태가 해당 값인 프로젝트만 조회</li>
+     * <li>null/미입력: 결재상태 필터 없음</li>
+     * </ul>
+     *
+     * <p>
+     * 목록 조회에서는 품목(Bitemm) 정보를 포함하지 않습니다 (성능 최적화).
+     * </p>
+     *
+     * @param condition 검색 조건 DTO (apfSts, prjYy, prjSts, prjTp, itDpm, svnDpm)
+     * @return 조건에 맞는 정보화사업 응답 DTO 목록 (신청서 정보 포함, 품목 제외)
+     */
+    public List<ProjectDto.Response> searchProjectList(ProjectDto.SearchCondition condition) {
+        return projectRepository.searchByCondition(condition).stream()
+                .map(project -> {
+                    ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
+                    // 각 프로젝트의 최신 신청서 정보(신청관리번호, 결재상태) 조회 및 설정
+                    setApplicationInfo(response, project.getPrjMngNo(), project.getPrjSno());
+                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
+                    setCodeNames(response);
+                    // 품목 기준 자본예산/일반관리비 합계 계산 및 설정
+                    setBudgetSummary(response, project.getPrjMngNo(), project.getPrjSno());
+                    return response;
+                })
+                .toList();
+    }
+
+    /**
      * 단건 정보화사업 상세 조회
      *
      * <p>
@@ -111,7 +152,7 @@ public class ProjectService {
      */
     public ProjectDto.Response getProject(String prjMngNo) {
         // 프로젝트 조회 (삭제되지 않은 항목만)
-        Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
+        Bprojm project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
         ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
@@ -192,7 +233,7 @@ public class ProjectService {
         request.setPrjRng(HtmlSanitizer.sanitize(request.getPrjRng()));
 
         // 엔티티 생성 및 저장
-        Project project = request.toEntity();
+        Bprojm project = request.toEntity();
         projectRepository.save(project);
         return project.getPrjMngNo(); // 저장된 관리번호 반환
     }
@@ -231,13 +272,13 @@ public class ProjectService {
     @Transactional
     public String updateProject(String prjMngNo, ProjectDto.UpdateRequest request) {
         // 프로젝트 조회 (삭제되지 않은 항목만)
-        Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
+        Bprojm project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
-        // 결재 상태 확인 (BPRJTM 테이블 코드로 신청서 연결 여부 조회)
+        // 결재 상태 확인 (BPROJM 테이블 코드로 신청서 연결 여부 조회)
         // 결재중 또는 결재완료 상태인 경우 수정 불가
         boolean isProcessingOrApproved = capplaRepository.existsByOrcTbCdAndOrcPkVlAndOrcSnoVlAndApfStsIn(
-                "BPRJTM", prjMngNo, project.getPrjSno(), java.util.List.of("결재중", "결재완료"));
+                "BPROJM", prjMngNo, project.getPrjSno(), java.util.List.of("결재중", "결재완료"));
 
         if (isProcessingOrApproved) {
             throw new IllegalStateException("결재중이거나 결재완료된 프로젝트는 수정할 수 없습니다.");
@@ -391,12 +432,12 @@ public class ProjectService {
     @Transactional
     public void deleteProject(String prjMngNo) {
         // 프로젝트 조회 (삭제되지 않은 항목만)
-        Project project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
+        Bprojm project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
 
         // 결재 상태 확인 (결재중/결재완료이면 삭제 불가)
         boolean isProcessingOrApproved = capplaRepository.existsByOrcTbCdAndOrcPkVlAndOrcSnoVlAndApfStsIn(
-                "BPRJTM", prjMngNo, project.getPrjSno(), java.util.List.of("결재중", "결재완료"));
+                "BPROJM", prjMngNo, project.getPrjSno(), java.util.List.of("결재중", "결재완료"));
 
         if (isProcessingOrApproved) {
             throw new IllegalStateException("결재중이거나 결재완료된 프로젝트는 삭제할 수 없습니다.");
@@ -449,7 +490,7 @@ public class ProjectService {
      * 조회 기준:
      * </p>
      * <ul>
-     * <li>{@code ORC_TB_CD = 'BPRJTM'}: 프로젝트 원본 테이블 코드</li>
+     * <li>{@code ORC_TB_CD = 'BPROJM'}: 프로젝트 원본 테이블 코드</li>
      * <li>{@code ORC_PK_VL = prjMngNo}: 프로젝트관리번호</li>
      * <li>{@code ORC_SNO_VL = prjSno}: 프로젝트순번</li>
      * <li>최신순 정렬 ({@code APF_REL_SNO DESC})</li>
@@ -460,17 +501,27 @@ public class ProjectService {
      * @param prjSno   프로젝트순번
      */
     private void setApplicationInfo(ProjectDto.Response response, String prjMngNo, Integer prjSno) {
-        // BPRJTM 테이블 코드와 프로젝트 관리번호/순번으로 연결된 신청서 목록 조회 (최신순)
+        // BPROJM 테이블 코드와 프로젝트 관리번호/순번으로 연결된 신청서 목록 조회 (최신순)
         List<com.kdb.it.domain.entity.Cappla> capplas = capplaRepository
-                .findByOrcTbCdAndOrcPkVlAndOrcSnoVlOrderByApfRelSnoDesc("BPRJTM", prjMngNo, prjSno);
+                .findByOrcTbCdAndOrcPkVlAndOrcSnoVlOrderByApfRelSnoDesc("BPROJM", prjMngNo, prjSno);
 
         if (!capplas.isEmpty()) {
             com.kdb.it.domain.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
             response.setApfMngNo(cappla.getApfMngNo()); // 신청관리번호 설정
 
-            // 신청서 마스터에서 결재상태 조회 및 설정
+            // 신청서 마스터에서 결재상태 및 상세 정보 조회
             capplmRepository.findById(cappla.getApfMngNo())
-                    .ifPresent(capplm -> response.setApfSts(capplm.getApfSts()));
+                    .ifPresent(capplm -> {
+                        response.setApfSts(capplm.getApfSts()); // 결재상태 설정 (하위 호환)
+
+                        // 결재자 목록 조회 (결재순서 오름차순)
+                        List<com.kdb.it.domain.entity.Cdecim> decisions = cdecimRepository
+                                .findByDcdMngNoOrderByDcdSqnAsc(cappla.getApfMngNo());
+
+                        // ApplicationInfoDto 생성 및 설정
+                        response.setApplicationInfo(
+                                com.kdb.it.dto.ApplicationInfoDto.fromEntities(capplm, decisions));
+                    });
         }
     }
 

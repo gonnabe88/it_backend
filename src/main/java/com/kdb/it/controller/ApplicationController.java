@@ -71,6 +71,22 @@ public class ApplicationController {
     }
 
     /**
+     * 신청서 세부내용(APF_DTL_CONE) 조회
+     *
+     * <p>신청서 관리번호(APF_MNG_NO)로 해당 신청서의 세부내용({@code APF_DTL_CONE})만 조회합니다.
+     * 전체 신청서 정보가 필요 없고 본문 JSON만 필요한 경우에 사용합니다.</p>
+     *
+     * @param apfMngNo 신청서 관리번호 (예: {@code APF_202600000001})
+     * @return HTTP 200 + 신청관리번호 및 세부내용 ({@link ApplicationDto.ApfDtlConeResponse})
+     */
+    @GetMapping("/{apfMngNo}/apfDtlCone")
+    @Operation(summary = "신청서 세부내용 조회", description = "신청서 관리번호(apfMngNo)로 세부내용(APF_DTL_CONE)을 조회합니다.")
+    public ResponseEntity<ApplicationDto.ApfDtlConeResponse> getApfDtlCone(
+            @PathVariable("apfMngNo") String apfMngNo) {
+        return ResponseEntity.ok(applicationService.getApfDtlCone(apfMngNo));
+    }
+
+    /**
      * 신청서 일괄 조회
      *
      * <p>여러 신청서 관리번호를 한 번에 조회합니다.

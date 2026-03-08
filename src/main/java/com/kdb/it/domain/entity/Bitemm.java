@@ -22,7 +22,7 @@ import lombok.experimental.SuperBuilder;
  * </p>
  *
  * <p>
- * 정보화사업({@link Project})에 속하는 개별 도입 품목(소프트웨어, 하드웨어, 서비스 등)을
+ * 정보화사업({@link Bprojm})에 속하는 개별 도입 품목(소프트웨어, 하드웨어, 서비스 등)을
  * 관리합니다. 하나의 사업에 여러 품목이 존재할 수 있습니다.
  * </p>
  *
@@ -31,7 +31,7 @@ import lombok.experimental.SuperBuilder;
  * </p>
  *
  * <p>
- * 연관 관계: {@code PRJ_MNG_NO} + {@code PRJ_SNO}로 {@link Project}와 연결됩니다.
+ * 연관 관계: {@code PRJ_MNG_NO} + {@code PRJ_SNO}로 {@link Bprojm}와 연결됩니다.
  * </p>
  */
 @Entity // JPA 엔티티로 등록
@@ -53,11 +53,11 @@ public class Bitemm extends BaseEntity {
     @Column(name = "GCL_SNO", nullable = false)
     private Integer gclSno;
 
-    /** 사업관리번호: 이 품목이 속한 정보화사업의 관리번호 (Project.prjMngNo 참조) */
-    @Column(name = "PRJ_MNG_NO", length = 32)
+    /** 사업관리번호: 이 품목이 속한 정보화사업의 관리번호 (Bprojm.prjMngNo 참조) */
+    @Column(name = "PRJ_MNG_NO", nullable = false, length = 32)
     private String prjMngNo;
 
-    /** 사업일련번호: 이 품목이 속한 정보화사업의 순번 (Project.prjSno 참조) */
+    /** 사업일련번호: 이 품목이 속한 정보화사업의 순번 (Bprojm.prjSno 참조) */
     @Column(name = "PRJ_SNO")
     private Integer prjSno;
 

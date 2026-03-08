@@ -44,7 +44,7 @@ public class ApplicationDto {
     @NoArgsConstructor
     @Schema(name = "ApplicationCreateRequest")
     public static class CreateRequest {
-        /** 원본 테이블코드 (예: "BPRJTM" = 정보화사업, "BCOSTM" = 전산관리비) */
+        /** 원본 테이블코드 (예: "BPROJM" = 정보화사업, "BCOSTM" = 전산관리비) */
         @Schema(description = "원본 테이블코드")
         private String orcTbCd;
 
@@ -279,6 +279,41 @@ public class ApplicationDto {
                     .approvers(approvers.stream()
                             .map(ApproverResponse::fromEntity) // 각 결재자 엔티티를 DTO로 변환
                             .collect(Collectors.toList()))
+                    .build();
+        }
+    }
+
+    /**
+     * 신청서 세부내용(APF_DTL_CONE) 조회 응답 DTO
+     *
+     * <p>신청관리번호({@code apfMngNo})와 대응하는 세부내용 JSON 문자열만 반환합니다.</p>
+     */
+    @Getter
+    @Builder
+    @Schema(name = "ApplicationApfDtlConeResponse", description = "신청서 세부내용 조회 응답")
+    public static class ApfDtlConeResponse {
+
+        /** 신청관리번호 (요청한 apfMngNo 그대로 반환) */
+        @Schema(description = "신청관리번호")
+        private String apfMngNo;
+
+        /**
+         * 신청서 세부내용 (APF_DTL_CONE)
+         * <p>신청 시 저장한 JSON 문자열 그대로 반환합니다.</p>
+         */
+        @Schema(description = "신청서 세부내용 (JSON 문자열)")
+        private String apfDtlCone;
+
+        /**
+         * {@link Capplm} 엔티티로부터 DTO 생성
+         *
+         * @param capplm 신청서 마스터 엔티티
+         * @return 변환된 ApfDtlConeResponse
+         */
+        public static ApfDtlConeResponse fromEntity(Capplm capplm) {
+            return ApfDtlConeResponse.builder()
+                    .apfMngNo(capplm.getApfMngNo())       // 신청관리번호
+                    .apfDtlCone(capplm.getApfDtlCone())   // 세부내용
                     .build();
         }
     }

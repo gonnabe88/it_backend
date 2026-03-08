@@ -88,6 +88,37 @@ public class CuserI extends BaseEntity {
         return organization != null ? organization.getBbrNm() : null;
     }
 
+    /**
+     * 상위조직코드 조회 편의 메서드
+     *
+     * <p>
+     * {@link CorgnI} 연관 관계에서 상위조직코드를 반환합니다.
+     * 조직 정보가 없는 경우 null을 반환합니다.
+     * </p>
+     *
+     * @return 상위조직코드 (예: "001"), 조직 정보 없을 시 null
+     */
+    public String getPrlmHrkOgzCCone() {
+        return organization != null ? organization.getPrlmHrkOgzCCone() : null;
+    }
+
+    /**
+     * 상위조직명 조회 편의 메서드
+     *
+     * <p>
+     * {@link CorgnI} 연관 관계의 상위조직({@code parentOrganization}) 부점명을 반환합니다.
+     * 조직 정보 또는 상위조직 정보가 없는 경우 null을 반환합니다.
+     * </p>
+     *
+     * @return 상위조직명 (예: "경영지원본부"), 상위조직 정보 없을 시 null
+     */
+    public String getPrlmHrkOgzCNm() {
+        if (organization != null && organization.getParentOrganization() != null) {
+            return organization.getParentOrganization().getBbrNm();
+        }
+        return null;
+    }
+
     /** 회사번호: 사내 직통 전화번호 */
     @Column(name = "CADR_TPN", length = 20)
     private String cadrTpn;

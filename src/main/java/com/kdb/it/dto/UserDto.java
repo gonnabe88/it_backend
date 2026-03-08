@@ -160,6 +160,14 @@ public class UserDto {
         @Schema(description = "상세직무내용")
         private String dtsDtlCone;
 
+        /** 상위조직코드 (PRLM_HRK_OGZ_C_CONE, 소속 부점의 상위 조직 코드) */
+        @Schema(description = "상위조직코드")
+        private String prlmHrkOgzCCone;
+
+        /** 상위조직명 (상위 CorgnI의 bbrNm, 소속 부점의 상위 조직 명칭) */
+        @Schema(description = "상위조직명")
+        private String prlmHrkOgzCNm;
+
         /**
          * {@link CuserI} 엔티티를 상세 응답 DTO로 변환하는 정적 팩토리 메서드
          *
@@ -178,6 +186,8 @@ public class UserDto {
                     .inleNo(user.getInleNo()) // 내선번호
                     .cpnTpn(user.getCpnTpn()) // 휴대폰번호
                     .dtsDtlCone(user.getDtsDtlCone()) // 상세직무내용
+                    .prlmHrkOgzCCone(user.getPrlmHrkOgzCCone()) // 상위조직코드
+                    .prlmHrkOgzCNm(user.getPrlmHrkOgzCNm()) // 상위조직명
                     .build();
         }
     }

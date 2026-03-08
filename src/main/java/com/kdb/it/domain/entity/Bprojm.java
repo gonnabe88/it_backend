@@ -18,7 +18,7 @@ import java.time.LocalDate;
  * 정보화사업(IT 프로젝트) 마스터 엔티티
  *
  * <p>
- * DB 테이블: {@code TAAABB_BPRJTM}
+ * DB 테이블: {@code BPROJM}
  * </p>
  *
  * <p>
@@ -36,13 +36,13 @@ import java.time.LocalDate;
  * </p>
  */
 @Entity // JPA 엔티티로 등록
-@Table(name = "TAAABB_BPRJTM") // 매핑할 DB 테이블명
-@IdClass(ProjectId.class) // 복합키 클래스 지정 (PRJ_MNG_NO + PRJ_SNO)
+@Table(name = "TAAABB_BPROJM") // 매핑할 DB 테이블명
+@IdClass(BprojmId.class) // 복합키 클래스 지정 (PRJ_MNG_NO + PRJ_SNO)
 @Getter // 모든 필드의 getter 자동 생성 (Lombok)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
 @AllArgsConstructor // 전체 필드 생성자 자동 생성
 @SuperBuilder // 상속 구조에서 Builder 패턴 지원
-public class Project extends BaseEntity {
+public class Bprojm extends BaseEntity {
 
     /** 프로젝트관리번호: 기본키 (예: PRJ-2026-0001) */
     @Id

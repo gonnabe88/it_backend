@@ -18,7 +18,7 @@ import org.springframework.data.repository.query.Param;
  *
  * <p>Soft Delete 패턴 적용: 조회 시 항상 {@code delYn='N'} 조건을 사용합니다.</p>
  */
-public interface BcostmRepository extends JpaRepository<Bcostm, BcostmId> {
+public interface BcostmRepository extends JpaRepository<Bcostm, BcostmId>, BcostmRepositoryCustom {
 
     /**
      * 특정 전산관리비 단건 조회 (삭제되지 않은 항목)

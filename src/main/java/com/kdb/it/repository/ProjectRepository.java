@@ -1,84 +1,84 @@
 package com.kdb.it.repository;
 
-import com.kdb.it.domain.entity.Project;
-import com.kdb.it.domain.entity.ProjectId;
+import com.kdb.it.domain.entity.Bprojm;
+import com.kdb.it.domain.entity.BprojmId;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * 정보화사업(Project) 데이터 접근 리포지토리
+ * ?�보?�사??Bprojm) ?�이???�근 리포지?�리
  *
  * <p>
- * Spring Data JPA의 {@link JpaRepository}를 상속하여
- * 정보화사업 테이블(TAAABB_BPRJTM)에 대한 CRUD 기능을 제공합니다.
+ * Spring Data JPA??{@link JpaRepository}�??�속?�여
+ * ?�보?�사???�이�?TAAABB_BPROJM)???�??CRUD 기능???�공?�니??
  * </p>
  *
  * <p>
- * 기본키 타입: {@link ProjectId} (복합키: prjMngNo + prjSno)
+ * 기본???�?? {@link BprojmId} (복합?? prjMngNo + prjSno)
  * </p>
  *
  * <p>
- * Soft Delete 패턴 적용: 조회 시 항상 {@code delYn='N'} 조건을 사용합니다.
+ * Soft Delete ?�턴 ?�용: 조회 ????�� {@code delYn='N'} 조건???�용?�니??
  * </p>
  */
-@Repository // Spring 리포지토리 빈으로 등록
-public interface ProjectRepository extends JpaRepository<Project, ProjectId> {
+@Repository // Spring 리포지?�리 빈으�??�록
+public interface ProjectRepository extends JpaRepository<Bprojm, BprojmId>, ProjectRepositoryCustom {
 
     /**
-     * 프로젝트 관리번호와 삭제여부로 단건 조회
+     * ?�로?�트 관리번?��? ??��?��?�??�건 조회
      *
      * <p>
-     * 삭제되지 않은 특정 프로젝트를 조회합니다.
-     * 프로젝트 상세 조회 시 사용됩니다.
+     * ??��?��? ?��? ?�정 ?�로?�트�?조회?�니??
+     * ?�로?�트 ?�세 조회 ???�용?�니??
      * </p>
      *
-     * @param prjMngNo 프로젝트 관리번호 (예: PRJ-2026-0001)
-     * @param delYn    삭제 여부 ('N'=미삭제)
-     * @return 조건에 맞는 프로젝트 (없으면 {@link Optional#empty()})
+     * @param prjMngNo ?�로?�트 관리번??(?? PRJ-2026-0001)
+     * @param delYn    ??�� ?��? ('N'=미삭??
+     * @return 조건??맞는 ?�로?�트 (?�으�?{@link Optional#empty()})
      */
-    Optional<Project> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
+    Optional<Bprojm> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
     /**
-     * 프로젝트 관리번호와 삭제여부로 존재 여부 확인
+     * ?�로?�트 관리번?��? ??��?��?�?존재 ?��? ?�인
      *
      * <p>
-     * 중복 생성 방지를 위한 효율적인 존재 여부 확인 메서드입니다.
-     * {@code COUNT(*)} 쿼리를 사용하여 엔티티 전체를 로드하지 않습니다.
+     * 중복 ?�성 방�?�??�한 ?�율?�인 존재 ?��? ?�인 메서?�입?�다.
+     * {@code COUNT(*)} 쿼리�??�용?�여 ?�티???�체�?로드?��? ?�습?�다.
      * </p>
      *
-     * @param prjMngNo 프로젝트 관리번호 (예: PRJ-2026-0001)
-     * @param delYn    삭제 여부 ('N'=미삭제)
-     * @return 존재하면 {@code true}
+     * @param prjMngNo ?�로?�트 관리번??(?? PRJ-2026-0001)
+     * @param delYn    ??�� ?��? ('N'=미삭??
+     * @return 존재?�면 {@code true}
      */
     boolean existsByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
     /**
-     * 전체 정보화사업 목록 조회 (삭제 여부 조건)
+     * ?�체 ?�보?�사??목록 조회 (??�� ?��? 조건)
      *
      * <p>
-     * DEL_YN 조건으로 삭제된 항목을 제외한 모든 프로젝트를 반환합니다.
+     * DEL_YN 조건?�로 ??��????��???�외??모든 ?�로?�트�?반환?�니??
      * </p>
      *
-     * @param delYn 삭제 여부 ('N'=미삭제, 'Y'=삭제)
-     * @return 조건에 맞는 정보화사업 목록
+     * @param delYn ??�� ?��? ('N'=미삭?? 'Y'=??��)
+     * @return 조건??맞는 ?�보?�사??목록
      */
-    List<Project> findAllByDelYn(String delYn);
+    List<Bprojm> findAllByDelYn(String delYn);
 
     /**
-     * Oracle 시퀀스(S_PRJ) 다음 값 조회
+     * Oracle ?�퀀??S_PRJ) ?�음 �?조회
      *
      * <p>
-     * 새로운 프로젝트 생성 시 관리번호 채번에 사용합니다.
-     * 형식: {@code PRJ-{사업연도}-{4자리 시퀀스}} (예: {@code PRJ-2026-0001})
+     * ?�로???�로?�트 ?�성 ??관리번??채번???�용?�니??
+     * ?�식: {@code PRJ-{?�업?�도}-{4?�리 ?�퀀??} (?? {@code PRJ-2026-0001})
      * </p>
      *
      * <p>
-     * Oracle DB 전용 Native Query입니다.
+     * Oracle DB ?�용 Native Query?�니??
      * </p>
      *
-     * @return Oracle 시퀀스(S_PRJ)의 다음 값 (Long)
+     * @return Oracle ?�퀀??S_PRJ)???�음 �?(Long)
      */
     @org.springframework.data.jpa.repository.Query(value = "SELECT S_PRJ.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();

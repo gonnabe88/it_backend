@@ -9,6 +9,7 @@ import com.kdb.it.service.ProjectService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  * 정보화사업(프로젝트) 관리 REST 컨트롤러
  *
  * <p>
- * 정보화사업(TAAABB_BPRJTM 테이블)의 CRUD 및 일괄 조회 기능을 담당합니다.
+ * 정보화사업(TAAABB_BPROJM 테이블)의 CRUD 및 일괄 조회 기능을 담당합니다.
  * </p>
  *
  * <p>
@@ -57,19 +58,39 @@ public class ProjectController {
     private final ProjectService projectService;
 
     /**
-     * 전체 정보화사업 목록 조회
+     * 정보화사업 목록 조회 (검색 조건 지원)
      *
      * <p>
-     * DEL_YN='N'인 삭제되지 않은 모든 정보화사업 목록을 반환합니다.
+     * DEL_YN='N'인 삭제되지 않은 정보화사업 목록을 반환합니다.
+     * Query Parameter로 검색 조건을 전달하면 필터링된 결과를 반환합니다.
      * 각 프로젝트의 최신 신청서 정보(신청서관리번호, 신청서상태)도 포함됩니다.
      * </p>
      *
+     * <p>
+     * 검색 조건 예시:
+     * </p>
+     * <ul>
+     * <li>{@code GET /api/projects} → 전체 조회</li>
+     * <li>{@code GET /api/projects?apfSts=none} → 신청서가 없는 프로젝트만</li>
+     * <li>{@code GET /api/projects?apfSts=결재중} → 결재중인 프로젝트만</li>
+     * <li>{@code GET /api/projects?prjYy=2026} → 2026년 사업만</li>
+     * <li>{@code GET /api/projects?apfSts=none&prjYy=2026} → 복합 조건</li>
+     * </ul>
+     *
+     * @param condition 검색 조건 (apfSts, prjYy, prjSts, prjTp, itDpm, svnDpm). 미입력 시 전체 조회
      * @return HTTP 200 + 정보화사업 목록 ({@link ProjectDto.Response} 리스트)
      */
     @GetMapping
-    @Operation(summary = "전체 정보화사업 조회", description = "모든 정보화사업 목록을 조회합니다.")
-    public ResponseEntity<List<ProjectDto.Response>> getProjects() {
-        return ResponseEntity.ok(projectService.getProjectList());
+    @Operation(
+        summary = "정보화사업 목록 조회",
+        description = "정보화사업 목록을 조회합니다. " +
+                      "Query Parameter로 조건을 지정하면 필터링된 결과를 반환합니다. " +
+                      "apfSts=none은 신청서가 없는 프로젝트, " +
+                      "apfSts=결재중/결재완료 등은 해당 결재상태의 프로젝트를 조회합니다."
+    )
+    public ResponseEntity<List<ProjectDto.Response>> getProjects(
+            @ModelAttribute ProjectDto.SearchCondition condition) {
+        return ResponseEntity.ok(projectService.searchProjectList(condition));
     }
 
     /**

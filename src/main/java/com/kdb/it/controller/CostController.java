@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -114,19 +115,39 @@ public class CostController {
     }
 
     /**
-     * 전체 전산관리비 목록 조회
+     * 전산관리비 목록 조회 (검색 조건 지원)
      *
-     * <p>DEL_YN='N'인 삭제되지 않은 모든 전산관리비 목록을 반환합니다.</p>
+     * <p>DEL_YN='N'인 삭제되지 않은 전산관리비 목록을 반환합니다.
+     * Query Parameter로 검색 조건을 전달하면 필터링된 결과를 반환합니다.</p>
      *
+     * <p>
+     * 검색 조건 예시:
+     * </p>
+     * <ul>
+     * <li>{@code GET /api/cost} → 전체 조회</li>
+     * <li>{@code GET /api/cost?apfSts=none} → 신청서가 없는 전산관리비만</li>
+     * <li>{@code GET /api/cost?apfSts=결재중} → 결재중인 전산관리비만</li>
+     * <li>{@code GET /api/cost?cttTp=유지보수} → 유지보수 계약만</li>
+     * <li>{@code GET /api/cost?apfSts=none&cttTp=유지보수} → 복합 조건</li>
+     * </ul>
+     *
+     * @param condition 검색 조건 (apfSts, cttTp, pulDpm, infPrtYn). 미입력 시 전체 조회
      * @return HTTP 200 + 전산관리비 목록 ({@link CostDto.Response} 리스트)
      */
-    @Operation(summary = "전체 전산관리비 조회", description = "등록된 모든 전산관리비 목록을 조회합니다.")
+    @Operation(
+        summary = "전산관리비 목록 조회",
+        description = "전산관리비 목록을 조회합니다. " +
+                      "Query Parameter로 조건을 지정하면 필터링된 결과를 반환합니다. " +
+                      "apfSts=none은 신청서가 없는 항목, " +
+                      "apfSts=결재중/결재완료 등은 해당 결재상태의 항목을 조회합니다."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = CostDto.Response.class)))
     })
     @GetMapping
-    public ResponseEntity<List<CostDto.Response>> getCostList() {
-        return ResponseEntity.ok(costService.getCostList());
+    public ResponseEntity<List<CostDto.Response>> getCostList(
+            @ModelAttribute CostDto.SearchCondition condition) {
+        return ResponseEntity.ok(costService.searchCostList(condition));
     }
 
     /**

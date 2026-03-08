@@ -49,8 +49,8 @@ import lombok.RequiredArgsConstructor;
  * 원본 데이터 연결:
  * </p>
  * <ul>
- * <li>신청서는 원본 테이블(예: BPRJTM)과 {@link com.kdb.it.domain.entity.Cappla}로 연결</li>
- * <li>{@code orcTbCd}: 원본 테이블 코드 (예: "BPRJTM")</li>
+ * <li>신청서는 원본 테이블(예: BPROJM)과 {@link com.kdb.it.domain.entity.Cappla}로 연결</li>
+ * <li>{@code orcTbCd}: 원본 테이블 코드 (예: "BPROJM")</li>
  * <li>{@code orcPkVl}: 원본 테이블의 PK 값 (예: 프로젝트관리번호)</li>
  * <li>{@code orcSnoVl}: 원본 테이블의 SNO 값 (예: 프로젝트순번)</li>
  * </ul>
@@ -243,7 +243,7 @@ public class ApplicationService {
         capplmRepository.save(capplm);
 
         // 1-1. 신청서 원본 데이터 연결 저장 (원본 테이블 코드가 있는 경우)
-        // 예: 프로젝트 신청서인 경우 orcTbCd="BPRJTM", orcPkVl=프로젝트관리번호
+        // 예: 프로젝트 신청서인 경우 orcTbCd="BPROJM", orcPkVl=프로젝트관리번호
         if (request.getOrcTbCd() != null) {
             Long seq = capplaRepository.getNextVal(); // CAPPLA 시퀀스 채번
             String apfRelSno = "APPL_" + String.format("%028d", seq); // 신청서관계일련번호
@@ -441,6 +441,23 @@ public class ApplicationService {
                 .failureCount(failureCount) // 실패 건수 (롤백 시 항상 0)
                 .results(results) // 개별 결과 목록
                 .build();
+    }
+
+    /**
+     * 신청서 세부내용(APF_DTL_CONE) 단건 조회
+     *
+     * <p>
+     * 신청관리번호로 신청서 마스터를 조회하여 세부내용({@code APF_DTL_CONE}) 필드만 반환합니다.
+     * </p>
+     *
+     * @param apfMngNo 조회할 신청관리번호
+     * @return 신청관리번호와 세부내용을 담은 응답 DTO ({@link ApplicationDto.ApfDtlConeResponse})
+     * @throws IllegalArgumentException 해당 신청관리번호의 신청서가 없는 경우
+     */
+    public ApplicationDto.ApfDtlConeResponse getApfDtlCone(String apfMngNo) {
+        Capplm capplm = capplmRepository.findById(apfMngNo)
+                .orElseThrow(() -> new IllegalArgumentException("신청서를 찾을 수 없습니다: " + apfMngNo));
+        return ApplicationDto.ApfDtlConeResponse.fromEntity(capplm);
     }
 
     /**

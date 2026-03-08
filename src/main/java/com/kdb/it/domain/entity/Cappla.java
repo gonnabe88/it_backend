@@ -17,7 +17,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>사용 예시:</p>
  * <ul>
- *   <li>프로젝트(PRJ_MNG_NO)에 대한 신청서 → {@code ORC_TB_CD='BPRJTM'}, {@code ORC_PK_VL=PRJ_MNG_NO}</li>
+ *   <li>프로젝트(PRJ_MNG_NO)에 대한 신청서 → {@code ORC_TB_CD='BPROJM'}, {@code ORC_PK_VL=PRJ_MNG_NO}</li>
  * </ul>
  *
  * <p>이 테이블을 통해 하나의 신청서가 어떤 원본 데이터를 대상으로 하는지,
@@ -48,7 +48,7 @@ public class Cappla extends BaseEntity {
 
     /**
      * 원본테이블코드: 신청 대상이 속한 테이블 코드
-     * (예: 'BPRJTM'=정보화사업, 'BCOSTM'=전산관리비)
+     * (예: 'BPROJM'=정보화사업, 'BCOSTM'=전산관리비)
      */
     @Column(name = "ORC_TB_CD", length = 10)
     private String orcTbCd;

@@ -1,0 +1,167 @@
+package com.kdb.it.repository;
+
+import com.kdb.it.domain.entity.Bprojm;
+import com.kdb.it.domain.entity.QBprojm;
+import com.kdb.it.domain.entity.QCappla;
+import com.kdb.it.domain.entity.QCapplm;
+import com.kdb.it.dto.ProjectDto;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
+/**
+ * 정보화사업(Bprojm) 커스텀 리포지토리 QueryDSL 구현체
+ *
+ * <p>{@link ProjectRepositoryCustom} 인터페이스의 QueryDSL 구현체입니다.
+ * 복잡한 동적 쿼리(apfSts 필터링 서브쿼리 포함)를 타입 안전하게 처리합니다.</p>
+ *
+ * <p>클래스 명명 규칙: Spring Data JPA가 자동 감지하려면
+ * 반드시 {@code [메인Repository명]Impl} 형태여야 합니다. ({@code ProjectRepositoryImpl})</p>
+ *
+ * <p>
+ * {@code apfSts} 서브쿼리 전략:
+ * </p>
+ * <ul>
+ * <li>{@code "none"}: NOT EXISTS — CAPPLA에 연결 레코드가 없는 프로젝트</li>
+ * <li>그 외 값: EXISTS — 최신 CAPPLA(APF_REL_SNO MAX)의 CAPPLM 결재상태가 일치하는 프로젝트</li>
+ * </ul>
+ */
+@RequiredArgsConstructor // final 필드 생성자 자동 주입 (Lombok)
+public class ProjectRepositoryImpl implements ProjectRepositoryCustom {
+
+    /** QueryDSL 쿼리 팩토리: JPA 쿼리 생성 및 실행 담당 */
+    private final JPAQueryFactory queryFactory;
+
+    /**
+     * 검색 조건으로 정보화사업 목록 동적 조회
+     *
+     * <p>
+     * [처리 순서]
+     * 1. DEL_YN='N' 기본 조건 설정
+     * 2. apfSts 조건 분기 처리 (none / 특정값 / null)
+     * 3. 나머지 단순 필드 조건 추가 (prjYy, prjSts, prjTp, itDpm, svnDpm)
+     * 4. BooleanBuilder로 조합된 WHERE 절로 쿼리 실행
+     * </p>
+     *
+     * <p>
+     * apfSts='none' 생성 SQL (NOT EXISTS):
+     * </p>
+     * <pre>{@code
+     * WHERE NOT EXISTS (
+     *   SELECT 1 FROM TAAABB_CAPPLA ca
+     *   WHERE ca.ORC_TB_CD = 'BPROJM'
+     *     AND ca.ORC_PK_VL = p.PRJ_MNG_NO
+     *     AND ca.ORC_SNO_VL = p.PRJ_SNO
+     * )
+     * }</pre>
+     *
+     * <p>
+     * apfSts='결재중' 생성 SQL (EXISTS + MAX 서브쿼리):
+     * </p>
+     * <pre>{@code
+     * WHERE EXISTS (
+     *   SELECT 1 FROM TAAABB_CAPPLA ca
+     *   JOIN TAAABB_CAPPLM cm ON ca.APF_MNG_NO = cm.APF_MNG_NO
+     *   WHERE ca.ORC_TB_CD = 'BPROJM'
+     *     AND ca.ORC_PK_VL = p.PRJ_MNG_NO
+     *     AND ca.ORC_SNO_VL = p.PRJ_SNO
+     *     AND cm.APF_STS = '결재중'
+     *     AND ca.APF_REL_SNO = (
+     *       SELECT MAX(ca2.APF_REL_SNO) FROM TAAABB_CAPPLA ca2
+     *       WHERE ca2.ORC_TB_CD = 'BPROJM'
+     *         AND ca2.ORC_PK_VL = p.PRJ_MNG_NO
+     *         AND ca2.ORC_SNO_VL = p.PRJ_SNO
+     *     )
+     * )
+     * }</pre>
+     *
+     * @param condition 검색 조건 DTO
+     * @return 조건에 맞는 정보화사업 목록
+     */
+    @Override
+    public List<Bprojm> searchByCondition(ProjectDto.SearchCondition condition) {
+        QBprojm bprojm = QBprojm.bprojm;
+        // 서브쿼리용 CAPPLA Q타입 별칭 (자기 참조 서브쿼리 충돌 방지)
+        QCappla cappla = new QCappla("cappla");
+        QCappla cappla2 = new QCappla("cappla2");
+        QCapplm capplm = QCapplm.capplm;
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 기본 조건: 삭제되지 않은 프로젝트만 조회
+        builder.and(bprojm.delYn.eq("N"));
+
+        // === apfSts 필터 처리 ===
+        String apfSts = condition.getApfSts();
+        if (apfSts != null && !apfSts.isBlank()) {
+            if ("none".equals(apfSts)) {
+                // 신청서가 없는 프로젝트: CAPPLA에 연결 레코드가 없는 경우
+                builder.and(
+                    JPAExpressions.selectOne()
+                        .from(cappla)
+                        .where(
+                            cappla.orcTbCd.eq("BPROJM"),
+                            cappla.orcPkVl.eq(bprojm.prjMngNo),
+                            cappla.orcSnoVl.eq(bprojm.prjSno)
+                        )
+                        .notExists()
+                );
+            } else {
+                // 특정 결재상태: 최신 신청서(APF_REL_SNO 최대값)의 결재상태가 일치하는 경우
+                builder.and(
+                    JPAExpressions.selectOne()
+                        .from(cappla)
+                        .join(capplm).on(cappla.apfMngNo.eq(capplm.apfMngNo))
+                        .where(
+                            cappla.orcTbCd.eq("BPROJM"),
+                            cappla.orcPkVl.eq(bprojm.prjMngNo),
+                            cappla.orcSnoVl.eq(bprojm.prjSno),
+                            capplm.apfSts.eq(apfSts),
+                            // 해당 프로젝트에 연결된 신청서 중 가장 최신(APF_REL_SNO 최대)인 것만 검사
+                            cappla.apfRelSno.eq(
+                                JPAExpressions.select(cappla2.apfRelSno.max())
+                                    .from(cappla2)
+                                    .where(
+                                        cappla2.orcTbCd.eq("BPROJM"),
+                                        cappla2.orcPkVl.eq(bprojm.prjMngNo),
+                                        cappla2.orcSnoVl.eq(bprojm.prjSno)
+                                    )
+                            )
+                        )
+                        .exists()
+                );
+            }
+        }
+
+        // === 단순 필드 조건 처리 (null이면 해당 조건 미적용) ===
+
+        // 사업연도 필터
+        if (condition.getPrjYy() != null && !condition.getPrjYy().isBlank()) {
+            builder.and(bprojm.prjYy.eq(condition.getPrjYy()));
+        }
+        // 프로젝트상태 필터
+        if (condition.getPrjSts() != null && !condition.getPrjSts().isBlank()) {
+            builder.and(bprojm.prjSts.eq(condition.getPrjSts()));
+        }
+        // 프로젝트유형 필터
+        if (condition.getPrjTp() != null && !condition.getPrjTp().isBlank()) {
+            builder.and(bprojm.prjTp.eq(condition.getPrjTp()));
+        }
+        // IT부서 필터
+        if (condition.getItDpm() != null && !condition.getItDpm().isBlank()) {
+            builder.and(bprojm.itDpm.eq(condition.getItDpm()));
+        }
+        // 주관부서 필터
+        if (condition.getSvnDpm() != null && !condition.getSvnDpm().isBlank()) {
+            builder.and(bprojm.svnDpm.eq(condition.getSvnDpm()));
+        }
+
+        return queryFactory
+                .selectFrom(bprojm)
+                .where(builder)
+                .fetch();
+    }
+}

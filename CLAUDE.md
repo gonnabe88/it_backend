@@ -55,7 +55,7 @@ src/main/resources/
 ### 4.3 주요 도메인 테이블 매핑
 | 엔티티         | 테이블명              | 역할              |
 |--------------|---------------------|-----------------|
-| Project      | TAAABB_BPRJTM       | 정보화사업 마스터  |
+| Project      | TAAABB_BPROJM       | 정보화사업 마스터  |
 | CuserI       | TAAABB_CUSERI       | 사용자/직원 정보  |
 | CorgnI       | TAAABB_CORGNI       | 조직/부점 정보   |
 | Bitemm       | TAAABB_BITEMM       | 프로젝트 품목     |

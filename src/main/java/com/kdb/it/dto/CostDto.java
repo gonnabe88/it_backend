@@ -325,6 +325,10 @@ public class CostDto {
         @Schema(description = "신청서상태", example = "결재중")
         private String apfSts;
 
+        /** 신청서 상세 정보 (신청서명, 신청자, 결재자 목록 등) */
+        @Schema(description = "신청서 상세 정보")
+        private ApplicationInfoDto applicationInfo;
+
         /**
          * {@link Bcostm} 엔티티를 응답 DTO로 변환하는 정적 팩토리 메서드
          *
@@ -352,6 +356,65 @@ public class CostDto {
                     .pulDpm(entity.getPulDpm()) // 추진부서
                     .delYn(entity.getDelYn()) // 삭제여부
                     .build();
+        }
+    }
+
+    /**
+     * 전산관리비 목록 조회 검색 조건 DTO
+     *
+     * <p>
+     * {@code GET /api/cost} 엔드포인트의 Query Parameter로 전달됩니다.
+     * 모든 필드가 null이면 전체 조회와 동일하게 동작합니다.
+     * </p>
+     *
+     * <p>
+     * {@code apfSts} 값 규칙:
+     * </p>
+     * <ul>
+     * <li>null (파라미터 미입력): 결재상태 필터 없음 → 전체 조회</li>
+     * <li>{@code "none"}: 신청서가 없는 전산관리비 (apfSts IS NULL)</li>
+     * <li>{@code "접수"}, {@code "결재중"}, {@code "결재완료"} 등: 최신 신청서의 결재상태가 해당 값인 전산관리비</li>
+     * </ul>
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @Schema(name = "CostSearchCondition", description = "전산관리비 목록 조회 검색 조건")
+    public static class SearchCondition {
+
+        /**
+         * 결재상태 필터
+         * <p>
+         * "none" → 신청서가 없는 전산관리비, 그 외 값 → 최신 신청서의 결재상태가 해당 값인 전산관리비
+         * null 또는 미입력 → 필터 없음 (전체 조회)
+         * </p>
+         */
+        @Schema(description = "결재상태 필터 (none=신청서없음, 접수/결재중/결재완료 등 실제 상태값). 미입력 시 전체 조회")
+        private String apfSts;
+
+        /** 계약구분 필터 (예: "유지보수", "신규계약"). null이면 전체 조회 */
+        @Schema(description = "계약구분 (예: 유지보수, 신규계약). 미입력 시 전체 조회")
+        private String cttTp;
+
+        /** 추진부서 코드 필터. null이면 전체 조회 */
+        @Schema(description = "추진부서 코드. 미입력 시 전체 조회")
+        private String pulDpm;
+
+        /** 정보보호여부 필터 ('Y'=정보보호, 'N'=일반). null이면 전체 조회 */
+        @Schema(description = "정보보호여부 (Y/N). 미입력 시 전체 조회")
+        private String infPrtYn;
+
+        /**
+         * 모든 조건이 비어있는지 확인 (전체 조회 여부 판단용)
+         *
+         * @return 모든 필드가 null 또는 빈 문자열이면 true
+         */
+        public boolean isEmpty() {
+            return isBlank(apfSts) && isBlank(cttTp) && isBlank(pulDpm) && isBlank(infPrtYn);
+        }
+
+        private boolean isBlank(String value) {
+            return value == null || value.isBlank();
         }
     }
 
