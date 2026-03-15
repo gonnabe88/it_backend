@@ -1,6 +1,7 @@
 package com.kdb.it.util;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 
 /**
@@ -22,7 +23,9 @@ import org.jsoup.safety.Safelist;
  * <ul>
  * <li>블록: {@code p, blockquote, h1~h6, pre, ol, ul, li}</li>
  * <li>인라인: {@code strong, em, u, s, br, span, code}</li>
- * <li>미디어/링크: {@code a(href), img(src, alt)}</li>
+ * <li>테이블: {@code table, thead, tbody, tfoot, tr, th, td, colgroup, col}</li>
+ * <li>미디어/링크:
+ * {@code a(href), img(src, alt, data-scene), figure(data-type)}</li>
  * </ul>
  */
 public final class HtmlSanitizer {
@@ -36,14 +39,14 @@ public final class HtmlSanitizer {
     }
 
     /**
-     * Quill 에디터 허용 태그/속성 Safelist 생성
+     * 리치에디터 허용 태그/속성 Safelist 생성
      *
      * <p>
-     * {@link Safelist#none()} 기반으로 시작하여 Quill 에디터에서
+     * {@link Safelist#none()} 기반으로 시작하여 리치에디터에서
      * 사용하는 태그와 속성만 허용 목록에 추가합니다.
      * </p>
      *
-     * @return Quill 에디터 전용 Safelist
+     * @return 리치에디터 전용 Safelist
      */
     private static Safelist createQuillSafelist() {
         return new Safelist()
@@ -53,15 +56,31 @@ public final class HtmlSanitizer {
                         "ol", "ul", "li")
                 // 인라인 서식 요소
                 .addTags("strong", "em", "u", "s", "span", "code")
+                // 테이블 요소
+                .addTags("table", "thead", "tbody", "tfoot", "tr", "th", "td",
+                        "colgroup", "col")
+                // 테이블 관련 스타일/속성 허용 (셀 병합, 너비 등)
+                .addAttributes("table", "style", "class", "border", "cellpadding", "cellspacing", "width")
+                .addAttributes("thead", "style", "class")
+                .addAttributes("tbody", "style", "class")
+                .addAttributes("tfoot", "style", "class")
+                .addAttributes("tr", "style", "class")
+                .addAttributes("th", "colspan", "rowspan", "style", "class", "width", "height", "align", "valign")
+                .addAttributes("td", "colspan", "rowspan", "style", "class", "width", "height", "align", "valign")
+                .addAttributes("col", "span", "style", "width")
+                .addAttributes("colgroup", "span")
                 // 링크: href 속성 허용
                 .addTags("a")
                 .addAttributes("a", "href")
                 .addProtocols("a", "href", "http", "https", "mailto")
-                // 이미지: src, alt 속성 허용
+                // Excalidraw / 미디어 래퍼: figure 태그 허용
+                .addTags("figure")
+                .addAttributes("figure", "data-type", "class", "style")
+                // 이미지: src, alt, data-scene(Excalidraw 재편집용), width, height 속성 허용
                 .addTags("img")
-                .addAttributes("img", "src", "alt")
+                .addAttributes("img", "src", "alt", "data-scene", "width", "height")
                 .addProtocols("img", "src", "http", "https", "data")
-                // span: style, class 속성 허용 (Quill 서식용)
+                // span: style, class 속성 허용 (서식용)
                 .addAttributes("span", "style", "class");
     }
 
@@ -82,6 +101,8 @@ public final class HtmlSanitizer {
         if (html == null || html.isEmpty()) {
             return html;
         }
-        return Jsoup.clean(html, QUILL_SAFELIST);
+        // prettyPrint=false: Jsoup 자동 줄바꿈/공백 삽입 방지 (테이블 구조 보존)
+        Document.OutputSettings outputSettings = new Document.OutputSettings().prettyPrint(false);
+        return Jsoup.clean(html, "", QUILL_SAFELIST, outputSettings);
     }
 }

@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-08T14:37:46.622Z",
+  "lastUpdated": "2026-03-15T14:59:54.134Z",
   "activeFeatures": [
     "config",
     "util",
@@ -8,7 +8,8 @@
     "controller",
     "junit-test-setup",
     "dto",
-    "repository"
+    "repository",
+    "entity"
   ],
   "primaryFeature": "config",
   "features": {
@@ -34,9 +35,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-07T16:53:51.444Z",
-        "lastUpdated": "2026-03-07T16:54:05.043Z"
+        "lastUpdated": "2026-03-15T11:29:45.650Z"
       },
-      "lastFile": "C:\\it\\it_backend\\src\\test\\java\\com\\kdb\\it\\util\\CustomPasswordEncoderTest.java"
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\util\\HtmlSanitizer.java"
     },
     "service": {
       "phase": "do",
@@ -47,9 +48,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-07T16:54:38.459Z",
-        "lastUpdated": "2026-03-08T14:37:35.613Z"
+        "lastUpdated": "2026-03-15T14:59:54.133Z"
       },
-      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\service\\ApplicationService.java"
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\service\\GeminiService.java"
     },
     "controller": {
       "phase": "do",
@@ -60,9 +61,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-07T16:55:27.472Z",
-        "lastUpdated": "2026-03-08T14:37:46.622Z"
+        "lastUpdated": "2026-03-15T11:55:39.108Z"
       },
-      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\controller\\ApplicationController.java"
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\controller\\CfilemController.java"
     },
     "junit-test-setup": {
       "phase": "act",
@@ -87,9 +88,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-08T13:45:35.777Z",
-        "lastUpdated": "2026-03-08T14:37:25.105Z"
+        "lastUpdated": "2026-03-15T14:58:20.112Z"
       },
-      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\dto\\ApplicationDto.java"
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\dto\\GeminiDto.java"
     },
     "repository": {
       "phase": "do",
@@ -100,9 +101,22 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-08T13:47:36.176Z",
-        "lastUpdated": "2026-03-08T13:52:50.562Z"
+        "lastUpdated": "2026-03-15T10:51:40.023Z"
       },
-      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\repository\\BcostmRepository.java"
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\repository\\CfilemRepository.java"
+    },
+    "entity": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-14T07:39:00.485Z",
+        "lastUpdated": "2026-03-15T10:50:51.734Z"
+      },
+      "lastFile": "C:\\it\\it_backend\\src\\main\\java\\com\\kdb\\it\\domain\\entity\\Cfilem.java"
     }
   },
   "pipeline": {
@@ -113,7 +127,7 @@
   "session": {
     "startedAt": "2026-03-07T16:08:24.393Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-08T14:37:46.622Z"
+    "lastActivity": "2026-03-15T14:59:54.134Z"
   },
   "history": [
     {
@@ -365,6 +379,210 @@
     {
       "timestamp": "2026-03-08T14:37:46.622Z",
       "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T07:39:00.485Z",
+      "feature": "entity",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T07:40:07.958Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T07:40:20.647Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T07:40:46.772Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T07:41:07.664Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:10:57.177Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:11:04.424Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:11:09.135Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:11:33.905Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:11:56.308Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-14T13:12:08.617Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T10:50:51.734Z",
+      "feature": "entity",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T10:51:22.317Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T10:51:40.023Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T10:52:53.687Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T10:53:51.938Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:29:45.650Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:35:14.060Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:35:36.777Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:35:56.506Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:36:05.191Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:55:39.108Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T11:55:47.074Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:49:14.765Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:49:28.285Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:49:36.338Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:49:52.441Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:50:04.920Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:50:36.251Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:58:20.112Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:58:37.233Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:59:15.964Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:59:29.683Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-15T14:59:54.133Z",
+      "feature": "service",
       "phase": "do",
       "action": "updated"
     }
