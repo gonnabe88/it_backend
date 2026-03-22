@@ -22,7 +22,7 @@ import org.jsoup.safety.Safelist;
  * </p>
  * <ul>
  * <li>블록: {@code p, blockquote, h1~h6, pre, ol, ul, li}</li>
- * <li>인라인: {@code strong, em, u, s, br, span, code}</li>
+ * <li>인라인: {@code strong, em, u, s, br, span, code, mark}</li>
  * <li>테이블: {@code table, thead, tbody, tfoot, tr, th, td, colgroup, col}</li>
  * <li>미디어/링크:
  * {@code a(href), img(src, alt, data-scene), figure(data-type)}</li>
@@ -55,7 +55,8 @@ public final class HtmlSanitizer {
                         "h1", "h2", "h3", "h4", "h5", "h6",
                         "ol", "ul", "li")
                 // 인라인 서식 요소
-                .addTags("strong", "em", "u", "s", "span", "code")
+                .addTags("strong", "em", "u", "s", "span", "code", "mark")
+                .addAttributes("mark", "style", "data-color")
                 // 테이블 요소
                 .addTags("table", "thead", "tbody", "tfoot", "tr", "th", "td",
                         "colgroup", "col")
