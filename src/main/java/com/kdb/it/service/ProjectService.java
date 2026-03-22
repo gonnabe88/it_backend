@@ -235,6 +235,38 @@ public class ProjectService {
         // 엔티티 생성 및 저장
         Bprojm project = request.toEntity();
         projectRepository.save(project);
+
+        // ===== 품목(Bitemm) 저장 =====
+        // 신규 등록 시 요청에 포함된 모든 품목은 신규 추가 대상
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            int gclSno = 0; // 품목일련번호 (1부터 시작)
+            for (ProjectDto.BitemmDto itemDto : request.getItems()) {
+                Long gclSeq = bitemmRepository.getNextSequenceValue(); // Oracle 시퀀스 채번
+                String gclMngNo = String.format("GCL-%s-%04d", java.time.LocalDate.now().getYear(), gclSeq);
+
+                com.kdb.it.domain.entity.Bitemm newItem = com.kdb.it.domain.entity.Bitemm.builder()
+                        .gclMngNo(gclMngNo) // 품목관리번호 (신규 채번)
+                        .gclSno(++gclSno) // 품목일련번호
+                        .prjMngNo(project.getPrjMngNo()) // 프로젝트관리번호
+                        .prjSno(project.getPrjSno()) // 프로젝트순번
+                        .gclDtt(itemDto.getGclDtt()) // 품목구분
+                        .gclNm(itemDto.getGclNm()) // 품목명
+                        .gclQtt(itemDto.getGclQtt()) // 품목수량
+                        .cur(itemDto.getCur()) // 통화
+                        .xcr(itemDto.getXcr()) // 환율
+                        .xcrBseDt(itemDto.getXcrBseDt()) // 환율기준일자
+                        .bgFdtn(itemDto.getBgFdtn()) // 예산근거
+                        .itdDt(itemDto.getItdDt()) // 도입시기
+                        .dfrCle(itemDto.getDfrCle()) // 지급주기
+                        .infPrtYn(itemDto.getInfPrtYn() == null ? "N" : itemDto.getInfPrtYn()) // 정보보호여부
+                        .itrInfrYn(itemDto.getItrInfrYn() == null ? "N" : itemDto.getItrInfrYn()) // 통합인프라여부
+                        .lstYn("Y") // 최종여부
+                        .gclAmt(itemDto.getGclAmt()) // 품목금액
+                        .build();
+                bitemmRepository.save(newItem);
+            }
+        }
+
         return project.getPrjMngNo(); // 저장된 관리번호 반환
     }
 
@@ -321,7 +353,8 @@ public class ProjectService {
                 request.getPrjPulPtt(), // 프로젝트추진가능성
                 request.getPrjSts(), // 프로젝트상태
                 request.getPrjYy(), // 사업연도
-                request.getSvnHdq()); // 주관본부/부문
+                request.getSvnHdq(), // 주관본부/부문
+                request.getOrnYn()); // 경상여부
 
         // ===== 품목 정보 동기화 (CUD) =====
         if (request.getItems() != null) {

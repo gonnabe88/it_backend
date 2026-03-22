@@ -182,6 +182,10 @@ public class Bprojm extends BaseEntity {
     @Column(name = "SVN_HDQ", length = 32)
     private String svnHdq;
 
+    /** 경상여부: 경상사업 여부 ('Y'=경상사업, null 또는 'N'=일반 정보화사업) */
+    @Column(name = "ORN_YN", length = 1)
+    private String ornYn;
+
     /**
      * 정보화사업 정보 업데이트 메서드 (prjSno 포함)
      *
@@ -223,6 +227,7 @@ public class Bprojm extends BaseEntity {
      * @param prjYy      사업연도
      * @param svnHdq     주관본부/부문
      * @param prjSno     프로젝트순번
+     * @param ornYn      경상여부 ('Y'=경상사업, 'N'=일반 정보화사업)
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
@@ -230,7 +235,7 @@ public class Bprojm extends BaseEntity {
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
             LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String prjYy, String svnHdq,
-            Integer prjSno) {
+            Integer prjSno, String ornYn) {
         this.prjSno = prjSno;
         this.prjNm = prjNm;
         // ... (나머지 필드 업데이트)
@@ -265,6 +270,7 @@ public class Bprojm extends BaseEntity {
         this.prjSts = prjSts;
         this.prjYy = prjYy;
         this.svnHdq = svnHdq;
+        this.ornYn = ornYn;
     }
 
     /**
@@ -307,13 +313,15 @@ public class Bprojm extends BaseEntity {
      * @param prjSts     프로젝트상태
      * @param prjYy      사업연도
      * @param svnHdq     주관본부/부문
+     * @param ornYn      경상여부 ('Y'=경상사업, 'N'=일반 정보화사업)
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String prjYy, String svnHdq) {
+            LocalDate lblFsgTlm, String rprSts, String prjPulPtt, String prjSts, String prjYy, String svnHdq,
+            String ornYn) {
         this.prjNm = prjNm;
         this.prjTp = prjTp;
         this.svnDpm = svnDpm;
@@ -346,5 +354,6 @@ public class Bprojm extends BaseEntity {
         this.prjSts = prjSts;
         this.prjYy = prjYy;
         this.svnHdq = svnHdq;
+        this.ornYn = ornYn;
     }
 }

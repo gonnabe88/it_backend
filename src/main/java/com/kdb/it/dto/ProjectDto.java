@@ -195,6 +195,10 @@ public class ProjectDto {
         @Schema(description = "사업연도")
         private String prjYy;
 
+        /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
+        @Schema(description = "경상여부")
+        private String ornYn;
+
         /**
          * 품목 목록
          * <p>
@@ -250,6 +254,7 @@ public class ProjectDto {
                     .prjPulPtt(prjPulPtt) // 프로젝트추진가능성
                     .prjSts(prjSts) // 프로젝트상태
                     .prjYy(prjYy) // 사업연도
+                    .ornYn(ornYn) // 경상여부
                     .build();
         }
     }
@@ -401,6 +406,10 @@ public class ProjectDto {
         /** 사업연도 */
         @Schema(description = "사업연도")
         private String prjYy;
+
+        /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
+        @Schema(description = "경상여부")
+        private String ornYn;
 
         /**
          * 품목 목록 (동기화 대상)
@@ -577,6 +586,10 @@ public class ProjectDto {
         @Schema(description = "사업연도")
         private String prjYy;
 
+        /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
+        @Schema(description = "경상여부")
+        private String ornYn;
+
         /** 최초 등록 일시 (JPA Auditing) */
         @Schema(description = "최초생성시간")
         private LocalDateTime fstEnrDtm;
@@ -707,6 +720,7 @@ public class ProjectDto {
                     .prjSts(project.getPrjSts()) // 프로젝트상태
                     .delYn(project.getDelYn()) // 삭제여부
                     .prjYy(project.getPrjYy()) // 사업연도
+                    .ornYn(project.getOrnYn()) // 경상여부
                     .fstEnrDtm(project.getFstEnrDtm()) // 최초 등록 일시
                     .fstEnrUsid(project.getFstEnrUsid()) // 최초 등록자
                     .lstChgDtm(project.getLstChgDtm()) // 마지막 수정 일시
@@ -890,13 +904,23 @@ public class ProjectDto {
         private String svnDpm;
 
         /**
+         * 경상여부 필터
+         * <p>
+         * "Y" → 경상사업만 조회, "N" → 일반 정보화사업만 조회 (ORN_YN IS NULL 또는 'N')
+         * null 또는 미입력 → 필터 없음 (전체 조회)
+         * </p>
+         */
+        @Schema(description = "경상여부 (Y=경상사업만, N=일반사업만). 미입력 시 전체 조회")
+        private String ornYn;
+
+        /**
          * 모든 조건이 비어있는지 확인 (전체 조회 여부 판단용)
          *
          * @return 모든 필드가 null 또는 빈 문자열이면 true
          */
         public boolean isEmpty() {
             return isBlank(apfSts) && isBlank(prjYy) && isBlank(prjSts)
-                    && isBlank(prjTp) && isBlank(itDpm) && isBlank(svnDpm);
+                    && isBlank(prjTp) && isBlank(itDpm) && isBlank(svnDpm) && isBlank(ornYn);
         }
 
         private boolean isBlank(String value) {
