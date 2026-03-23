@@ -34,39 +34,63 @@ import java.util.stream.Collectors;
 public class ApplicationDto {
 
     /**
+     * 원본 데이터 연결 항목 DTO
+     *
+     * <p>단일 신청서가 복수의 원본 레코드(정보화사업, 전산관리비 등)를
+     * 연결할 때 {@link CreateRequest#orcItems} 배열의 요소로 사용됩니다.</p>
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @Schema(name = "ApplicationOrcItem", description = "원본 데이터 연결 항목")
+    public static class OrcItem {
+        /** 원본 테이블코드 (예: "BPRJTM"=정보화사업, "BITCOST"=전산관리비) */
+        @Schema(description = "원본 테이블코드")
+        private String orcTbCd;
+
+        /** 원본 테이블의 PK값 (예: 프로젝트관리번호 "PRJ-2026-0001") */
+        @Schema(description = "원본 PK값")
+        private String orcPkVl;
+
+        /** 원본 테이블의 SNO(일련번호)값 (nullable, 예: "1") */
+        @Schema(description = "원본 SNO값")
+        private String orcSnoVl;
+    }
+
+    /**
      * 신청서 등록 요청 DTO
      *
-     * <p>신규 신청서를 등록할 때 사용합니다. 원본 데이터 연결 정보와
+     * <p>신규 신청서를 등록할 때 사용합니다. 복수의 원본 데이터 연결 정보({@link OrcItem} 목록)와
      * 신청서 본문, 결재자 목록을 포함합니다.</p>
+     *
+     * <p>한 번의 상신으로 복수의 원본 레코드(정보화사업, 전산관리비 등)를 하나의 신청서로 묶어
+     * 처리합니다. {@code orcItems}의 각 항목에 대해 {@code TAAABB_CAPPLA} 행이 생성됩니다.</p>
      */
     @Getter
     @Setter
     @NoArgsConstructor
     @Schema(name = "ApplicationCreateRequest")
     public static class CreateRequest {
-        /** 원본 테이블코드 (예: "BPROJM" = 정보화사업, "BCOSTM" = 전산관리비) */
-        @Schema(description = "원본 테이블코드")
-        private String orcTbCd;
-
-        /** 원본 테이블의 PK값 (예: 프로젝트관리번호 "PRJ-2026-0001") */
-        @Schema(description = "원본 테이블의 PK값")
-        private String orcPkVl;
-
-        /** 원본 테이블의 SNO(일련번호)값 (예: "1") */
-        @Schema(description = "원본 테이블의 sno값")
-        private String orcSnoVl;
-
-        /** 신청서명 (예: "2026년 정보화사업 예산 신청") */
+        /** 신청서명 (예: "전산예산 작성") */
         @Schema(description = "신청서명")
         private String apfNm;
 
         /**
          * 신청서 세부 내용 (JSON 형식)
-         * <p>결재선(approvalLine) 정보를 포함하는 JSON 문자열.
+         * <p>결재선(approvalLine) 정보 및 전체 정보화사업/전산관리비 목록을 포함하는 JSON 문자열.
          * 결재 처리 시 각 결재자의 date 필드가 업데이트됩니다.</p>
+         * <p>구조 예시: {@code { "projects": [...], "costs": [...], "approvalLine": {...} }}</p>
          */
-        @Schema(description = "신청서세부내용")
+        @Schema(description = "신청서세부내용 (JSON)")
         private String apfDtlCone;
+
+        /**
+         * 원본 데이터 연결 항목 목록 (복수 원본 지원)
+         * <p>각 항목마다 {@code TAAABB_CAPPLA} 행이 생성됩니다.
+         * null 또는 빈 리스트인 경우 Cappla를 저장하지 않습니다.</p>
+         */
+        @Schema(description = "원본 데이터 연결 항목 목록")
+        private List<OrcItem> orcItems;
 
         /** 신청자 사원번호 (현재 로그인한 사용자) */
         @Schema(description = "신청 사원번호")

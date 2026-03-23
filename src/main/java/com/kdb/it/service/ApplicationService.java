@@ -242,20 +242,22 @@ public class ApplicationService {
                 .build();
         capplmRepository.save(capplm);
 
-        // 1-1. 신청서 원본 데이터 연결 저장 (원본 테이블 코드가 있는 경우)
-        // 예: 프로젝트 신청서인 경우 orcTbCd="BPROJM", orcPkVl=프로젝트관리번호
-        if (request.getOrcTbCd() != null) {
-            Long seq = capplaRepository.getNextVal(); // CAPPLA 시퀀스 채번
-            String apfRelSno = "APPL_" + String.format("%028d", seq); // 신청서관계일련번호
+        // 1-1. 원본 데이터 연결 저장 (orcItems 각각에 대해 Cappla 생성)
+        // 하나의 신청서가 복수의 원본 레코드(정보화사업, 전산관리비 등)를 연결할 수 있습니다.
+        if (request.getOrcItems() != null && !request.getOrcItems().isEmpty()) {
+            for (ApplicationDto.OrcItem item : request.getOrcItems()) {
+                Long seq = capplaRepository.getNextVal(); // 항목마다 CAPPLA 시퀀스 채번
+                String apfRelSno = "APPL_" + String.format("%028d", seq); // 신청서관계일련번호
 
-            com.kdb.it.domain.entity.Cappla cappla = com.kdb.it.domain.entity.Cappla.builder()
-                    .apfRelSno(apfRelSno) // 신청서관계일련번호 (PK)
-                    .apfMngNo(apfMngNo) // 신청관리번호 (FK)
-                    .orcTbCd(request.getOrcTbCd()) // 원본 테이블코드
-                    .orcPkVl(request.getOrcPkVl()) // 원본 테이블 PK 값
-                    .orcSnoVl(request.getOrcSnoVl() != null ? Integer.parseInt(request.getOrcSnoVl()) : null) // 원본 SNO
-                    .build();
-            capplaRepository.save(cappla);
+                com.kdb.it.domain.entity.Cappla cappla = com.kdb.it.domain.entity.Cappla.builder()
+                        .apfRelSno(apfRelSno) // 신청서관계일련번호 (PK)
+                        .apfMngNo(apfMngNo) // 신청관리번호 (FK)
+                        .orcTbCd(item.getOrcTbCd()) // 원본 테이블코드
+                        .orcPkVl(item.getOrcPkVl()) // 원본 PK값
+                        .orcSnoVl(item.getOrcSnoVl() != null ? Integer.parseInt(item.getOrcSnoVl()) : null) // 원본 SNO
+                        .build();
+                capplaRepository.save(cappla);
+            }
         }
 
         // 2. 결재선 생성: 요청받은 결재자 사번 목록을 순번(dcdSqn)대로 저장
