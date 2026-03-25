@@ -13,6 +13,7 @@ import com.kdb.it.security.JwtAuthenticationFilter;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 /**
  * JWT 토큰 생성 및 검증 유틸리티 클래스
@@ -83,11 +84,11 @@ public class JwtUtil {
     }
 
     /**
-     * Access Token 생성
+     * Access Token 생성 (자격등급 및 부서코드 클레임 포함)
      *
      * <p>
-     * 사번을 subject로 하는 단기 유효 JWT Access Token을 생성합니다.
-     * API 요청 시 Authorization 헤더에 포함하여 사용합니다.
+     * 사번을 subject로 하며, 자격등급 목록(athIds)과 부서코드(bbrC)를 클레임에 추가합니다.
+     * 한 사용자가 여러 자격등급을 가질 수 있으므로 athIds는 JSON 배열로 직렬화됩니다.
      * </p>
      *
      * <p>
@@ -95,23 +96,34 @@ public class JwtUtil {
      * </p>
      * <ul>
      * <li>{@code sub}: 사번 (subject)</li>
+     * <li>{@code athIds}: 자격등급 ID 목록 (JSON 배열, 예: ["ITPZZ001", "ITPZZ002"])</li>
+     * <li>{@code bbrC}: 소속 부서코드 (권한 범위 결정용)</li>
      * <li>{@code iat}: 발급 시각 (issued at)</li>
      * <li>{@code exp}: 만료 시각 (expiration)</li>
      * </ul>
      *
-     * @param eno 토큰의 subject로 사용할 사번
+     * @param eno    토큰의 subject로 사용할 사번
+     * @param athIds 자격등급 ID 목록 (null/빈 리스트이면 ITPZZ001 기본값 적용)
+     * @param bbrC   소속 부서코드
      * @return 서명된 JWT Access Token 문자열
      */
-    public String generateAccessToken(String eno) {
-        Date now = new Date(); // 현재 시각
-        Date expiryDate = new Date(now.getTime() + accessTokenValidityMs); // 만료 시각 = 현재 + 유효시간
+    public String generateAccessToken(String eno, List<String> athIds, String bbrC) {
+        Date now        = new Date();
+        Date expiryDate = new Date(now.getTime() + accessTokenValidityMs);
+
+        // athIds가 null/빈 리스트이면 기본값 일반사용자 적용
+        List<String> effectiveAthIds = (athIds != null && !athIds.isEmpty())
+            ? athIds
+            : List.of("ITPZZ001");
 
         return Jwts.builder()
-                .subject(eno) // sub 클레임: 사번
-                .issuedAt(now) // iat 클레임: 발급 시각
-                .expiration(expiryDate) // exp 클레임: 만료 시각
-                .signWith(secretKey) // HMAC-SHA 알고리즘으로 서명
-                .compact(); // JWT 문자열로 직렬화
+                .subject(eno)                          // sub 클레임: 사번
+                .claim("athIds", effectiveAthIds)      // 자격등급 목록 클레임 (JSON 배열)
+                .claim("bbrC",   bbrC)                 // 소속 부서코드 클레임
+                .issuedAt(now)                         // iat 클레임: 발급 시각
+                .expiration(expiryDate)                // exp 클레임: 만료 시각
+                .signWith(secretKey)                   // HMAC-SHA 알고리즘으로 서명
+                .compact();                            // JWT 문자열로 직렬화
     }
 
     /**
@@ -142,6 +154,36 @@ public class JwtUtil {
     }
 
     /**
+     * JWT 토큰에서 자격등급 ID 목록 추출
+     *
+     * <p>
+     * JJWT는 JSON 배열 클레임을 {@code List<String>}으로 역직렬화합니다.
+     * 클레임이 없거나 파싱 실패 시 빈 리스트를 반환합니다.
+     * </p>
+     *
+     * @param token JWT 토큰 문자열
+     * @return 자격등급 ID 목록 (없으면 빈 리스트)
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getAthIdsFromToken(String token) {
+        Object claim = getClaims(token).get("athIds");
+        if (claim instanceof List<?>) {
+            return (List<String>) claim;
+        }
+        return List.of();
+    }
+
+    /**
+     * JWT 토큰에서 소속 부서코드 추출
+     *
+     * @param token JWT 토큰 문자열
+     * @return 소속 부서코드 (클레임 없으면 null)
+     */
+    public String getBbrCFromToken(String token) {
+        return (String) getClaims(token).get("bbrC");
+    }
+
+    /**
      * JWT 토큰에서 사번 추출
      *
      * <p>
@@ -159,12 +201,21 @@ public class JwtUtil {
      * @throws io.jsonwebtoken.JwtException 토큰이 유효하지 않은 경우
      */
     public String getEnoFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey) // 서명 검증에 사용할 키 설정
+        return getClaims(token).getSubject(); // sub 클레임(사번) 반환
+    }
+
+    /**
+     * 내부 헬퍼: JWT 토큰에서 Claims(Payload) 파싱
+     *
+     * @param token JWT 토큰 문자열
+     * @return 파싱된 {@link Claims} 객체
+     */
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(token) // 서명된 JWT 파싱 및 검증
-                .getPayload(); // Claims(Payload) 객체 반환
-        return claims.getSubject(); // sub 클레임(사번) 반환
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**

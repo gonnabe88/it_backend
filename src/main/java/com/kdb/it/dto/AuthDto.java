@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * 인증(Authentication) 관련 DTO 클래스 모음
  *
@@ -145,6 +147,18 @@ public class AuthDto {
         /** 로그인한 사용자의 이름 */
         @Schema(description = "이름")
         private String empNm;
+
+        /**
+         * 자격등급 ID 목록 (다중 자격등급 지원)
+         * 예: ["ITPZZ001", "ITPZZ002"]
+         * ITPZZ001=일반사용자, ITPZZ002=기획통할담당자, ITPAD001=시스템관리자
+         */
+        @Schema(description = "자격등급 ID 목록")
+        private List<String> athIds;
+
+        /** 소속 부서코드: 권한 범위 결정에 사용 */
+        @Schema(description = "소속 부서코드")
+        private String bbrC;
     }
 
     /**

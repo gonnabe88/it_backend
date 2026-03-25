@@ -1,6 +1,5 @@
 package com.kdb.it.security;
 
-import com.kdb.it.service.CustomUserDetailsService;
 import com.kdb.it.util.CookieUtil;
 import com.kdb.it.util.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -11,13 +10,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * JWT 인증 필터
@@ -74,9 +73,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /** JWT 토큰 생성/검증 유틸리티 */
     private final JwtUtil jwtUtil;
 
-    /** 사용자 상세 정보 로드 서비스 (DB에서 UserDetails 조회) */
-    private final CustomUserDetailsService userDetailsService;
-
     /**
      * JWT 인증 처리 핵심 메서드
      *
@@ -102,11 +98,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 토큰이 있고 서명/만료 검증을 통과한 경우에만 인증 설정
             if (StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)) {
-                // 토큰의 Payload에서 subject(사번) 추출
-                String eno = jwtUtil.getEnoFromToken(jwt);
+                // 토큰의 Payload에서 사번, 자격등급 목록, 부서코드 추출
+                String       eno    = jwtUtil.getEnoFromToken(jwt);
+                List<String> athIds = jwtUtil.getAthIdsFromToken(jwt);
+                String       bbrC   = jwtUtil.getBbrCFromToken(jwt);
 
-                // DB에서 사용자 정보 로드 (UserDetails 객체 생성)
-                UserDetails userDetails = userDetailsService.loadUserByUsername(eno);
+                // JWT 클레임으로 CustomUserDetails 생성 (DB 재조회 없음 - 성능 최적화)
+                CustomUserDetails userDetails = new CustomUserDetails(eno, athIds, bbrC);
 
                 // Spring Security 인증 객체 생성 (credentials=null: 이미 토큰으로 인증됨)
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

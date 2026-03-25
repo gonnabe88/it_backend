@@ -1,9 +1,11 @@
 package com.kdb.it.service;
 
+import com.kdb.it.domain.entity.CroleI;
 import com.kdb.it.domain.entity.CuserI;
 import com.kdb.it.domain.entity.LoginHistory;
 import com.kdb.it.domain.entity.RefreshToken;
 import com.kdb.it.dto.AuthDto;
+import com.kdb.it.repository.CroleIRepository;
 import com.kdb.it.repository.CuserIRepository;
 import com.kdb.it.repository.LoginHistoryRepository;
 import com.kdb.it.repository.RefreshTokenRepository;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 인증(Authentication) 서비스
@@ -45,6 +49,9 @@ public class AuthService {
 
     /** 비밀번호 암호화 및 검증 (SHA-256 + Base64) */
     private final PasswordEncoder passwordEncoder;
+
+    /** 역할관리(사용자↔자격등급 매핑) 데이터 접근 리포지토리 (TAAABB_CROLEI) */
+    private final CroleIRepository croleIRepository;
 
     /** JWT Access/Refresh Token 생성 및 검증 유틸리티 */
     private final JwtUtil jwtUtil;
@@ -133,8 +140,20 @@ public class AuthService {
                 throw new RuntimeException("비밀번호가 일치하지 않습니다.");
             }
 
-            // Access Token 생성 (단기 유효, 기본 1시간)
-            String accessToken = jwtUtil.generateAccessToken(eno);
+            // 사용자의 모든 활성 자격등급 조회 (다중 자격등급 지원)
+            List<String> athIds = croleIRepository
+                    .findAllByIdEnoAndUseYnAndDelYn(eno, "Y", "N")
+                    .stream()
+                    .map(CroleI::getAthId)
+                    .collect(Collectors.toList());
+
+            // 미등록 사용자 기본값: 일반사용자(ITPZZ001)
+            if (athIds.isEmpty()) {
+                athIds = List.of("ITPZZ001");
+            }
+
+            // Access Token 생성 (자격등급 목록 및 부서코드 클레임 포함)
+            String accessToken = jwtUtil.generateAccessToken(eno, athIds, user.getBbrC());
 
             // Refresh Token 생성 (장기 유효, 기본 7일)
             String refreshTokenValue = jwtUtil.generateRefreshToken(eno);
@@ -158,6 +177,8 @@ public class AuthService {
                     .refreshToken(refreshTokenValue)    // 발급된 Refresh Token
                     .eno(eno)                           // 로그인한 사번
                     .empNm(user.getUsrNm())             // 사용자명
+                    .athIds(athIds)                     // 자격등급 ID 목록
+                    .bbrC(user.getBbrC())               // 소속 부서코드
                     .build();
 
         } catch (RuntimeException e) {
@@ -204,8 +225,23 @@ public class AuthService {
             throw new RuntimeException("만료된 Refresh Token입니다.");
         }
 
-        // 새로운 Access Token 생성
-        String newAccessToken = jwtUtil.generateAccessToken(refreshToken.getEno());
+        // Refresh 시에도 최신 자격등급 반영 (자격등급 변경 시 즉시 적용)
+        String eno = refreshToken.getEno();
+        CuserI user = cuserIRepository.findByEno(eno)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        List<String> athIds = croleIRepository
+                .findAllByIdEnoAndUseYnAndDelYn(eno, "Y", "N")
+                .stream()
+                .map(CroleI::getAthId)
+                .collect(Collectors.toList());
+
+        if (athIds.isEmpty()) {
+            athIds = List.of("ITPZZ001");
+        }
+
+        // 새로운 Access Token 생성 (최신 자격등급 및 부서코드 반영)
+        String newAccessToken = jwtUtil.generateAccessToken(eno, athIds, user.getBbrC());
 
         return AuthDto.RefreshResponse.builder()
                 .accessToken(newAccessToken) // 새로 발급된 Access Token

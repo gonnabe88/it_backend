@@ -1,6 +1,6 @@
 # 프로젝트 백로그 (Project Backlog)
 
-> 마지막 갱신일: 2026-03-04
+> 마지막 갱신일: 2026-03-25
 
 ## 보안 개선
 
@@ -8,6 +8,11 @@
   - 파일: `dto/AuthDto.java`
   - 우선순위: 중간
   - 비고: RBAC 아키텍처 설계 선행 필요
+
+- [ ] `CustomPasswordEncoder`: SHA-256 **salt 적용** 검토
+  - 파일: `config/CustomPasswordEncoder.java`
+  - 우선순위: 낮음
+  - 비고: 현재 레거시 시스템 호환성 문제로 salt 미사용, 보안 강화 시 bcrypt 전환 검토
 
 ## 코드 품질
 
@@ -54,4 +59,5 @@
 
 - [x] `CcodemDto`: Swagger `@Schema` 어노테이션 추가 (2026-03-03)
 - [x] `CcodemRepositoryImpl`: 클래스/메서드 JavaDoc 보강 (2026-03-03)
-- [x] `README.md`: 개발 노트 작성 및 최신화 (2026-03-04)
+- [x] `README.md`: 개발 노트 작성 및 최신화 (2026-03-04, 2026-03-25)
+- [x] 전체 소스 코드 주석 전수 점검 (81개 파일) — 한글 JavaDoc/인라인 주석 표준 충족 확인 (2026-03-25)

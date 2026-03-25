@@ -13,7 +13,7 @@ KDB IT 관리 시스템의 백엔드 API 서버로, 정보화사업(IT 프로젝
 | 프레임워크 | Spring Boot | 4.0.1 | Spring Framework 7.0 기반 |
 | DB | Oracle Database | - | Native Query(시퀀스 채번) 사용 |
 | ORM | Spring Data JPA + QueryDSL | - | 동적 쿼리용 QueryDSL 병행 |
-| 인증 | Spring Security + JWT (JJWT 0.12.3) | - | Stateless Bearer Token 방식 |
+| 인증 | Spring Security + JWT (JJWT 0.12.3) | - | httpOnly 쿠키 방식 (XSS 방어) |
 | API 문서 | Springdoc OpenAPI 3.0.0 | - | Swagger UI 자동 생성 |
 | 빌드 | Gradle (Kotlin DSL) | - | - |
 | 유틸 | Lombok | - | 보일러플레이트 코드 제거 |
@@ -40,8 +40,9 @@ Controller → Service → Repository → DB (Oracle)
 | **Soft Delete** | 물리 삭제 대신 `DEL_YN='Y'` 논리 삭제 사용 |
 | **복합키** | `@IdClass` 방식으로 복합 기본키 정의 (`ProjectId`, `BcostmId`, `BitemmId`, `CdecimId`) |
 | **JPA Auditing** | `BaseEntity`에서 생성/수정 일시·사용자 자동 관리 |
-| **JWT 인증** | Access Token(15분) + Refresh Token(7일) 이중 토큰 전략 |
+| **JWT 인증** | httpOnly 쿠키 기반 Access Token(30분) + Refresh Token(7일), `CookieUtil`로 관리 |
 | **비밀번호** | SHA-256 + Base64 인코딩 (`CustomPasswordEncoder`) |
+| **HTML 새니타이징** | `HtmlSanitizer` (Jsoup 기반)으로 서버 측 XSS 방어, 프론트엔드 DOMPurify와 이중 방어 |
 | **Oracle 시퀀스** | 관리번호 채번에 Native Query로 Oracle 시퀀스 사용 |
 | **DTO 패턴** | 정적 중첩 클래스(Static Nested Class)로 관련 DTO 그룹화 |
 | **전역 예외 처리** | `@RestControllerAdvice` 기반 `GlobalExceptionHandler`로 표준 오류 응답 |
@@ -59,7 +60,13 @@ BaseEntity (추상 클래스)
  ├── Cdecim      (결재 정보)
  ├── Ccodem      (공통코드)
  ├── CorgnI      (조직)
- └── CuserI      (사용자)
+ ├── CuserI      (사용자)
+ ├── Bgdocm      (가이드 문서)
+ ├── Brdocm      (요구사항 정의서)
+ ├── Cfilem      (첨부파일)
+ ├── CauthI      (자격등급)
+ ├── CroleI      (역할 매핑)
+ └── CroleIId    (역할 복합키)
 
 독립 엔티티 (BaseEntity 미상속):
  ├── LoginHistory  (로그인 이력, ID 자동 증가)
@@ -72,15 +79,15 @@ BaseEntity (추상 클래스)
 
 ```
 com.kdb.it
-├── config/         # 설정 (Security, JPA, Jackson, QueryDSL, Swagger, PasswordEncoder)
-├── controller/     # REST API 컨트롤러 (8개)
-├── service/        # 비즈니스 로직 서비스 (9개)
-├── repository/     # JPA 리포지토리 + QueryDSL 커스텀 (15개)
-├── domain/entity/  # JPA 엔티티 (15개, 복합키 ID 클래스 포함)
-├── dto/            # 데이터 전송 객체 (8개)
-├── security/       # JWT 인증 필터 (1개)
-├── util/           # JWT 유틸리티 (1개)
-└── exception/      # 전역 예외 핸들러 + 커스텀 예외 (2개)
+├── config/         # 설정 (Security, JPA, Jackson, QueryDSL, Swagger, PasswordEncoder) — 7개
+├── controller/     # REST API 컨트롤러 — 12개
+├── service/        # 비즈니스 로직 서비스 — 13개
+├── repository/     # JPA 리포지토리 + QueryDSL 커스텀 — 24개
+├── domain/entity/  # JPA 엔티티 (복합키 ID 클래스 포함) — 22개
+├── dto/            # 데이터 전송 객체 — 13개
+├── security/       # JWT 인증 필터 + CustomUserDetails — 2개
+├── util/           # JWT, Cookie, HtmlSanitizer 유틸리티 — 3개
+└── exception/      # 전역 예외 핸들러 + 커스텀 예외 — 2개
 ```
 
 ### 4.2 도메인 모듈 관계
@@ -94,6 +101,10 @@ com.kdb.it
 | 공통코드 | `CcodemController` | `CcodemService` | `CcodemRepository` + Custom | `Ccodem` |
 | 사용자 | `UserController` | `UserService` | `CuserIRepository` | `CuserI` |
 | 조직 | `OrganizationController` | `OrganizationService` | `CorgnIRepository` | `CorgnI` |
+| 가이드문서 | `BgdocmController` | `BgdocmService` | `BgdocmRepository` | `Bgdocm` |
+| 요구사항정의서 | `BrdocmController` | `BrdocmService` | `BrdocmRepository` | `Brdocm` |
+| 첨부파일 | `CfilemController` | `CfilemService` | `CfilemRepository` | `Cfilem` |
+| Gemini AI | `GeminiController` | `GeminiService` | - | - |
 | 로그인이력 | `LoginHistoryController` | `LoginHistoryService` | `LoginHistoryRepository` | `LoginHistory` |
 
 ## 5. 인증/인가 흐름
@@ -101,17 +112,18 @@ com.kdb.it
 ```
 [로그인] POST /api/auth/login
   → 사번/비밀번호 검증 → Access Token + Refresh Token 발급
-  → Refresh Token DB 저장 → 로그인 이력 기록
+  → httpOnly 쿠키(Set-Cookie)로 토큰 전달 → 로그인 이력 기록
 
-[API 요청] Authorization: Bearer {AccessToken}
-  → JwtAuthenticationFilter → 토큰 검증
+[API 요청] httpOnly 쿠키 자동 전송 (또는 Authorization: Bearer {token} 폴백)
+  → JwtAuthenticationFilter → 쿠키/헤더에서 토큰 추출 → 검증
+  → JWT claims(eno, athIds, bbrC)로 CustomUserDetails 생성 (DB 재조회 없음)
   → SecurityContext에 인증 정보 설정 → Controller 진입
 
 [토큰 갱신] POST /api/auth/refresh
-  → Refresh Token 검증 → 새 Access Token 발급
+  → httpOnly 쿠키의 Refresh Token 검증 → 새 Access Token 쿠키 발급
 
 [로그아웃] POST /api/auth/logout
-  → DB에서 Refresh Token 삭제 → 로그아웃 이력 기록
+  → DB에서 Refresh Token 삭제 → 쿠키 만료(maxAge=0) → 로그아웃 이력 기록
 ```
 
 ## 6. 주요 API 엔드포인트
@@ -124,6 +136,10 @@ com.kdb.it
 | GET/POST | `/api/projects/**` | 정보화사업 CRUD | 필요 |
 | GET/POST | `/api/costs/**` | 전산관리비 CRUD | 필요 |
 | GET/POST | `/api/applications/**` | 신청서(결재) 관리 | 필요 |
+| GET/POST | `/api/documents/**` | 요구사항 정의서 CRUD | 필요 |
+| GET/POST | `/api/guide-documents/**` | 가이드 문서 CRUD | 필요 |
+| GET/POST | `/api/files/**` | 첨부파일 업로드/다운로드/미리보기 | 필요 |
+| POST | `/api/gemini/generate` | Gemini AI 프록시 | 필요 |
 | GET | `/api/ccodem/**` | 공통코드 조회 | 필요 |
 | GET | `/api/users/**` | 사용자 조회 | 필요 |
 | GET | `/api/organizations` | 조직 목록 조회 | 필요 |
@@ -149,11 +165,19 @@ com.kdb.it
 - `application.properties`: DB 접속 정보, JWT 비밀키/유효시간, CORS 도메인 설정
 - CORS: `cors.allowed-origins` 속성으로 허용 도메인 관리 (기본값 `*`, 운영 시 도메인 지정)
 - CSRF: Stateless JWT 방식으로 비활성화
+- 쿠키: `app.cookie.secure` 속성으로 Secure 플래그 제어 (개발=false, 운영=true)
+- Gemini AI: `gemini.api.key`, `gemini.api.base-url`, `gemini.api.model` 설정 필요
+- 파일 업로드: `file.upload.path` 속성으로 저장 경로 설정
 
 ## 9. 변경 이력
 
 | 날짜 | 변경 내용 |
 |------|----------|
-| 2026-03-04 | `GlobalExceptionHandler` 신규 추가, CORS `properties` 기반 전환, `LoginHistory` DB 페이징 적용, `ProjectId` Lombok 통일, `ApplicationService` SLF4J 로거 전환 |
+| 2026-03-25 | 전체 프로젝트 문서화 리프레시: 소스 코드 주석 전수 점검(81개 파일), README.md 최신화 |
+| 2026-03-22 | Tiptap 에디터 관련 수정, `HtmlSanitizer` 테이블 태그 허용 확대 |
+| 2026-03-14 | 요구사항 정의서 테이블 포맷 보존 수정, TOC 스크롤 기능 |
+| 2026-03-09 | httpOnly 쿠키 인증 전환 (`CookieUtil`, `JwtAuthenticationFilter` 쿠키 우선 추출) |
+| 2026-03-08 | `GeminiService` 파일 첨부 지원, `CfilemController` 일괄 업로드 API 추가 |
+| 2026-03-04 | `GlobalExceptionHandler` 신규 추가, CORS `properties` 기반 전환 |
 | 2026-03-03 | `CcodemDto` Swagger 어노테이션 추가, `CcodemRepositoryImpl` JavaDoc 보강 |
 | 2026-03-02 | `Bcostm` 추진부서(`PUL_DPM`) 필드 추가, `Project` 응답에 부서명/사용자명 포함 |

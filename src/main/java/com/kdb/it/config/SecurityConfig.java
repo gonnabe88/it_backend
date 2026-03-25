@@ -115,6 +115,8 @@ public class SecurityConfig {
                                                                 "/swagger-resources/**", "/webjars/**",
                                                                 "/swagger-ui.html", "/error")
                                                 .permitAll()
+                                                // 관리자 전용 엔드포인트 (ITPAD001만 접근 가능)
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 // 나머지는 인증 필요 (유효한 JWT 토큰 필수)
                                                 .anyRequest().authenticated())
                                 // 인증/접근 예외 처리 핸들러 설정
