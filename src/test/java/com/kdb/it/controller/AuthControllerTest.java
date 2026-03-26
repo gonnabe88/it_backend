@@ -15,7 +15,7 @@ import com.kdb.it.config.TestSecurityConfig;
 import com.kdb.it.common.system.dto.AuthDto;
 import com.kdb.it.common.system.service.AuthService;
 import com.kdb.it.common.system.service.CustomUserDetailsService;
-import com.kdb.it.util.CookieUtil;
+import com.kdb.it.common.util.CookieUtil;
 import com.kdb.it.common.system.security.JwtUtil;
 
 import org.junit.jupiter.api.DisplayName;

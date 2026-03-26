@@ -22,6 +22,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.kdb.it.common.system.service.AuthService;
+import com.kdb.it.common.util.CustomPasswordEncoder;
 
 import java.util.List;
 

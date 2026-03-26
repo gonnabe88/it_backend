@@ -1,6 +1,6 @@
 package com.kdb.it.common.system.security;
 
-import com.kdb.it.util.CookieUtil;
+import com.kdb.it.common.util.CookieUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;

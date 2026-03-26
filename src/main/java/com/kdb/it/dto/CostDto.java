@@ -1,5 +1,6 @@
 package com.kdb.it.dto;
 
+import com.kdb.it.common.approval.dto.ApplicationInfoDto;
 import com.kdb.it.domain.entity.Bcostm;
 
 import io.swagger.v3.oas.annotations.media.Schema;

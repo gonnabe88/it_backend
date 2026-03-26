@@ -1,29 +1,31 @@
 package com.kdb.it.service;
 
-import com.kdb.it.domain.entity.Bprojm;
-import com.kdb.it.dto.ProjectDto;
-import com.kdb.it.repository.BitemmRepository;
-import com.kdb.it.repository.CapplaRepository;
-import com.kdb.it.repository.CapplmRepository;
-import com.kdb.it.common.iam.repository.OrganizationRepository;
-import com.kdb.it.common.iam.repository.UserRepository;
-import com.kdb.it.repository.ProjectRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.kdb.it.budget.project.dto.ProjectDto;
+import com.kdb.it.budget.project.entity.Bprojm;
+import com.kdb.it.budget.project.repository.ProjectRepository;
+import com.kdb.it.budget.project.service.ProjectService;
+import com.kdb.it.common.approval.repository.ApplicationMapRepository;
+import com.kdb.it.common.approval.repository.ApplicationRepository;
+import com.kdb.it.common.iam.repository.OrganizationRepository;
+import com.kdb.it.common.iam.repository.UserRepository;
+import com.kdb.it.budget.project.repository.ProjectItemRepository;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * ProjectService 단위 테스트
@@ -39,11 +41,11 @@ class ProjectServiceTest {
         @Mock
         private ProjectRepository projectRepository;
         @Mock
-        private CapplaRepository capplaRepository;
+        private ApplicationMapRepository capplaRepository;
         @Mock
-        private CapplmRepository capplmRepository;
+        private ApplicationRepository capplmRepository;
         @Mock
-        private BitemmRepository bitemmRepository;
+        private ProjectItemRepository bitemmRepository;
         @Mock
         private OrganizationRepository corgnIRepository;
         @Mock

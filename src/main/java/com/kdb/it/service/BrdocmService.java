@@ -3,7 +3,7 @@ package com.kdb.it.service;
 import com.kdb.it.domain.entity.Brdocm;
 import com.kdb.it.dto.BrdocmDto;
 import com.kdb.it.repository.BrdocmRepository;
-import com.kdb.it.util.HtmlSanitizer;
+import com.kdb.it.common.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

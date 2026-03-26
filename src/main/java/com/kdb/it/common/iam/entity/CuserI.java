@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import lombok.experimental.SuperBuilder;
-import com.kdb.it.config.CustomPasswordEncoder;
+import com.kdb.it.common.util.CustomPasswordEncoder;
 import com.kdb.it.domain.entity.BaseEntity;
 
 /**

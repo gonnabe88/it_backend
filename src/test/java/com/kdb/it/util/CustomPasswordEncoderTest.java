@@ -1,6 +1,6 @@
 package com.kdb.it.util;
 
-import com.kdb.it.config.CustomPasswordEncoder;
+import com.kdb.it.common.util.CustomPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * CustomPasswordEncoder 단위 테스트
  *
- * <p>순수 Java 클래스로 Spring 의존성이 없으므로 직접 인스턴스화하여 테스트합니다.</p>
+ * <p>
+ * 순수 Java 클래스로 Spring 의존성이 없으므로 직접 인스턴스화하여 테스트합니다.
+ * </p>
  */
 class CustomPasswordEncoderTest {
 
@@ -86,7 +88,8 @@ class CustomPasswordEncoderTest {
     @Test
     @DisplayName("encode - 빈 문자열 입력 시 알려진 SHA-256 Base64 해시 반환")
     void encode_빈문자열_알려진해시반환() {
-        // given: SHA-256("") = e3b0c44298fc1c149afb... → Base64 = "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
+        // given: SHA-256("") = e3b0c44298fc1c149afb... → Base64 =
+        // "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="
         String emptyInput = "";
 
         // when

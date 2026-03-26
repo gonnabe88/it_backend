@@ -1,25 +1,30 @@
 package com.kdb.it.repository;
 
+import java.util.List;
+
+import com.kdb.it.common.approval.entity.QCappla;
+import com.kdb.it.common.approval.entity.QCapplm;
 import com.kdb.it.domain.entity.Bcostm;
 import com.kdb.it.domain.entity.QBcostm;
-import com.kdb.it.domain.entity.QCappla;
-import com.kdb.it.domain.entity.QCapplm;
 import com.kdb.it.dto.CostDto;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import lombok.RequiredArgsConstructor;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 전산관리비(Bcostm) 커스텀 리포지토리 QueryDSL 구현체
  *
- * <p>{@link BcostmRepositoryCustom} 인터페이스의 QueryDSL 구현체입니다.
- * 복잡한 동적 쿼리(apfSts 필터링 서브쿼리 포함)를 타입 안전하게 처리합니다.</p>
+ * <p>
+ * {@link BcostmRepositoryCustom} 인터페이스의 QueryDSL 구현체입니다.
+ * 복잡한 동적 쿼리(apfSts 필터링 서브쿼리 포함)를 타입 안전하게 처리합니다.
+ * </p>
  *
- * <p>클래스 명명 규칙: Spring Data JPA가 자동 감지하려면
- * 반드시 {@code [메인Repository명]Impl} 형태여야 합니다. ({@code BcostmRepositoryImpl})</p>
+ * <p>
+ * 클래스 명명 규칙: Spring Data JPA가 자동 감지하려면
+ * 반드시 {@code [메인Repository명]Impl} 형태여야 합니다. ({@code BcostmRepositoryImpl})
+ * </p>
  *
  * <p>
  * {@code apfSts} 서브쿼리 전략:
@@ -49,6 +54,7 @@ public class BcostmRepositoryImpl implements BcostmRepositoryCustom {
      * <p>
      * apfSts='none' 생성 SQL (NOT EXISTS):
      * </p>
+     * 
      * <pre>{@code
      * WHERE NOT EXISTS (
      *   SELECT 1 FROM TAAABB_CAPPLA ca
@@ -61,6 +67,7 @@ public class BcostmRepositoryImpl implements BcostmRepositoryCustom {
      * <p>
      * apfSts='결재중' 생성 SQL (EXISTS + MAX 서브쿼리):
      * </p>
+     * 
      * <pre>{@code
      * WHERE EXISTS (
      *   SELECT 1 FROM TAAABB_CAPPLA ca
@@ -100,39 +107,33 @@ public class BcostmRepositoryImpl implements BcostmRepositoryCustom {
             if ("none".equals(apfSts)) {
                 // 신청서가 없는 전산관리비: CAPPLA에 연결 레코드가 없는 경우
                 builder.and(
-                    JPAExpressions.selectOne()
-                        .from(cappla)
-                        .where(
-                            cappla.orcTbCd.eq("BCOSTM"),
-                            cappla.orcPkVl.eq(bcostm.itMngcNo),
-                            cappla.orcSnoVl.eq(bcostm.itMngcSno)
-                        )
-                        .notExists()
-                );
+                        JPAExpressions.selectOne()
+                                .from(cappla)
+                                .where(
+                                        cappla.orcTbCd.eq("BCOSTM"),
+                                        cappla.orcPkVl.eq(bcostm.itMngcNo),
+                                        cappla.orcSnoVl.eq(bcostm.itMngcSno))
+                                .notExists());
             } else {
                 // 특정 결재상태: 최신 신청서(APF_REL_SNO 최대값)의 결재상태가 일치하는 경우
                 builder.and(
-                    JPAExpressions.selectOne()
-                        .from(cappla)
-                        .join(capplm).on(cappla.apfMngNo.eq(capplm.apfMngNo))
-                        .where(
-                            cappla.orcTbCd.eq("BCOSTM"),
-                            cappla.orcPkVl.eq(bcostm.itMngcNo),
-                            cappla.orcSnoVl.eq(bcostm.itMngcSno),
-                            capplm.apfSts.eq(apfSts),
-                            // 해당 전산관리비에 연결된 신청서 중 가장 최신(APF_REL_SNO 최대)인 것만 검사
-                            cappla.apfRelSno.eq(
-                                JPAExpressions.select(cappla2.apfRelSno.max())
-                                    .from(cappla2)
-                                    .where(
-                                        cappla2.orcTbCd.eq("BCOSTM"),
-                                        cappla2.orcPkVl.eq(bcostm.itMngcNo),
-                                        cappla2.orcSnoVl.eq(bcostm.itMngcSno)
-                                    )
-                            )
-                        )
-                        .exists()
-                );
+                        JPAExpressions.selectOne()
+                                .from(cappla)
+                                .join(capplm).on(cappla.apfMngNo.eq(capplm.apfMngNo))
+                                .where(
+                                        cappla.orcTbCd.eq("BCOSTM"),
+                                        cappla.orcPkVl.eq(bcostm.itMngcNo),
+                                        cappla.orcSnoVl.eq(bcostm.itMngcSno),
+                                        capplm.apfSts.eq(apfSts),
+                                        // 해당 전산관리비에 연결된 신청서 중 가장 최신(APF_REL_SNO 최대)인 것만 검사
+                                        cappla.apfRelSno.eq(
+                                                JPAExpressions.select(cappla2.apfRelSno.max())
+                                                        .from(cappla2)
+                                                        .where(
+                                                                cappla2.orcTbCd.eq("BCOSTM"),
+                                                                cappla2.orcPkVl.eq(bcostm.itMngcNo),
+                                                                cappla2.orcSnoVl.eq(bcostm.itMngcSno))))
+                                .exists());
             }
         }
 

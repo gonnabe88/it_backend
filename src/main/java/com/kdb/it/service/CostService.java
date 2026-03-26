@@ -47,10 +47,10 @@ public class CostService {
     private final BcostmRepository bcostmRepository;
 
     /** 신청서-원본 데이터 연결 리포지토리 (TAAABB_CAPPLA): 결재 상태 확인용 */
-    private final com.kdb.it.repository.CapplaRepository capplaRepository;
+    private final com.kdb.it.common.approval.repository.ApplicationMapRepository capplaRepository;
 
     /** 신청서 마스터 리포지토리 (TAAABB_CAPPLM): 결재 상태 조회용 */
-    private final com.kdb.it.repository.CapplmRepository capplmRepository;
+    private final com.kdb.it.common.approval.repository.ApplicationRepository capplmRepository;
 
     /** 조직(부점) 정보 리포지토리 (TAAABB_CORGNI): 부서코드→부서명 조회용 */
     private final com.kdb.it.common.iam.repository.OrganizationRepository corgnIRepository;
@@ -59,7 +59,7 @@ public class CostService {
     private final com.kdb.it.common.iam.repository.UserRepository cuserIRepository;
 
     /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
-    private final com.kdb.it.repository.CdecimRepository cdecimRepository;
+    private final com.kdb.it.common.approval.repository.ApproverRepository cdecimRepository;
 
     /**
      * 특정 전산관리비 단건 조회
@@ -323,11 +323,11 @@ public class CostService {
      */
     private void setApplicationInfo(CostDto.Response response, String itMngcNo, Integer itMngcSno) {
         // BCOSTM 테이블 코드와 관리번호/순번으로 연결된 신청서 목록 조회 (최신순)
-        List<com.kdb.it.domain.entity.Cappla> capplas = capplaRepository
+        List<com.kdb.it.common.approval.entity.Cappla> capplas = capplaRepository
                 .findByOrcTbCdAndOrcPkVlAndOrcSnoVlOrderByApfRelSnoDesc("BCOSTM", itMngcNo, itMngcSno);
 
         if (!capplas.isEmpty()) {
-            com.kdb.it.domain.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
+            com.kdb.it.common.approval.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
             response.setApfMngNo(cappla.getApfMngNo()); // 신청관리번호 설정
 
             // 신청서 마스터에서 결재상태 및 상세 정보 조회
@@ -336,12 +336,12 @@ public class CostService {
                         response.setApfSts(capplm.getApfSts()); // 결재상태 설정 (하위 호환)
 
                         // 결재자 목록 조회 (결재순서 오름차순)
-                        List<com.kdb.it.domain.entity.Cdecim> decisions = cdecimRepository
+                        List<com.kdb.it.common.approval.entity.Cdecim> decisions = cdecimRepository
                                 .findByDcdMngNoOrderByDcdSqnAsc(cappla.getApfMngNo());
 
                         // ApplicationInfoDto 생성 및 설정
                         response.setApplicationInfo(
-                                com.kdb.it.dto.ApplicationInfoDto.fromEntities(capplm, decisions));
+                                com.kdb.it.common.approval.dto.ApplicationInfoDto.fromEntities(capplm, decisions));
                     });
         }
     }

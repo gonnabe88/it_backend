@@ -2,7 +2,7 @@ package com.kdb.it.common.system.controller;
 
 import com.kdb.it.common.system.dto.AuthDto;
 import com.kdb.it.common.system.service.AuthService;
-import com.kdb.it.util.CookieUtil;
+import com.kdb.it.common.util.CookieUtil;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
