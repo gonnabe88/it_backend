@@ -53,10 +53,10 @@ public class CostService {
     private final com.kdb.it.repository.CapplmRepository capplmRepository;
 
     /** 조직(부점) 정보 리포지토리 (TAAABB_CORGNI): 부서코드→부서명 조회용 */
-    private final com.kdb.it.repository.CorgnIRepository corgnIRepository;
+    private final com.kdb.it.common.iam.repository.OrganizationRepository corgnIRepository;
 
     /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
-    private final com.kdb.it.repository.CuserIRepository cuserIRepository;
+    private final com.kdb.it.common.iam.repository.UserRepository cuserIRepository;
 
     /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
     private final com.kdb.it.repository.CdecimRepository cdecimRepository;

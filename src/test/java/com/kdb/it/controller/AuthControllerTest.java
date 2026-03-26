@@ -12,11 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdb.it.config.JacksonConfig;
 import com.kdb.it.config.TestSecurityConfig;
-import com.kdb.it.dto.AuthDto;
-import com.kdb.it.service.AuthService;
-import com.kdb.it.service.CustomUserDetailsService;
+import com.kdb.it.common.system.dto.AuthDto;
+import com.kdb.it.common.system.service.AuthService;
+import com.kdb.it.common.system.service.CustomUserDetailsService;
 import com.kdb.it.util.CookieUtil;
-import com.kdb.it.util.JwtUtil;
+import com.kdb.it.common.system.security.JwtUtil;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ import jakarta.servlet.http.Cookie;
  * 토큰은 응답 body가 아닌 Set-Cookie 헤더로 전달됨을 검증합니다.
  * </p>
  */
-@WebMvcTest(AuthController.class)
+@WebMvcTest(com.kdb.it.common.system.controller.AuthController.class)
 @Import({ TestSecurityConfig.class, JacksonConfig.class })
 class AuthControllerTest {
 

@@ -5,8 +5,8 @@ import com.kdb.it.dto.ProjectDto;
 import com.kdb.it.repository.BitemmRepository;
 import com.kdb.it.repository.CapplaRepository;
 import com.kdb.it.repository.CapplmRepository;
-import com.kdb.it.repository.CorgnIRepository;
-import com.kdb.it.repository.CuserIRepository;
+import com.kdb.it.common.iam.repository.OrganizationRepository;
+import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.repository.ProjectRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,9 +45,9 @@ class ProjectServiceTest {
         @Mock
         private BitemmRepository bitemmRepository;
         @Mock
-        private CorgnIRepository corgnIRepository;
+        private OrganizationRepository corgnIRepository;
         @Mock
-        private CuserIRepository cuserIRepository;
+        private UserRepository cuserIRepository;
 
         @InjectMocks
         private ProjectService projectService;

@@ -3,7 +3,7 @@ package com.kdb.it.service;
 import com.kdb.it.domain.entity.Bprojm;
 import com.kdb.it.dto.ProjectDto;
 import com.kdb.it.repository.ProjectRepository;
-import com.kdb.it.security.CustomUserDetails;
+import com.kdb.it.common.system.security.CustomUserDetails;
 import com.kdb.it.util.HtmlSanitizer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -66,10 +66,10 @@ public class ProjectService {
     private final com.kdb.it.repository.BitemmRepository bitemmRepository;
 
     /** 조직(부점) 정보 리포지토리 (TAAABB_CORGNI): 부서코드→부서명 조회용 */
-    private final com.kdb.it.repository.CorgnIRepository corgnIRepository;
+    private final com.kdb.it.common.iam.repository.OrganizationRepository corgnIRepository;
 
     /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
-    private final com.kdb.it.repository.CuserIRepository cuserIRepository;
+    private final com.kdb.it.common.iam.repository.UserRepository cuserIRepository;
 
     /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
     private final com.kdb.it.repository.CdecimRepository cdecimRepository;
@@ -107,7 +107,8 @@ public class ProjectService {
      * 검색 조건으로 정보화사업 목록 조회
      *
      * <p>
-     * {@link ProjectDto.SearchCondition}의 조건이 모두 비어있으면 전체 조회({@link #getProjectList()})와 동일합니다.
+     * {@link ProjectDto.SearchCondition}의 조건이 모두 비어있으면 전체
+     * 조회({@link #getProjectList()})와 동일합니다.
      * </p>
      *
      * <p>
@@ -691,14 +692,18 @@ public class ProjectService {
     /**
      * RBAC 수정/삭제 권한 검증 헬퍼 (내부 메서드)
      *
-     * <p>SecurityContext에서 현재 인증된 사용자({@link CustomUserDetails})를 조회하고,
-     * 자격등급 기반으로 리소스 수정 권한을 3단계로 검증합니다.</p>
+     * <p>
+     * SecurityContext에서 현재 인증된 사용자({@link CustomUserDetails})를 조회하고,
+     * 자격등급 기반으로 리소스 수정 권한을 3단계로 검증합니다.
+     * </p>
      *
-     * <p>권한 계층:</p>
+     * <p>
+     * 권한 계층:
+     * </p>
      * <ol>
-     *   <li>시스템관리자(ITPAD001): 모든 리소스 수정 허용</li>
-     *   <li>기획통할담당자(ITPZZ002): 소속 부서(bbrC) == 리소스 부서(resourceBbrC) 인 경우 허용</li>
-     *   <li>일반사용자(ITPZZ001): 본인 작성 리소스(creatorEno == 요청자 eno) 인 경우만 허용</li>
+     * <li>시스템관리자(ITPAD001): 모든 리소스 수정 허용</li>
+     * <li>기획통할담당자(ITPZZ002): 소속 부서(bbrC) == 리소스 부서(resourceBbrC) 인 경우 허용</li>
+     * <li>일반사용자(ITPZZ001): 본인 작성 리소스(creatorEno == 요청자 eno) 인 경우만 허용</li>
      * </ol>
      *
      * @param creatorEno   리소스 최초 작성자 사번 (FST_ENR_USID)

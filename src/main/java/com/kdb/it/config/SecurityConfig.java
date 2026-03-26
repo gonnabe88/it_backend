@@ -1,6 +1,6 @@
 package com.kdb.it.config;
 
-import com.kdb.it.security.JwtAuthenticationFilter;
+import com.kdb.it.common.system.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.kdb.it.service.AuthService;
+import com.kdb.it.common.system.service.AuthService;
 
 import java.util.List;
 

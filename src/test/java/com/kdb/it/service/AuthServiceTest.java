@@ -21,15 +21,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.kdb.it.domain.entity.CuserI;
-import com.kdb.it.domain.entity.LoginHistory;
-import com.kdb.it.domain.entity.RefreshToken;
-import com.kdb.it.dto.AuthDto;
-import com.kdb.it.repository.CroleIRepository;
-import com.kdb.it.repository.CuserIRepository;
-import com.kdb.it.repository.LoginHistoryRepository;
-import com.kdb.it.repository.RefreshTokenRepository;
-import com.kdb.it.util.JwtUtil;
+import com.kdb.it.common.iam.entity.CuserI;
+import com.kdb.it.common.system.entity.LoginHistory;
+import com.kdb.it.common.system.entity.RefreshToken;
+import com.kdb.it.common.system.dto.AuthDto;
+import com.kdb.it.common.iam.repository.RoleRepository;
+import com.kdb.it.common.iam.repository.UserRepository;
+import com.kdb.it.common.system.repository.LoginHistoryRepository;
+import com.kdb.it.common.system.repository.RefreshTokenRepository;
+import com.kdb.it.common.system.security.JwtUtil;
+import com.kdb.it.common.system.service.AuthService;
 
 /**
  * AuthService 단위 테스트
@@ -40,8 +41,8 @@ import com.kdb.it.util.JwtUtil;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock private CuserIRepository cuserIRepository;
-    @Mock private CroleIRepository croleIRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private RoleRepository roleRepository;
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private LoginHistoryRepository loginHistoryRepository;
     @Mock private PasswordEncoder passwordEncoder;
@@ -59,7 +60,7 @@ class AuthServiceTest {
         CuserI user = CuserI.builder()
                 .eno("10001").usrNm("홍길동").usrEcyPwd("encodedPwd").delYn("N").build();
 
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("password", "encodedPwd")).willReturn(true);
         given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access-token");
         given(jwtUtil.generateRefreshToken("10001")).willReturn("refresh-token");
@@ -78,7 +79,7 @@ class AuthServiceTest {
     @DisplayName("login - 존재하지 않는 사번 → RuntimeException 발생")
     void login_존재하지않는사번_예외발생() {
         // given
-        given(cuserIRepository.findByEno("99999")).willReturn(Optional.empty());
+        given(userRepository.findByEno("99999")).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> authService.login("99999", "pwd", "127.0.0.1", "Agent"))
@@ -93,7 +94,7 @@ class AuthServiceTest {
         CuserI user = CuserI.builder()
                 .eno("10001").usrNm("홍길동").usrEcyPwd("encodedPwd").delYn("N").build();
 
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("wrongPwd", "encodedPwd")).willReturn(false);
 
         // when & then
@@ -109,7 +110,7 @@ class AuthServiceTest {
         CuserI user = CuserI.builder()
                 .eno("10001").usrNm("홍길동").usrEcyPwd("encodedPwd").delYn("N").build();
 
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
 
         // when: 예외 무시
@@ -126,7 +127,7 @@ class AuthServiceTest {
         CuserI user = CuserI.builder()
                 .eno("10001").usrNm("홍길동").usrEcyPwd("encodedPwd").delYn("N").build();
 
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
         given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access-token");
         given(jwtUtil.generateRefreshToken(anyString())).willReturn("refresh-token");
@@ -146,7 +147,7 @@ class AuthServiceTest {
         CuserI user = CuserI.builder()
                 .eno("10001").usrNm("홍길동").usrEcyPwd("encodedPwd").delYn("N").build();
 
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
         given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access");
         given(jwtUtil.generateRefreshToken(anyString())).willReturn("refresh");
@@ -169,14 +170,14 @@ class AuthServiceTest {
         request.setEmpNm("김테스트");
         request.setPassword("password");
 
-        given(cuserIRepository.existsByEno("10002")).willReturn(false);
+        given(userRepository.existsByEno("10002")).willReturn(false);
         given(passwordEncoder.encode("password")).willReturn("encodedPwd");
 
         // when
         authService.signup(request);
 
         // then
-        verify(cuserIRepository, times(1)).save(any(CuserI.class));
+        verify(userRepository, times(1)).save(any(CuserI.class));
     }
 
     @Test
@@ -186,7 +187,7 @@ class AuthServiceTest {
         AuthDto.SignupRequest request = new AuthDto.SignupRequest();
         request.setEno("10001");
 
-        given(cuserIRepository.existsByEno("10001")).willReturn(true);
+        given(userRepository.existsByEno("10001")).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> authService.signup(request))
@@ -209,9 +210,9 @@ class AuthServiceTest {
 
         given(jwtUtil.validateToken(refreshTokenValue)).willReturn(true);
         given(refreshTokenRepository.findByToken(refreshTokenValue)).willReturn(Optional.of(refreshToken));
-        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(
+        given(userRepository.findByEno("10001")).willReturn(Optional.of(
                 CuserI.builder().eno("10001").usrNm("홍길동").bbrC("BBR001").delYn("N").build()));
-        given(croleIRepository.findAllByIdEnoAndUseYnAndDelYn("10001", "Y", "N"))
+        given(roleRepository.findAllByIdEnoAndUseYnAndDelYn("10001", "Y", "N"))
                 .willReturn(Collections.emptyList());
         given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("new-access-token");
 
