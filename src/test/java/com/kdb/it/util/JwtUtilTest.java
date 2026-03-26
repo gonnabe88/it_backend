@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -21,6 +23,11 @@ class JwtUtilTest {
     private static final long REFRESH_VALIDITY_MS = 604_800_000L; // 7일
     private static final long EXPIRED_VALIDITY_MS = 1L;           // 즉시 만료 (1ms)
 
+    /** 테스트용 기본 자격등급 목록 */
+    private static final List<String> TEST_ATH_IDS = List.of("ITPZZ001");
+    /** 테스트용 기본 부서코드 */
+    private static final String TEST_BBR_C = "BBR001";
+
     private JwtUtil jwtUtil;
     private JwtUtil expiredJwtUtil; // 만료 토큰 생성 전용
 
@@ -37,7 +44,7 @@ class JwtUtilTest {
         String eno = "10001";
 
         // when
-        String token = jwtUtil.generateAccessToken(eno);
+        String token = jwtUtil.generateAccessToken(eno, TEST_ATH_IDS, TEST_BBR_C);
 
         // then
         assertThat(token).isNotNull().isNotEmpty();
@@ -50,7 +57,7 @@ class JwtUtilTest {
     void generateAccessToken_토큰에서사번추출() {
         // given
         String eno = "10001";
-        String token = jwtUtil.generateAccessToken(eno);
+        String token = jwtUtil.generateAccessToken(eno, TEST_ATH_IDS, TEST_BBR_C);
 
         // when
         String extractedEno = jwtUtil.getEnoFromToken(token);
@@ -77,7 +84,7 @@ class JwtUtilTest {
     @DisplayName("토큰 유효성 검증 - 유효한 토큰은 true 반환")
     void validateToken_유효한토큰_true반환() {
         // given
-        String token = jwtUtil.generateAccessToken("10001");
+        String token = jwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
 
         // when & then
         assertThat(jwtUtil.validateToken(token)).isTrue();
@@ -87,7 +94,7 @@ class JwtUtilTest {
     @DisplayName("토큰 유효성 검증 - 만료된 토큰은 false 반환")
     void validateToken_만료된토큰_false반환() throws InterruptedException {
         // given: 유효시간 1ms 토큰 생성 후 만료 대기
-        String expiredToken = expiredJwtUtil.generateAccessToken("10001");
+        String expiredToken = expiredJwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
         Thread.sleep(10);
 
         // when & then
@@ -114,7 +121,7 @@ class JwtUtilTest {
     @DisplayName("토큰 만료 확인 - 유효한 토큰은 false 반환")
     void isTokenExpired_유효한토큰_false반환() {
         // given
-        String token = jwtUtil.generateAccessToken("10001");
+        String token = jwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
 
         // when & then
         assertThat(jwtUtil.isTokenExpired(token)).isFalse();
@@ -124,7 +131,7 @@ class JwtUtilTest {
     @DisplayName("토큰 만료 확인 - 만료된 토큰은 true 반환")
     void isTokenExpired_만료된토큰_true반환() throws InterruptedException {
         // given
-        String expiredToken = expiredJwtUtil.generateAccessToken("10001");
+        String expiredToken = expiredJwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
         Thread.sleep(10);
 
         // when & then
@@ -138,7 +145,7 @@ class JwtUtilTest {
         String eno = "10001";
 
         // when
-        String accessToken = jwtUtil.generateAccessToken(eno);
+        String accessToken = jwtUtil.generateAccessToken(eno, TEST_ATH_IDS, TEST_BBR_C);
         String refreshToken = jwtUtil.generateRefreshToken(eno);
 
         // then: 발급 시각이 같아도 exp 클레임이 다르므로 토큰 값도 다름

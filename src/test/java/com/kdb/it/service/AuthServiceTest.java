@@ -1,13 +1,18 @@
 package com.kdb.it.service;
 
-import com.kdb.it.domain.entity.CuserI;
-import com.kdb.it.domain.entity.LoginHistory;
-import com.kdb.it.domain.entity.RefreshToken;
-import com.kdb.it.dto.AuthDto;
-import com.kdb.it.repository.CuserIRepository;
-import com.kdb.it.repository.LoginHistoryRepository;
-import com.kdb.it.repository.RefreshTokenRepository;
-import com.kdb.it.util.JwtUtil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,15 +21,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import com.kdb.it.domain.entity.CuserI;
+import com.kdb.it.domain.entity.LoginHistory;
+import com.kdb.it.domain.entity.RefreshToken;
+import com.kdb.it.dto.AuthDto;
+import com.kdb.it.repository.CroleIRepository;
+import com.kdb.it.repository.CuserIRepository;
+import com.kdb.it.repository.LoginHistoryRepository;
+import com.kdb.it.repository.RefreshTokenRepository;
+import com.kdb.it.util.JwtUtil;
 
 /**
  * AuthService 단위 테스트
@@ -36,6 +41,7 @@ import static org.mockito.Mockito.*;
 class AuthServiceTest {
 
     @Mock private CuserIRepository cuserIRepository;
+    @Mock private CroleIRepository croleIRepository;
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private LoginHistoryRepository loginHistoryRepository;
     @Mock private PasswordEncoder passwordEncoder;
@@ -55,7 +61,7 @@ class AuthServiceTest {
 
         given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("password", "encodedPwd")).willReturn(true);
-        given(jwtUtil.generateAccessToken("10001")).willReturn("access-token");
+        given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access-token");
         given(jwtUtil.generateRefreshToken("10001")).willReturn("refresh-token");
 
         // when
@@ -122,7 +128,7 @@ class AuthServiceTest {
 
         given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
-        given(jwtUtil.generateAccessToken(anyString())).willReturn("access-token");
+        given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access-token");
         given(jwtUtil.generateRefreshToken(anyString())).willReturn("refresh-token");
 
         // when
@@ -142,7 +148,7 @@ class AuthServiceTest {
 
         given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(user));
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
-        given(jwtUtil.generateAccessToken(anyString())).willReturn("access");
+        given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("access");
         given(jwtUtil.generateRefreshToken(anyString())).willReturn("refresh");
 
         // when
@@ -203,7 +209,11 @@ class AuthServiceTest {
 
         given(jwtUtil.validateToken(refreshTokenValue)).willReturn(true);
         given(refreshTokenRepository.findByToken(refreshTokenValue)).willReturn(Optional.of(refreshToken));
-        given(jwtUtil.generateAccessToken("10001")).willReturn("new-access-token");
+        given(cuserIRepository.findByEno("10001")).willReturn(Optional.of(
+                CuserI.builder().eno("10001").usrNm("홍길동").bbrC("BBR001").delYn("N").build()));
+        given(croleIRepository.findAllByIdEnoAndUseYnAndDelYn("10001", "Y", "N"))
+                .willReturn(Collections.emptyList());
+        given(jwtUtil.generateAccessToken(anyString(), anyList(), any())).willReturn("new-access-token");
 
         // when
         AuthDto.RefreshResponse response = authService.refreshAccessToken(refreshTokenValue);
