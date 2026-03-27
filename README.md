@@ -77,34 +77,47 @@ BaseEntity (추상 클래스)
 
 ### 4.1 패키지 구조
 
+2026-03-27 도메인 기반 레이어드 아키텍처로 전환 완료.
+
 ```
 com.kdb.it
-├── config/         # 설정 (Security, JPA, Jackson, QueryDSL, Swagger, PasswordEncoder) — 7개
-├── controller/     # REST API 컨트롤러 — 12개
-├── service/        # 비즈니스 로직 서비스 — 13개
-├── repository/     # JPA 리포지토리 + QueryDSL 커스텀 — 24개
-├── domain/entity/  # JPA 엔티티 (복합키 ID 클래스 포함) — 22개
-├── dto/            # 데이터 전송 객체 — 13개
-├── security/       # JWT 인증 필터 + CustomUserDetails — 2개
-├── util/           # JWT, Cookie, HtmlSanitizer 유틸리티 — 3개
-└── exception/      # 전역 예외 핸들러 + 커스텀 예외 — 2개
+├── config/                  # 전역 설정 (Security, JPA, Jackson, QueryDSL, Swagger) — 5개
+├── exception/               # 전역 예외 핸들러 + 커스텀 예외 — 2개
+├── common/
+│   ├── system/              # 인증·로그인 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
+│   ├── iam/                 # 사용자·조직·권한 (UserController, OrganizationController, UserRepository)
+│   ├── approval/            # 신청서·결재 (ApplicationController, ApplicationService, ApplicationMapRepository)
+│   ├── code/                # 공통 코드 (CodeController, CodeService, CodeRepository)
+│   └── util/                # 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
+├── budget/
+│   ├── project/             # 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectItemRepository)
+│   └── cost/                # 전산업무비 (CostController, CostService, CostRepository, BudgetDocController)
+└── infra/
+    ├── file/                # 파일 관리 (FileController, FileService, FileRepository, Cfilem)
+    └── ai/                  # Gemini AI (GeminiController, GeminiService)
+```
+
+**의존성 규칙 (단방향)**
+```
+budget → common (O)   infra → common (O)
+common → budget (X)   common → infra  (X)
 ```
 
 ### 4.2 도메인 모듈 관계
 
 | 도메인 | Controller | Service | Repository | Entity |
 |--------|-----------|---------|------------|--------|
-| 정보화사업 | `ProjectController` | `ProjectService` | `ProjectRepository`, `BitemmRepository` | `Project`, `Bitemm` |
-| 전산관리비 | `CostController` | `CostService` | `BcostmRepository` | `Bcostm` |
-| 신청서(결재) | `ApplicationController` | `ApplicationService` | `CapplmRepository`, `CapplaRepository`, `CdecimRepository` | `Capplm`, `Cappla`, `Cdecim` |
-| 인증 | `AuthController` | `AuthService` | `CuserIRepository`, `RefreshTokenRepository`, `LoginHistoryRepository` | `CuserI`, `RefreshToken`, `LoginHistory` |
-| 공통코드 | `CcodemController` | `CcodemService` | `CcodemRepository` + Custom | `Ccodem` |
-| 사용자 | `UserController` | `UserService` | `CuserIRepository` | `CuserI` |
-| 조직 | `OrganizationController` | `OrganizationService` | `CorgnIRepository` | `CorgnI` |
-| 가이드문서 | `BgdocmController` | `BgdocmService` | `BgdocmRepository` | `Bgdocm` |
-| 요구사항정의서 | `BrdocmController` | `BrdocmService` | `BrdocmRepository` | `Brdocm` |
-| 첨부파일 | `CfilemController` | `CfilemService` | `CfilemRepository` | `Cfilem` |
-| Gemini AI | `GeminiController` | `GeminiService` | - | - |
+| 정보화사업 | `ProjectController` | `ProjectService` | `ProjectRepository`, `ProjectItemRepository` | `Bprojm`, `Bitemm` |
+| 전산업무비 | `CostController` | `CostService` | `CostRepository` + Custom | `Bcostm` |
+| 예산문서 | `BudgetDocController` | `BudgetDocService` | `BudgetDocRepository` | `Bgdocm` |
+| 프로젝트문서 | `ProjectDocController` | `ProjectDocService` | `ProjectDocRepository` | `Brdocm` |
+| 신청서(결재) | `ApplicationController` | `ApplicationService` | `ApplicationRepository`, `ApplicationMapRepository`, `ApproverRepository` | `Capplm`, `Cappla`, `Cdecim` |
+| 인증 | `AuthController` | `AuthService` | `UserRepository`, `RefreshTokenRepository`, `LoginHistoryRepository` | `CuserI`, `RefreshToken`, `LoginHistory` |
+| 공통코드 | `CodeController` | `CodeService` | `CodeRepository` + Custom | `Ccodem` |
+| 사용자 | `UserController` | `UserService` | `UserRepository` | `CuserI` |
+| 조직 | `OrganizationController` | `OrganizationService` | `OrganizationRepository` | `CorgnI` |
+| 첨부파일 | `FileController` | `FileService` | `FileRepository` | `Cfilem` |
+| Gemini AI | `GeminiController` | `GeminiService` | `FileRepository` (파일 첨부) | - |
 | 로그인이력 | `LoginHistoryController` | `LoginHistoryService` | `LoginHistoryRepository` | `LoginHistory` |
 
 ## 5. 인증/인가 흐름
@@ -150,13 +163,16 @@ com.kdb.it
 ## 7. 빌드 및 실행
 
 ```bash
+# QueryDSL 어노테이션 프로세서 실행 (필요시)
+./gradlew compileJava
+
 # 빌드
 ./gradlew build
 
 # 실행
 ./gradlew bootRun
 
-# 테스트 (현재 테스트 비활성화)
+# 테스트 (45개 단위 테스트 — ProjectServiceTest, AuthServiceTest 등)
 ./gradlew test
 ```
 
@@ -173,6 +189,7 @@ com.kdb.it
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-03-26~27 | **도메인 기반 레이어드 아키텍처 리팩토링**: flat 패키지 → common/budget/infra 3개 도메인 분리, 33개 클래스 리네이밍(CodeController, FileRepository 등), 테스트 파일 도메인 패키지 이동, Match Rate 100% |
 | 2026-03-25 | 전체 프로젝트 문서화 리프레시: 소스 코드 주석 전수 점검(81개 파일), README.md 최신화 |
 | 2026-03-22 | Tiptap 에디터 관련 수정, `HtmlSanitizer` 테이블 태그 허용 확대 |
 | 2026-03-14 | 요구사항 정의서 테이블 포맷 보존 수정, TOC 스크롤 기능 |

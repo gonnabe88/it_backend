@@ -39,23 +39,32 @@ Controller Layer  →  Service Layer  →  Repository Layer  →  Oracle DB
 ### 4.2 디렉토리 구조
 ```
 src/main/java/com/kdb/it/
-├── config/          - Spring Security, JPA Auditing, QueryDSL, Swagger 설정
-├── controller/      - REST 컨트롤러 (AuthController, ProjectController, ...)
-├── domain/entity/   - JPA 엔티티 (BaseEntity 상속 구조)
-├── dto/             - 요청/응답 DTO (정적 중첩 클래스 방식)
-├── exception/       - 커스텀 예외 클래스
-├── repository/      - JPA Repository + QueryDSL Custom Repository
-├── security/        - JWT 인증 필터 (JwtAuthenticationFilter)
-├── service/         - 비즈니스 로직 서비스
-└── util/            - JWT 생성·검증 유틸 (JwtUtil)
+├── config/                  - Spring Security, JPA Auditing, QueryDSL, Swagger 설정
+├── common/                  - 공통 도메인
+│   ├── approval/            - 결재 (ApplicationMapRepository, ApplicationRepository, ApproverRepository)
+│   ├── iam/                 - 사용자/조직 (UserRepository, OrganizationRepository, RoleRepository)
+│   ├── system/              - 인증·보안 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
+│   └── util/                - 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
+├── budget/                  - 예산 도메인
+│   └── project/             - 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectRepository)
+└── infra/                   - 인프라 도메인
+    ├── ai/                  - Gemini AI 연동 (GeminiController, GeminiService)
+    └── file/                - 파일 관리 (FileController, FileService, Cfilem, FileRepository)
+src/test/java/com/kdb/it/
+├── common/system/controller/ - AuthControllerTest
+├── common/system/service/    - AuthServiceTest
+├── common/system/security/   - JwtUtilTest
+├── common/util/              - CustomPasswordEncoderTest
+├── budget/project/controller/ - ProjectControllerTest
+└── budget/project/service/   - ProjectServiceTest
 src/main/resources/
-└── application.properties - DB, JWT, 로깅 설정
+└── application.properties   - DB, JWT, 로깅 설정
 ```
 
 ### 4.3 주요 도메인 테이블 매핑
 | 엔티티         | 테이블명              | 역할              |
 |--------------|---------------------|-----------------|
-| Project      | TAAABB_BPROJM       | 정보화사업 마스터  |
+| Bprojm       | TAAABB_BPROJM       | 정보화사업 마스터  |
 | CuserI       | TAAABB_CUSERI       | 사용자/직원 정보  |
 | CorgnI       | TAAABB_CORGNI       | 조직/부점 정보   |
 | Bitemm       | TAAABB_BITEMM       | 프로젝트 품목     |

@@ -17,7 +17,7 @@ import java.util.List;
  *
  * <p>
  * 프로젝트({@link com.kdb.it.budget.project.dto.ProjectDto.Response})와
- * 전산관리비({@link com.kdb.it.dto.CostDto.Response}) 응답에
+ * 전산관리비({@link com.kdb.it.budget.cost.dto.CostDto.Response}) 응답에
  * 공통으로 포함되는 신청서 상세 정보를 담습니다.
  * </p>
  *

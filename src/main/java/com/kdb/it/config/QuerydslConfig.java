@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
  * <p>QueryDSL 사용 예시:</p>
  * <pre>{@code
  * @RequiredArgsConstructor
- * public class CuserIRepositoryImpl implements CuserIRepositoryCustom {
+ * public class UserRepositoryImpl implements UserRepositoryCustom {
  *     private final JPAQueryFactory queryFactory;
  *
  *     public List<CuserI> searchByName(String name) {

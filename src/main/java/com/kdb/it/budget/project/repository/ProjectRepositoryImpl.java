@@ -84,9 +84,9 @@ public class ProjectRepositoryImpl implements ProjectRepositoryCustom {
                 // 특정 결재상태: 최신 신청서(APF_REL_SNO 최대값)의 결재상태가 일치하는 경우
                 builder.and(
                         JPAExpressions.selectOne()
-                                .from(cappla)
-                                .join(capplm).on(cappla.apfMngNo.eq(capplm.apfMngNo))
+                                .from(cappla, capplm)
                                 .where(
+                                        cappla.apfMngNo.eq(capplm.apfMngNo),
                                         cappla.orcTbCd.eq("BPROJM"),
                                         cappla.orcPkVl.eq(bprojm.prjMngNo),
                                         cappla.orcSnoVl.eq(bprojm.prjSno),
