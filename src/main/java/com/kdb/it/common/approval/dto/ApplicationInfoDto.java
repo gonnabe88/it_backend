@@ -16,8 +16,8 @@ import java.util.List;
  * 신청서 상세 정보 공통 DTO
  *
  * <p>
- * 프로젝트({@link com.kdb.it.budget.project.dto.ProjectDto.Response})와
- * 전산관리비({@link com.kdb.it.budget.cost.dto.CostDto.Response}) 응답에
+ * 프로젝트({@link com.kdb.it.domain.budget.project.dto.ProjectDto.Response})와
+ * 전산관리비({@link com.kdb.it.domain.budget.cost.dto.CostDto.Response}) 응답에
  * 공통으로 포함되는 신청서 상세 정보를 담습니다.
  * </p>
  *

@@ -25,8 +25,8 @@ import com.kdb.it.common.iam.entity.CuserI;
 import com.kdb.it.common.iam.repository.RoleRepository;
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.system.dto.AuthDto;
-import com.kdb.it.common.system.entity.LoginHistory;
-import com.kdb.it.common.system.entity.RefreshToken;
+import com.kdb.it.common.system.entity.Clognh;
+import com.kdb.it.common.system.entity.Crtokm;
 import com.kdb.it.common.system.repository.LoginHistoryRepository;
 import com.kdb.it.common.system.repository.RefreshTokenRepository;
 import com.kdb.it.common.system.security.JwtUtil;
@@ -127,7 +127,7 @@ class AuthServiceTest {
                 }
 
                 // then: 실패 이력 1회 저장
-                verify(loginHistoryRepository, times(1)).save(any(LoginHistory.class));
+                verify(loginHistoryRepository, times(1)).save(any(Clognh.class));
         }
 
         @Test
@@ -147,7 +147,7 @@ class AuthServiceTest {
 
                 // then
                 verify(refreshTokenRepository, times(1)).deleteByEno("10001");
-                verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
+                verify(refreshTokenRepository, times(1)).save(any(Crtokm.class));
         }
 
         @Test
@@ -166,7 +166,7 @@ class AuthServiceTest {
                 authService.login("10001", "password", "127.0.0.1", "Agent");
 
                 // then
-                verify(loginHistoryRepository, times(1)).save(any(LoginHistory.class));
+                verify(loginHistoryRepository, times(1)).save(any(Clognh.class));
         }
 
         // ── 회원가입 테스트 ──────────────────────────────────────────────────
@@ -212,14 +212,13 @@ class AuthServiceTest {
         void refreshAccessToken_유효한토큰_새AccessToken반환() {
                 // given
                 String refreshTokenValue = "valid-refresh-token";
-                RefreshToken refreshToken = RefreshToken.builder()
-                                .token(refreshTokenValue).eno("10001")
-                                .expiryDate(LocalDateTime.now().plusDays(7))
-                                .createdAt(LocalDateTime.now())
+                Crtokm refreshToken = Crtokm.builder()
+                                .tok(refreshTokenValue).eno("10001")
+                                .endDtm(LocalDateTime.now().plusDays(7))
                                 .build();
 
                 given(jwtUtil.validateToken(refreshTokenValue)).willReturn(true);
-                given(refreshTokenRepository.findByToken(refreshTokenValue)).willReturn(Optional.of(refreshToken));
+                given(refreshTokenRepository.findByTok(refreshTokenValue)).willReturn(Optional.of(refreshToken));
                 given(userRepository.findByEno("10001")).willReturn(Optional.of(
                                 CuserI.builder().eno("10001").usrNm("홍길동").bbrC("BBR001").delYn("N").build()));
                 given(roleRepository.findAllByIdEnoAndUseYnAndDelYn("10001", "Y", "N"))
@@ -250,14 +249,13 @@ class AuthServiceTest {
         void refreshAccessToken_만료된DB토큰_예외발생및삭제() {
                 // given
                 String tokenValue = "expired-refresh-token";
-                RefreshToken expiredToken = RefreshToken.builder()
-                                .token(tokenValue).eno("10001")
-                                .expiryDate(LocalDateTime.now().minusDays(1)) // 이미 만료
-                                .createdAt(LocalDateTime.now().minusDays(8))
+                Crtokm expiredToken = Crtokm.builder()
+                                .tok(tokenValue).eno("10001")
+                                .endDtm(LocalDateTime.now().minusDays(1)) // 이미 만료
                                 .build();
 
                 given(jwtUtil.validateToken(tokenValue)).willReturn(true);
-                given(refreshTokenRepository.findByToken(tokenValue)).willReturn(Optional.of(expiredToken));
+                given(refreshTokenRepository.findByTok(tokenValue)).willReturn(Optional.of(expiredToken));
 
                 // when & then
                 assertThatThrownBy(() -> authService.refreshAccessToken(tokenValue))
@@ -278,6 +276,6 @@ class AuthServiceTest {
 
                 // then
                 verify(refreshTokenRepository, times(1)).deleteByEno("10001");
-                verify(loginHistoryRepository, times(1)).save(any(LoginHistory.class));
+                verify(loginHistoryRepository, times(1)).save(any(Clognh.class));
         }
 }

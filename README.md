@@ -89,9 +89,13 @@ com.kdb.it
 │   ├── approval/            # 신청서·결재 (ApplicationController, ApplicationService, ApplicationMapRepository)
 │   ├── code/                # 공통 코드 (CodeController, CodeService, CodeRepository)
 │   └── util/                # 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
-├── budget/
-│   ├── project/             # 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectItemRepository)
-│   └── cost/                # 전산업무비 (CostController, CostService, CostRepository, BudgetDocController)
+├── domain/                  # 비즈니스 도메인 집합
+│   ├── budget/              # 예산 관리 (project, cost, document)
+│   |   ├── project/             # 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectItemRepository)
+│   |   └── cost/                # 전산업무비 (CostController, CostService, CostRepository, BudgetDocController)
+│   ├── cdp/                 # 경력개발 (빈 디렉토리)
+│   ├── audit/               # 감사/이력 (빈 디렉토리)
+│   └── entity/              # BaseEntity
 └── infra/
     ├── file/                # 파일 관리 (FileController, FileService, FileRepository, Cfilem)
     └── ai/                  # Gemini AI (GeminiController, GeminiService)

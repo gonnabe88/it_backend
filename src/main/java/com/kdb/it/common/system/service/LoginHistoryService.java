@@ -1,6 +1,6 @@
 package com.kdb.it.common.system.service;
 
-import com.kdb.it.common.system.entity.LoginHistory;
+import com.kdb.it.common.system.entity.Clognh;
 import com.kdb.it.common.system.dto.LoginHistoryDto;
 import com.kdb.it.common.system.repository.LoginHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class LoginHistoryService {
      */
     public List<LoginHistoryDto.Response> getLoginHistory(String eno) {
         // DB 레벨에서 최신순 50건만 조회 (메모리 처리 불필요)
-        List<LoginHistory> histories = loginHistoryRepository.findTop50ByEnoOrderByLoginTimeDesc(eno);
+        List<Clognh> histories = loginHistoryRepository.findTop50ByEnoOrderByLgnDtmDesc(eno);
 
         // 엔티티 목록을 DTO 목록으로 변환하여 반환
         return LoginHistoryDto.Response.fromEntities(histories);
@@ -63,7 +63,7 @@ public class LoginHistoryService {
      */
     public List<LoginHistoryDto.Response> getRecentLoginHistory(String eno) {
         // Repository의 findTop10By 메서드로 DB에서 직접 10건만 조회 (LIMIT 10)
-        List<LoginHistory> histories = loginHistoryRepository.findTop10ByEnoOrderByLoginTimeDesc(eno);
+        List<Clognh> histories = loginHistoryRepository.findTop10ByEnoOrderByLgnDtmDesc(eno);
         return LoginHistoryDto.Response.fromEntities(histories);
     }
 }

@@ -1,6 +1,6 @@
 package com.kdb.it.common.system.dto;
 
-import com.kdb.it.common.system.entity.LoginHistory;
+import com.kdb.it.common.system.entity.Clognh;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +28,7 @@ public class LoginHistoryDto {
     /**
      * 로그인 이력 조회 응답 DTO
      *
-     * <p>{@link LoginHistory} 엔티티의 정보를 클라이언트에 전달합니다.</p>
+     * <p>{@link Clognh} 엔티티의 정보를 클라이언트에 전달합니다.</p>
      *
      * <p>로그인 유형({@code loginType}) 종류:</p>
      * <ul>
@@ -37,7 +37,7 @@ public class LoginHistoryDto {
      *   <li>{@code LOGOUT}: 로그아웃</li>
      * </ul>
      *
-     * <p>{@link #fromEntity(LoginHistory)}: 단건 변환</p>
+     * <p>{@link #fromEntity(Clognh)}: 단건 변환</p>
      * <p>{@link #fromEntities(List)}: 목록 변환</p>
      */
     @Getter
@@ -83,33 +83,33 @@ public class LoginHistoryDto {
         private String failureReason;
 
         /**
-         * {@link LoginHistory} 엔티티를 단건 응답 DTO로 변환하는 정적 팩토리 메서드
+         * {@link Clognh} 엔티티를 단건 응답 DTO로 변환하는 정적 팩토리 메서드
          *
-         * @param loginHistory 변환할 LoginHistory 엔티티
+         * @param clognh 변환할 Clognh 엔티티
          * @return 변환된 응답 DTO
          */
-        public static Response fromEntity(LoginHistory loginHistory) {
+        public static Response fromEntity(Clognh clognh) {
             return Response.builder()
-                    .id(loginHistory.getId())                     // 이력 ID
-                    .eno(loginHistory.getEno())                   // 사번
-                    .loginType(loginHistory.getLoginType())       // 로그인 타입
-                    .ipAddress(loginHistory.getIpAddress())       // IP 주소
-                    .userAgent(loginHistory.getUserAgent())       // User Agent
-                    .loginTime(loginHistory.getLoginTime())       // 이벤트 시각
-                    .failureReason(loginHistory.getFailureReason()) // 실패 사유
+                    .id(clognh.getLgnSno())                     // 로그인일련번호 → id 키 유지
+                    .eno(clognh.getEno())                       // 사원번호
+                    .loginType(clognh.getLgnTp())               // 로그인유형 → JSON 키 유지
+                    .ipAddress(clognh.getIpAddr())              // IP주소 → JSON 키 유지
+                    .userAgent(clognh.getUstAgt())              // 사용자에이전트 → JSON 키 유지
+                    .loginTime(clognh.getLgnDtm())              // 로그인일시 → JSON 키 유지
+                    .failureReason(clognh.getFlurRsn())         // 실패사유 → JSON 키 유지
                     .build();
         }
 
         /**
-         * {@link LoginHistory} 엔티티 목록을 응답 DTO 목록으로 변환하는 정적 팩토리 메서드
+         * {@link Clognh} 엔티티 목록을 응답 DTO 목록으로 변환하는 정적 팩토리 메서드
          *
          * <p>{@link com.kdb.it.common.system.service.LoginHistoryService}에서 목록 변환 시 사용합니다.</p>
          *
-         * @param loginHistories 변환할 LoginHistory 엔티티 목록
+         * @param clognhs 변환할 Clognh 엔티티 목록
          * @return 변환된 응답 DTO 목록
          */
-        public static List<Response> fromEntities(List<LoginHistory> loginHistories) {
-            return loginHistories.stream()
+        public static List<Response> fromEntities(List<Clognh> clognhs) {
+            return clognhs.stream()
                     .map(Response::fromEntity) // 각 엔티티를 DTO로 변환
                     .collect(Collectors.toList());
         }

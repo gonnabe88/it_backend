@@ -45,8 +45,11 @@ src/main/java/com/kdb/it/
 │   ├── iam/                 - 사용자/조직 (UserRepository, OrganizationRepository, RoleRepository)
 │   ├── system/              - 인증·보안 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
 │   └── util/                - 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
-├── budget/                  - 예산 도메인
-│   └── project/             - 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectRepository)
+├── domain/                  - 비즈니스 도메인 집합
+│   ├── budget/              - 예산 관리 (project, cost, document)
+│   ├── cdp/                 - 경력개발 (빈 디렉토리)
+│   ├── audit/               - 감사/이력 (빈 디렉토리)
+│   └── entity/              - BaseEntity
 └── infra/                   - 인프라 도메인
     ├── ai/                  - Gemini AI 연동 (GeminiController, GeminiService)
     └── file/                - 파일 관리 (FileController, FileService, Cfilem, FileRepository)
@@ -73,8 +76,8 @@ src/main/resources/
 | Cappla       | TAAABB_CAPPLA       | 신청서-원본 연결  |
 | Cdecim       | TAAABB_CDECIM       | 결재선 정보       |
 | Ccodem       | TAAABB_CCODEM       | 코드 마스터       |
-| LoginHistory | LOGIN_HISTORY       | 로그인 이력       |
-| RefreshToken | REFRESH_TOKEN       | Refresh Token   |
+| Clognh       | TAAABB_CLOGNH       | 로그인이력        |
+| Crtokm       | TAAABB_CRTOKM       | 갱신토큰          |
 
 ## 5. 코딩 스타일 및 가이드라인
 

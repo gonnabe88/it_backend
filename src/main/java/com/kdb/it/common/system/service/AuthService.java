@@ -2,8 +2,8 @@ package com.kdb.it.common.system.service;
 
 import com.kdb.it.common.iam.entity.CroleI;
 import com.kdb.it.common.iam.entity.CuserI;
-import com.kdb.it.common.system.entity.LoginHistory;
-import com.kdb.it.common.system.entity.RefreshToken;
+import com.kdb.it.common.system.entity.Clognh;
+import com.kdb.it.common.system.entity.Crtokm;
 import com.kdb.it.common.system.dto.AuthDto;
 import com.kdb.it.common.iam.repository.RoleRepository;
 import com.kdb.it.common.iam.repository.UserRepository;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  *   <li>Refresh Token: 장기 유효 (기본 7일), DB에 저장, Access Token 갱신에 사용</li>
  * </ul>
  *
- * <p>로그인 이력: 로그인 성공/실패, 로그아웃 시 {@link LoginHistory}에 자동 기록됩니다.</p>
+ * <p>로그인 이력: 로그인 성공/실패, 로그아웃 시 {@link Clognh}에 자동 기록됩니다.</p>
  *
  * <p>비밀번호 처리: {@link PasswordEncoder} (SHA-256 + Base64 방식)로 암호화합니다.</p>
  */
@@ -160,11 +160,11 @@ public class AuthService {
 
             // 기존 Refresh Token 삭제 후 새 토큰 저장 (1인 1토큰 정책)
             refreshTokenRepository.deleteByEno(eno);
-            RefreshToken refreshToken = RefreshToken.builder()
-                    .token(refreshTokenValue)                       // JWT Refresh Token 문자열
+            Crtokm refreshToken = Crtokm.builder()
+                    .tok(refreshTokenValue)                         // JWT Refresh Token 문자열
                     .eno(eno)                                       // 토큰 소유자 사번
-                    .expiryDate(LocalDateTime.now().plusDays(7))    // 만료일: 7일 후
-                    .createdAt(LocalDateTime.now())                 // 생성일시: 현재
+                    .endDtm(LocalDateTime.now().plusDays(7))        // 종료일시: 7일 후
+                    // 최초생성시간(fstEnrDtm)은 BaseEntity @CreatedDate 자동 기록
                     .build();
             refreshTokenRepository.save(refreshToken);
 
@@ -216,10 +216,10 @@ public class AuthService {
         }
 
         // DB에서 Refresh Token 조회 (2차 검증: DB 존재 여부)
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+        Crtokm refreshToken = refreshTokenRepository.findByTok(refreshTokenValue)
                 .orElseThrow(() -> new RuntimeException("Refresh Token을 찾을 수 없습니다."));
 
-        // DB 저장 만료일 기준 만료 여부 확인 (3차 검증: expiryDate 필드)
+        // DB 저장 만료일 기준 만료 여부 확인 (3차 검증: endDtm 필드)
         if (refreshToken.isExpired()) {
             refreshTokenRepository.delete(refreshToken); // 만료된 토큰 즉시 삭제
             throw new RuntimeException("만료된 Refresh Token입니다.");
@@ -270,7 +270,7 @@ public class AuthService {
     /**
      * 로그인 성공 이력 기록 (내부 헬퍼 메서드)
      *
-     * <p>{@link LoginHistory#createLoginSuccess(String, String, String)} 팩토리 메서드를 사용하여
+     * <p>{@link Clognh#createLoginSuccess(String, String, String)} 팩토리 메서드를 사용하여
      * LOGIN_SUCCESS 타입의 이력을 생성하고 저장합니다.</p>
      *
      * @param eno       로그인 성공한 사번
@@ -278,14 +278,14 @@ public class AuthService {
      * @param userAgent 접속 User-Agent
      */
     private void recordLoginSuccess(String eno, String ipAddress, String userAgent) {
-        LoginHistory loginHistory = LoginHistory.createLoginSuccess(eno, ipAddress, userAgent);
+        Clognh loginHistory = Clognh.createLoginSuccess(eno, ipAddress, userAgent);
         loginHistoryRepository.save(loginHistory);
     }
 
     /**
      * 로그인 실패 이력 기록 (내부 헬퍼 메서드)
      *
-     * <p>{@link LoginHistory#createLoginFailure(String, String, String, String)} 팩토리 메서드를 사용하여
+     * <p>{@link Clognh#createLoginFailure(String, String, String, String)} 팩토리 메서드를 사용하여
      * LOGIN_FAILURE 타입의 이력을 생성하고 저장합니다.</p>
      *
      * @param eno           로그인 시도한 사번
@@ -294,14 +294,14 @@ public class AuthService {
      * @param failureReason 실패 사유 (예: "비밀번호 불일치", "존재하지 않는 사번")
      */
     private void recordLoginFailure(String eno, String ipAddress, String userAgent, String failureReason) {
-        LoginHistory loginHistory = LoginHistory.createLoginFailure(eno, ipAddress, userAgent, failureReason);
+        Clognh loginHistory = Clognh.createLoginFailure(eno, ipAddress, userAgent, failureReason);
         loginHistoryRepository.save(loginHistory);
     }
 
     /**
      * 로그아웃 이력 기록 (내부 헬퍼 메서드)
      *
-     * <p>{@link LoginHistory#createLogout(String, String, String)} 팩토리 메서드를 사용하여
+     * <p>{@link Clognh#createLogout(String, String, String)} 팩토리 메서드를 사용하여
      * LOGOUT 타입의 이력을 생성하고 저장합니다.</p>
      *
      * @param eno       로그아웃한 사번
@@ -309,7 +309,7 @@ public class AuthService {
      * @param userAgent 접속 User-Agent
      */
     private void recordLogout(String eno, String ipAddress, String userAgent) {
-        LoginHistory loginHistory = LoginHistory.createLogout(eno, ipAddress, userAgent);
+        Clognh loginHistory = Clognh.createLogout(eno, ipAddress, userAgent);
         loginHistoryRepository.save(loginHistory);
     }
 }
