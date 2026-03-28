@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 품목(Bitemm) 동기화 로직 (수정 시):
  * </p>
  * <ol>
- * <li>요청의 {@code gclMngNo}가 있으면 기존 항목 수정</li>
+ * <li>요청의 {@code gclMngNo}가 있으면 기존 레코드 Soft Delete + 동일 관리번호·일련번호(+1)로 신규 레코드 저장</li>
  * <li>요청의 {@code gclMngNo}가 없으면 신규 항목 추가</li>
  * <li>요청에 없는 기존 항목은 Soft Delete</li>
  * </ol>
@@ -292,7 +292,7 @@ public class ProjectService {
      * <li>기존 품목 목록 조회 (DEL_YN='N')</li>
      * <li>요청 품목 처리:
      * <ul>
-     * <li>{@code gclMngNo}가 있는 경우: 기존 항목 찾아 수정 (새 빌더로 생성 후 save → JPA merge)</li>
+     * <li>{@code gclMngNo}가 있는 경우: 기존 레코드 Soft Delete 후 동일 관리번호 + 일련번호(+1)로 신규 레코드 저장</li>
      * <li>{@code gclMngNo}가 없는 경우: 신규 항목으로 시퀀스 채번 후 추가</li>
      * </ul>
      * </li>
@@ -380,19 +380,20 @@ public class ProjectService {
             for (ProjectDto.BitemmDto itemDto : request.getItems()) {
                 if (itemDto.getGclMngNo() != null && !itemDto.getGclMngNo().isEmpty()) {
                     // === 기존 항목 수정 ===
-                    // gclMngNo와 gclSno로 기존 항목 찾기
+                    // gclMngNo로 현재 활성(DEL_YN='N') 항목 찾기 (existingItems는 이미 DEL_YN='N' 필터됨)
                     com.kdb.it.domain.budget.project.entity.Bitemm existingItem = existingItems.stream()
-                            .filter(item -> item.getGclMngNo().equals(itemDto.getGclMngNo())
-                                    && item.getGclSno().equals(itemDto.getGclSno()))
+                            .filter(item -> item.getGclMngNo().equals(itemDto.getGclMngNo()))
                             .findFirst()
                             .orElse(null);
 
                     if (existingItem != null) {
-                        // Bitemm 엔티티에 update 메서드가 없으므로,
-                        // 동일 PK(gclMngNo, gclSno)로 새 Builder 생성 후 save → JPA merge 수행
+                        // 기존 레코드 Soft Delete (이전 버전으로 처리)
+                        existingItem.delete();
+                        // 기존 관리번호 유지 + 일련번호 1 증가하여 신규 레코드 저장
+                        int newGclSno = existingItem.getGclSno() + 1;
                         com.kdb.it.domain.budget.project.entity.Bitemm updatedItem = com.kdb.it.domain.budget.project.entity.Bitemm.builder()
-                                .gclMngNo(existingItem.getGclMngNo()) // PK 유지
-                                .gclSno(existingItem.getGclSno()) // PK 유지
+                                .gclMngNo(existingItem.getGclMngNo()) // 품목관리번호 유지 (기존 번호)
+                                .gclSno(newGclSno) // 품목일련번호 1 증가
                                 .prjMngNo(existingItem.getPrjMngNo()) // 프로젝트관리번호 유지
                                 .prjSno(existingItem.getPrjSno()) // 프로젝트순번 유지
                                 .gclDtt(itemDto.getGclDtt()) // 품목구분
@@ -409,8 +410,9 @@ public class ProjectService {
                                 .lstYn("Y") // 최종여부
                                 .gclAmt(itemDto.getGclAmt()) // 품목금액
                                 .build();
-                        bitemmRepository.save(updatedItem); // JPA save → ID 있으므로 merge
+                        bitemmRepository.save(updatedItem);
                         processedGclMngNos.add(existingItem.getGclMngNo()); // 처리 완료 표시
+                        maxGclSno = Math.max(maxGclSno, newGclSno); // 신규 품목 추가 시 기준 갱신
                     }
                 } else {
                     // === 신규 품목 추가 ===

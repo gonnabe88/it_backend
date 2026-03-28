@@ -2,23 +2,8 @@
 
 > 마지막 갱신일: 2026-03-25
 
-## 보안 개선
-
-- [ ] `AuthDto.SignupRequest`: 외부 회원가입 API에 **관리자 권한 제한** 적용
-  - 파일: `dto/AuthDto.java`
-  - 우선순위: 중간
-  - 비고: RBAC 아키텍처 설계 선행 필요
-
-- [ ] `CustomPasswordEncoder`: SHA-256 **salt 적용** 검토
-  - 파일: `config/CustomPasswordEncoder.java`
-  - 우선순위: 낮음
-  - 비고: 현재 레거시 시스템 호환성 문제로 salt 미사용, 보안 강화 시 bcrypt 전환 검토
-
 ## 코드 품질
 
-- [ ] `CustomUserDetailsService`: 권한(authorities) 목록이 빈 상태 → **역할 기반 접근 제어(RBAC)** 구현 검토
-  - 파일: `service/CustomUserDetailsService.java`
-  - 우선순위: 낮음
 
 ## 완료된 항목
 
