@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -98,6 +99,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException e) {
         log.warn("런타임 예외 발생: {}", e.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    /**
+     * 클라이언트 연결 끊김 처리 (응답 없음)
+     *
+     * <p>파일 다운로드·미리보기 도중 클라이언트(브라우저)가 연결을 닫으면 발생합니다.
+     * 이미 Content-Type이 image/* 등으로 설정된 상태에서 오류 JSON을 쓰려 하면
+     * HttpMessageNotWritableException이 연쇄 발생하므로, void 반환으로 응답 쓰기를 생략합니다.</p>
+     *
+     * @param e {@link AsyncRequestNotUsableException}
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException e) {
+        // 클라이언트 정상 취소(다운로드 중단, 탭 닫기 등) — ERROR 로그 불필요
+        log.debug("클라이언트 연결이 끊어졌습니다: {}", e.getMessage());
     }
 
     /**
