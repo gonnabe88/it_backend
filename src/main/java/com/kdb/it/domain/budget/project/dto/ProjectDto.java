@@ -184,9 +184,9 @@ public class ProjectDto {
         @Schema(description = "보고상태")
         private String rprSts;
 
-        /** 프로젝트추진가능성 (추진 가능성 평가) */
-        @Schema(description = "프로젝트추진가능성")
-        private String prjPulPtt;
+        /** 프로젝트추진가능성 (0~100 정수, NUMBER(3,0)) */
+        @Schema(description = "프로젝트추진가능성 (0~100)")
+        private Integer prjPulPtt;
 
         /** 프로젝트상태 (예: "계획", "진행중", "완료", "취소") */
         @Schema(description = "프로젝트상태")
@@ -256,6 +256,7 @@ public class ProjectDto {
                     .dplYn(dplYn == null ? "N" : dplYn) // 중복여부 (기본값 "N")
                     .lblFsgTlm(lblFsgTlm) // 의무완료기한
                     .rprSts(rprSts) // 보고상태
+                    .lstYn("Y") // 최종여부: 신규 등록은 항상 최신 레코드
                     .prjPulPtt(prjPulPtt) // 프로젝트추진가능성
                     .prjSts(prjSts) // 프로젝트상태
                     .prjYy(prjYy) // 사업연도
@@ -401,9 +402,9 @@ public class ProjectDto {
         @Schema(description = "보고상태")
         private String rprSts;
 
-        /** 프로젝트추진가능성 */
-        @Schema(description = "프로젝트추진가능성")
-        private String prjPulPtt;
+        /** 프로젝트추진가능성 (0~100 정수, NUMBER(3,0)) */
+        @Schema(description = "프로젝트추진가능성 (0~100)")
+        private Integer prjPulPtt;
 
         /** 프로젝트상태 */
         @Schema(description = "프로젝트상태")
@@ -580,9 +581,9 @@ public class ProjectDto {
         @Schema(description = "보고상태")
         private String rprSts;
 
-        /** 프로젝트추진가능성 */
-        @Schema(description = "프로젝트추진가능성")
-        private String prjPulPtt;
+        /** 프로젝트추진가능성 (0~100 정수, NUMBER(3,0)) */
+        @Schema(description = "프로젝트추진가능성 (0~100)")
+        private Integer prjPulPtt;
 
         /** 프로젝트상태 */
         @Schema(description = "프로젝트상태")
