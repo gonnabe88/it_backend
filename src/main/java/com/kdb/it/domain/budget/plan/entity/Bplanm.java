@@ -27,7 +27,7 @@ import java.math.BigDecimal;
  * </p>
  */
 @Entity
-@Table(name = "TAAABB_BPLANM")
+@Table(name = "TAAABB_BPLANM", comment = "정보기술부문계획")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,15 +36,15 @@ public class Bplanm extends BaseEntity {
 
     /** 계획관리번호 (PK, 형식: PLN-{연도}-{seq:04d}) */
     @Id
-    @Column(name = "PLN_MNG_NO", length = 32)
+    @Column(name = "PLN_MNG_NO", length = 32, comment = "계획관리번호")
     private String plnMngNo;
 
     /** 계획구분 (신규, 조정) */
-    @Column(name = "PLN_TP", length = 16)
+    @Column(name = "PLN_TP", length = 16, comment = "계획구분")
     private String plnTp;
 
     /** 대상년도 (형식: YYYY) */
-    @Column(name = "PLN_YY", length = 4)
+    @Column(name = "PLN_YY", length = 4, comment = "대상년도")
     private String plnYy;
 
     /**
@@ -55,18 +55,18 @@ public class Bplanm extends BaseEntity {
      * </p>
      */
     @Lob
-    @Column(name = "PLN_DTL_CONE")
+    @Column(name = "PLN_DTL_CONE", comment = "계획세부내용")
     private String plnDtlCone;
 
     /** 총예산 (전체 대상사업의 프로젝트 예산 합계) */
-    @Column(name = "TTL_BG", precision = 15, scale = 2)
+    @Column(name = "TTL_BG", precision = 15, scale = 2, comment = "총예산")
     private BigDecimal ttlBg;
 
     /** 자본예산 (전체 대상사업의 자본예산 합계) */
-    @Column(name = "CPT_BG", precision = 15, scale = 2)
+    @Column(name = "CPT_BG", precision = 15, scale = 2, comment = "자본예산")
     private BigDecimal cptBg;
 
     /** 일반관리비 (전체 대상사업의 일반관리비 합계) */
-    @Column(name = "MNGC", precision = 15, scale = 2)
+    @Column(name = "MNGC", precision = 15, scale = 2, comment = "일반관리비")
     private BigDecimal mngc;
 }

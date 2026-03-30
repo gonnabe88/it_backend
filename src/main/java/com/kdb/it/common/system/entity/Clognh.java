@@ -32,7 +32,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
-@Table(name = "TAAABB_CLOGNH")
+@Table(name = "TAAABB_CLOGNH", comment = "로그인이력")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -45,33 +45,33 @@ public class Clognh extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "S_LGN_SNO")
     @SequenceGenerator(name = "S_LGN_SNO", sequenceName = "S_LGN_SNO", allocationSize = 1)
-    @Column(name = "LGN_SNO")
+    @Column(name = "LGN_SNO", comment = "로그인일련번호")
     private Long lgnSno;
 
     /**
      * 사원번호: 로그인을 시도한 사용자의 사번
      * 로그인 실패의 경우 DB에 없는 사번도 기록될 수 있음
      */
-    @Column(name = "ENO", nullable = false, length = 32)
+    @Column(name = "ENO", nullable = false, length = 32, comment = "사원번호")
     private String eno;
 
     /**
      * 로그인유형: 이력의 종류
      * 값: "LOGIN_SUCCESS", "LOGIN_FAILURE", "LOGOUT"
      */
-    @Column(name = "LGN_TP", nullable = false, length = 80)
+    @Column(name = "LGN_TP", nullable = false, length = 80, comment = "로그인유형")
     private String lgnTp;
 
     /** IP주소: 클라이언트의 실제 IP 주소 (프록시 환경 고려, 최대 200자) */
-    @Column(name = "IP_ADDR", length = 200)
+    @Column(name = "IP_ADDR", length = 200, comment = "IP주소")
     private String ipAddr;
 
     /** 사용자에이전트: 클라이언트 브라우저/기기 정보 (최대 2000자) */
-    @Column(name = "UST_AGT", length = 2000)
+    @Column(name = "UST_AGT", length = 2000, comment = "사용자에이전트")
     private String ustAgt;
 
     /** 로그인일시: 이벤트 발생 일시 (서버 기준 시각) */
-    @Column(name = "LGN_DTM", nullable = false)
+    @Column(name = "LGN_DTM", nullable = false, comment = "로그인일시")
     private LocalDateTime lgnDtm;
 
     /**
@@ -79,7 +79,7 @@ public class Clognh extends BaseEntity {
      * LOGIN_SUCCESS, LOGOUT의 경우 null
      * 예: "비밀번호 불일치", "존재하지 않는 사번"
      */
-    @Column(name = "FLUR_RSN", length = 200)
+    @Column(name = "FLUR_RSN", length = 200, comment = "실패사유")
     private String flurRsn;
 
     /**

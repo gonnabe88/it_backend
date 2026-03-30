@@ -24,7 +24,7 @@ import java.time.LocalDate;
  * </p>
  */
 @Entity
-@Table(name = "TAAABB_CCODEM")
+@Table(name = "TAAABB_CCODEM", comment = "공통코드마스터")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -33,39 +33,39 @@ public class Ccodem extends BaseEntity {
 
     /** 코드ID: 기본키 */
     @Id
-    @Column(name = "C_ID", nullable = false, length = 32)
+    @Column(name = "C_ID", nullable = false, length = 32, comment = "코드ID")
     private String cdId;
 
     /** 코드명 */
-    @Column(name = "C_NM", length = 100)
+    @Column(name = "C_NM", length = 100, comment = "코드명")
     private String cdNm;
 
     /** 코드값 */
-    @Column(name = "CDVA", length = 100)
+    @Column(name = "CDVA", length = 100, comment = "코드값")
     private String cdva;
 
     /** 코드설명 */
-    @Column(name = "C_DES", length = 500)
+    @Column(name = "C_DES", length = 500, comment = "코드설명")
     private String cdDes;
 
     /** 코드값구분 */
-    @Column(name = "CTT_TP", length = 100)
+    @Column(name = "CTT_TP", length = 100, comment = "코드값구분")
     private String cttTp;
 
     /** 코드값구분설명 */
-    @Column(name = "CTT_TP_DES", length = 500)
+    @Column(name = "CTT_TP_DES", length = 500, comment = "코드값구분설명")
     private String cttTpDes;
 
     /** 코드순서 */
-    @Column(name = "C_SQN")
+    @Column(name = "C_SQN", comment = "코드순서")
     private Integer cdSqn;
 
     /** 시작일자 */
-    @Column(name = "STT_DT")
+    @Column(name = "STT_DT", comment = "시작일자")
     private LocalDate sttDt;
 
     /** 종료일자 */
-    @Column(name = "END_DT")
+    @Column(name = "END_DT", comment = "종료일자")
     private LocalDate endDt;
 
     /**

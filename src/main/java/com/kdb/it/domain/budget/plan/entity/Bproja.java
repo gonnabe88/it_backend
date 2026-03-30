@@ -25,7 +25,7 @@ import lombok.experimental.SuperBuilder;
  * </ul>
  */
 @Entity
-@Table(name = "TAAABB_BPROJA")
+@Table(name = "TAAABB_BPROJA", comment = "프로젝트-계획 관계")
 @IdClass(BprojaId.class)
 @Getter
 @NoArgsConstructor
@@ -35,11 +35,11 @@ public class Bproja extends BaseEntity {
 
     /** 프로젝트관리번호 (복합 PK의 첫 번째 키) */
     @Id
-    @Column(name = "PRJ_MNG_NO", length = 32)
+    @Column(name = "PRJ_MNG_NO", length = 32, comment = "프로젝트관리번호")
     private String prjMngNo;
 
     /** 업무관리번호 (복합 PK의 두 번째 키, BPLANM의 PLN_MNG_NO에 대응) */
     @Id
-    @Column(name = "BZ_MNG_NO", length = 32)
+    @Column(name = "BZ_MNG_NO", length = 32, comment = "업무관리번호")
     private String bzMngNo;
 }

@@ -30,7 +30,7 @@ import java.time.LocalDate;
  * </p>
  */
 @Entity
-@Table(name = "TAAABB_BRDOCM")
+@Table(name = "TAAABB_BRDOCM", comment = "요구사항 정의서")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -39,28 +39,28 @@ public class Brdocm extends BaseEntity {
 
     /** 문서관리번호: 기본키 (예: DOC-2026-0001) */
     @Id
-    @Column(name = "DOC_MNG_NO", nullable = false, length = 32)
+    @Column(name = "DOC_MNG_NO", nullable = false, length = 32, comment = "문서관리번호")
     private String docMngNo;
 
     /** 요구사항명: 요구사항의 제목 (최대 200자) */
-    @Column(name = "REQ_NM", length = 200)
+    @Column(name = "REQ_NM", length = 200, comment = "요구사항명")
     private String reqNm;
 
     /** 요구사항내용: 요구사항 상세 내용 (BLOB, HTML 포함 가능) */
     @Lob
-    @Column(name = "REQ_CONE")
+    @Column(name = "REQ_CONE", comment = "요구사항내용")
     private byte[] reqCone;
 
     /** 요구사항구분: 요구사항 분류 코드 (최대 32자) */
-    @Column(name = "REQ_DTT", length = 32)
+    @Column(name = "REQ_DTT", length = 32, comment = "요구사항구분")
     private String reqDtt;
 
     /** 업무구분: 업무 영역 분류 코드 (최대 32자) */
-    @Column(name = "BZ_DTT", length = 32)
+    @Column(name = "BZ_DTT", length = 32, comment = "업무구분")
     private String bzDtt;
 
     /** 완료기한: 요구사항 처리 완료 기한 */
-    @Column(name = "FSG_TLM")
+    @Column(name = "FSG_TLM", comment = "완료기한")
     private LocalDate fsgTlm;
 
     /**
