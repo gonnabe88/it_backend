@@ -128,10 +128,6 @@ public class ProjectDto {
         @Schema(description = "사업설명")
         private String prjDes;
 
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
-
         /** 현황 (현재 사업 진행 현황) */
         @Schema(description = "현황")
         private String saf;
@@ -242,7 +238,6 @@ public class ProjectDto {
                     .itDpmTlr(itDpmTlr) // IT부서담당팀장
                     .edrt(edrt) // 전결권
                     .prjDes(prjDes) // 사업설명
-                    .pulRsn(pulRsn) // 추진사유
                     .saf(saf) // 현황
                     .ncs(ncs) // 필요성
                     .xptEff(xptEff) // 기대효과
@@ -345,10 +340,6 @@ public class ProjectDto {
         /** 사업설명 */
         @Schema(description = "사업설명")
         private String prjDes;
-
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
 
         /** 현황 */
         @Schema(description = "현황")
@@ -524,10 +515,6 @@ public class ProjectDto {
         /** 사업설명 */
         @Schema(description = "사업설명")
         private String prjDes;
-
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
 
         /** 현황 */
         @Schema(description = "현황")
@@ -717,7 +704,6 @@ public class ProjectDto {
                     .itDpmTlr(project.getItDpmTlr()) // IT부서담당팀장
                     .edrt(project.getEdrt()) // 전결권
                     .prjDes(project.getPrjDes()) // 사업설명
-                    .pulRsn(project.getPulRsn()) // 추진사유
                     .saf(project.getSaf()) // 현황
                     .ncs(project.getNcs()) // 필요성
                     .xptEff(project.getXptEff()) // 기대효과

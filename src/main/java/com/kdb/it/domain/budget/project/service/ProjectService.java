@@ -343,7 +343,6 @@ public class ProjectService {
                 request.getItDpmTlr(), // IT부서담당팀장
                 request.getEdrt(), // 전결권
                 request.getPrjDes(), // 사업설명
-                request.getPulRsn(), // 추진사유
                 request.getSaf(), // 현황
                 request.getNcs(), // 필요성
                 request.getXptEff(), // 기대효과

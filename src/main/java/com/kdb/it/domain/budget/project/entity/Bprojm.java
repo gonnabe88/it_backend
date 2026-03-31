@@ -111,10 +111,6 @@ public class Bprojm extends BaseEntity {
     @Column(name = "PRJ_DES", length = 1000, comment = "사업설명")
     private String prjDes;
 
-    /** 추진사유: 사업을 추진하게 된 배경 및 이유 (최대 1000자) */
-    @Column(name = "PUL_RSN", length = 1000, comment = "추진사유")
-    private String pulRsn;
-
     /** 현황: 현재 업무/시스템의 현황 분석 내용 (최대 1000자) */
     @Column(name = "SAF", length = 1000, comment = "현황")
     private String saf;
@@ -217,7 +213,6 @@ public class Bprojm extends BaseEntity {
      * @param itDpmTlr   IT부서담당팀장
      * @param edrt       전결권
      * @param prjDes     사업설명
-     * @param pulRsn     추진사유
      * @param saf        현황
      * @param ncs        필요성
      * @param xptEff     기대효과
@@ -241,7 +236,7 @@ public class Bprojm extends BaseEntity {
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
-            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
+            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
             LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String prjYy, String svnHdq,
@@ -262,7 +257,6 @@ public class Bprojm extends BaseEntity {
         this.itDpmTlr = itDpmTlr;
         this.edrt = edrt;
         this.prjDes = prjDes;
-        this.pulRsn = pulRsn;
         this.saf = saf;
         this.ncs = ncs;
         this.xptEff = xptEff;
@@ -306,7 +300,6 @@ public class Bprojm extends BaseEntity {
      * @param itDpmTlr   IT부서담당팀장
      * @param edrt       전결권
      * @param prjDes     사업설명
-     * @param pulRsn     추진사유
      * @param saf        현황
      * @param ncs        필요성
      * @param xptEff     기대효과
@@ -329,7 +322,7 @@ public class Bprojm extends BaseEntity {
      */
     public void update(String prjNm, String prjTp, String svnDpm, String itDpm, BigDecimal prjBg,
             BigDecimal nyyPrjBg, LocalDate sttDt, LocalDate endDt, String svnDpmCgpr, String itDpmCgpr,
-            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes, String pulRsn,
+            String svnDpmTlr, String itDpmTlr, String edrt, String prjDes,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
             LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String prjYy, String svnHdq,
@@ -348,7 +341,6 @@ public class Bprojm extends BaseEntity {
         this.itDpmTlr = itDpmTlr;
         this.edrt = edrt;
         this.prjDes = prjDes;
-        this.pulRsn = pulRsn;
         this.saf = saf;
         this.ncs = ncs;
         this.xptEff = xptEff;
