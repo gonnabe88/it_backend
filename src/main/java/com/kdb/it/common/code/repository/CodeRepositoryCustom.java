@@ -28,4 +28,11 @@ public interface CodeRepositoryCustom {
      * @return 조회된 공통코드 엔티티 목록
      */
     List<Ccodem> findByCttTpWithValidDate(String cttTp, LocalDate targetDate);
+
+    /**
+     * 논리 삭제되지 않은 전체 공통코드를 코드순서 오름차순(null 마지막)으로 조회
+     *
+     * @return 활성 공통코드 엔티티 목록 (코드순서 오름차순)
+     */
+    List<Ccodem> findAllActive();
 }

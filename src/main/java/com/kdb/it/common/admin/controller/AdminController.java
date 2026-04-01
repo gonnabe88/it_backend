@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +61,7 @@ public class AdminController {
     @Operation(summary = "공통코드 추가", description = "새로운 공통코드를 추가합니다. C_ID 중복 시 400 반환.")
     public ResponseEntity<Void> createCode(@Valid @RequestBody AdminDto.CodeRequest req) {
         adminService.createCode(req);
-        return ResponseEntity.status(201).build();
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     /**
