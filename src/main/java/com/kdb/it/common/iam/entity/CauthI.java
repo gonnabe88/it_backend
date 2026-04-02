@@ -51,4 +51,17 @@ public class CauthI extends BaseEntity {
     private String useYn;
 
     // BaseEntity: DEL_YN, GUID, GUID_PRG_SNO, FST_ENR_DTM, FST_ENR_USID, LST_CHG_DTM, LST_CHG_USID 제공
+
+    /**
+     * 자격등급 정보 업데이트 (Dirty Checking 활용)
+     *
+     * @param qlfGrNm  자격등급명
+     * @param qlfGrMat 자격등급사항
+     * @param useYn    사용여부
+     */
+    public void update(String qlfGrNm, String qlfGrMat, String useYn) {
+        this.qlfGrNm  = qlfGrNm;
+        this.qlfGrMat = qlfGrMat;
+        this.useYn    = useYn;
+    }
 }

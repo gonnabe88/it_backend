@@ -83,4 +83,19 @@ public class CorgnI extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRLM_HRK_OGZ_C_CONE", referencedColumnName = "PRLM_OGZ_C_CONE", insertable = false, updatable = false)
     private CorgnI parentOrganization;
+
+    /**
+     * 조직 정보 업데이트 (Dirty Checking 활용)
+     *
+     * @param bbrNm           부점명
+     * @param bbrWrenNm       부점영문명
+     * @param itmSqnSno       순서
+     * @param prlmHrkOgzCCone 상위조직코드
+     */
+    public void update(String bbrNm, String bbrWrenNm, String itmSqnSno, String prlmHrkOgzCCone) {
+        this.bbrNm           = bbrNm;
+        this.bbrWrenNm       = bbrWrenNm;
+        this.itmSqnSno       = itmSqnSno;
+        this.prlmHrkOgzCCone = prlmHrkOgzCCone;
+    }
 }

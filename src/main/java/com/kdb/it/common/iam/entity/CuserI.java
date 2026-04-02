@@ -183,6 +183,29 @@ public class CuserI extends BaseEntity {
     }
 
     /**
+     * 사용자 기본정보 업데이트 (Dirty Checking 활용)
+     * 비밀번호는 별도 updatePassword()로 처리합니다.
+     *
+     * @param usrNm        사용자명
+     * @param ptCNm        직위명
+     * @param temC         팀코드
+     * @param bbrC         부서코드
+     * @param etrMilAddrNm 이메일
+     * @param inleNo       내선번호
+     * @param cpnTpn       휴대폰번호
+     */
+    public void update(String usrNm, String ptCNm, String temC, String bbrC,
+                       String etrMilAddrNm, String inleNo, String cpnTpn) {
+        this.usrNm        = usrNm;
+        this.ptCNm        = ptCNm;
+        this.temC         = temC;
+        this.bbrC         = bbrC;
+        this.etrMilAddrNm = etrMilAddrNm;
+        this.inleNo       = inleNo;
+        this.cpnTpn       = cpnTpn;
+    }
+
+    /**
      * 비밀번호 변경 메서드
      *
      * <p>

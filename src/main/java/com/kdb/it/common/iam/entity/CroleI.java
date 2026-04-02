@@ -67,4 +67,13 @@ public class CroleI extends BaseEntity {
     public String getEno() {
         return id.getEno();
     }
+
+    /**
+     * 사용여부 업데이트 (Dirty Checking 활용)
+     *
+     * @param useYn 사용여부 ('Y'=사용, 'N'=미사용)
+     */
+    public void updateUseYn(String useYn) {
+        this.useYn = useYn;
+    }
 }

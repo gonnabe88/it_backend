@@ -46,3 +46,5 @@
 - [x] `CcodemRepositoryImpl`: 클래스/메서드 JavaDoc 보강 (2026-03-03)
 - [x] `README.md`: 개발 노트 작성 및 최신화 (2026-03-04, 2026-03-25)
 - [x] 전체 소스 코드 주석 전수 점검 (81개 파일) — 한글 JavaDoc/인라인 주석 표준 충족 확인 (2026-03-25)
+- [x] 테스트 코드 (ProjectServiceTest, AuthControllerTest 등) 컴파일 오류 및 도메인 패키지 이동 문제 수정 (2026-03-26)
+- [x] 엔티티 클래스 전수 검사하여 데이터베이스 스키마 JPA 3.2 주석(`@Table(comment=...)`, `@Column`) 부착 (2026-03-30)
