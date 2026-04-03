@@ -230,7 +230,7 @@ public class CostService {
 
         // 엔티티 필드 업데이트 (JPA Dirty Checking으로 자동 반영)
         target.update(
-                request.getIoeNm(), // 비목명
+                request.getIoeC(), // 비목코드
                 request.getCttNm(), // 계약명
                 request.getCttTp(), // 계약구분
                 request.getCttOpp(), // 계약상대처
@@ -242,8 +242,12 @@ public class CostService {
                 request.getXcrBseDt(), // 환율기준일자
                 request.getInfPrtYn(), // 정보보호여부
                 request.getIndRsn(), // 증감사유
-                request.getPulCgpr(), // 추진담당자
-                request.getPulDpm()); // 추진부서
+                request.getCgpr(), // 담당자
+                request.getBiceDpm(), // 담당부서
+                request.getBiceTem(), // 담당팀
+                request.getAbusC(), // 사업코드
+                request.getItMngcTp(), // 전산업무비유형
+                request.getItMngcDtt()); // 전산업무비구분
 
         return target.getItMngcNo(); // 수정된 관리번호 반환
     }
@@ -363,16 +367,22 @@ public class CostService {
      * @param response 코드명을 설정할 응답 DTO
      */
     private void setCodeNames(CostDto.Response response) {
-        // 추진부서 코드 → 추진부서명 (TAAABB_CORGNI)
-        if (response.getPulDpm() != null && !response.getPulDpm().isEmpty()) {
-            corgnIRepository.findById(response.getPulDpm())
-                    .ifPresent(org -> response.setPulDpmNm(org.getBbrNm()));
+        // 담당부서 코드 → 담당부서명 (TAAABB_CORGNI)
+        if (response.getBiceDpm() != null && !response.getBiceDpm().isEmpty()) {
+            corgnIRepository.findById(response.getBiceDpm())
+                    .ifPresent(org -> response.setBiceDpmNm(org.getBbrNm()));
         }
 
-        // 추진담당자 사번 → 추진담당자명 (TAAABB_CUSERI)
-        if (response.getPulCgpr() != null && !response.getPulCgpr().isEmpty()) {
-            cuserIRepository.findById(response.getPulCgpr())
-                    .ifPresent(user -> response.setPulCgprNm(user.getUsrNm()));
+        // 담당팀 코드 → 담당팀명 (TAAABB_CORGNI)
+        if (response.getBiceTem() != null && !response.getBiceTem().isEmpty()) {
+            corgnIRepository.findById(response.getBiceTem())
+                    .ifPresent(org -> response.setBiceTemNm(org.getBbrNm()));
+        }
+
+        // 담당자 사번 → 담당자명 (TAAABB_CUSERI)
+        if (response.getCgpr() != null && !response.getCgpr().isEmpty()) {
+            cuserIRepository.findById(response.getCgpr())
+                    .ifPresent(user -> response.setCgprNm(user.getUsrNm()));
         }
     }
 }

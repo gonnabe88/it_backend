@@ -60,9 +60,9 @@ public class Bcostm extends BaseEntity {
     @Column(name = "LST_YN", length = 4, comment = "최종여부")
     private String lstYn;
 
-    /** 비목명: 전산관리비 항목의 대분류명 (예: 서버 유지보수, 네트워크 장비) */
-    @Column(name = "IOE_NM", length = 400, comment = "비목명")
-    private String ioeNm;
+    /** 비목코드 */
+    @Column(name = "IOE_C", length = 400, comment = "비목코드")
+    private String ioeC;
 
     /** 계약명: 실제 계약서상의 명칭 (예: 2026년 서버 유지보수 계약) */
     @Column(name = "CTT_NM", length = 800, comment = "계약명")
@@ -108,13 +108,29 @@ public class Bcostm extends BaseEntity {
     @Column(name = "IND_RSN", length = 4000, comment = "증감사유")
     private String indRsn;
 
-    /** 추진담당자: 해당 비용 항목의 담당자 사번 또는 이름 */
-    @Column(name = "PUL_CGPR", length = 128, comment = "추진담당자")
-    private String pulCgpr;
+    /** 담당자: 해당 비용 항목의 담당자 사번 또는 이름 */
+    @Column(name = "CGPR", length = 128, comment = "담당자")
+    private String cgpr;
 
-    /** 추진부서: 해당 비용 항목의 추진 부서 코드 */
-    @Column(name = "PUL_DPM", length = 100, comment = "추진부서")
-    private String pulDpm;
+    /** 담당부서: 해당 비용 항목의 담당 부서 코드 */
+    @Column(name = "BICE_DPM", length = 100, comment = "담당부서")
+    private String biceDpm;
+
+    /** 담당팀: 해당 비용 항목의 담당 팀 코드 */
+    @Column(name = "BICE_TEM", length = 100, comment = "담당팀")
+    private String biceTem;
+
+    /** 사업코드 */
+    @Column(name = "ABUS_C", length = 100, comment = "사업코드")
+    private String abusC;
+
+    /** 전산업무비유형 */
+    @Column(name = "IT_MNGC_TP", length = 100, comment = "전산업무비유형")
+    private String itMngcTp;
+
+    /** 전산업무비구분 */
+    @Column(name = "IT_MNGC_DTT", length = 100, comment = "전산업무비구분")
+    private String itMngcDtt;
 
     /**
      * 전산관리비 정보 업데이트 메서드
@@ -124,7 +140,7 @@ public class Bcostm extends BaseEntity {
      * 변경된 필드는 트랜잭션 종료 시 자동으로 DB에 반영됩니다.
      * </p>
      *
-     * @param ioeNm    비목명
+     * @param ioeC     비목코드
      * @param cttNm    계약명
      * @param cttTp    계약구분
      * @param cttOpp   계약상대처
@@ -136,13 +152,17 @@ public class Bcostm extends BaseEntity {
      * @param xcrBseDt 환율기준일자
      * @param infPrtYn 정보보호여부
      * @param indRsn   증감사유
-     * @param pulCgpr  추진담당자
-     * @param pulDpm   추진부서
+     * @param cgpr     담당자
+     * @param biceDpm  담당부서
+     * @param biceTem  담당팀
+     * @param abusC    사업코드
+     * @param itMngcTp 전산업무비유형
+     * @param itMngcDtt 전산업무비구분
      */
-    public void update(String ioeNm, String cttNm, String cttTp, String cttOpp, BigDecimal itMngcBg,
+    public void update(String ioeC, String cttNm, String cttTp, String cttOpp, BigDecimal itMngcBg,
             String dfrCle, LocalDate fstDfrDt, String cur, BigDecimal xcr, LocalDate xcrBseDt,
-            String infPrtYn, String indRsn, String pulCgpr, String pulDpm) {
-        this.ioeNm = ioeNm;
+            String infPrtYn, String indRsn, String cgpr, String biceDpm, String biceTem, String abusC, String itMngcTp, String itMngcDtt) {
+        this.ioeC = ioeC;
         this.cttNm = cttNm;
         this.cttTp = cttTp;
         this.cttOpp = cttOpp;
@@ -154,7 +174,11 @@ public class Bcostm extends BaseEntity {
         this.xcrBseDt = xcrBseDt;
         this.infPrtYn = infPrtYn;
         this.indRsn = indRsn;
-        this.pulCgpr = pulCgpr;
-        this.pulDpm = pulDpm;
+        this.cgpr = cgpr;
+        this.biceDpm = biceDpm;
+        this.biceTem = biceTem;
+        this.abusC = abusC;
+        this.itMngcTp = itMngcTp;
+        this.itMngcDtt = itMngcDtt;
     }
 }

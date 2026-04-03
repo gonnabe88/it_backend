@@ -66,9 +66,9 @@ public class CostDto {
         @Schema(description = "전산업무비코드 (IT관리비관리번호)", example = "COST_2026_0001")
         private String itMngcNo;
 
-        /** 비목명 (예산 비목의 이름, 예: "서버 유지보수") */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 (계약서 명칭) */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
@@ -114,13 +114,29 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 (담당자명) */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 (담당자명) */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 (부서코드) */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 (부서코드) */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        /** 담당팀 (팀코드) */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        /** 전산업무비구분 */
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String itMngcDtt;
 
         /**
          * 요청 DTO를 {@link Bcostm} 엔티티로 변환합니다.
@@ -132,7 +148,7 @@ public class CostDto {
             return Bcostm.builder()
                     .itMngcNo(this.itMngcNo) // 전산관리비관리번호
                     .itMngcSno(nextSno) // 전산관리비일련번호
-                    .ioeNm(this.ioeNm) // 비목명
+                    .ioeC(this.ioeC) // 비목코드
                     .cttNm(this.cttNm) // 계약명
                     .cttTp(this.cttTp) // 계약구분
                     .cttOpp(this.cttOpp) // 계약상대처
@@ -144,8 +160,12 @@ public class CostDto {
                     .xcrBseDt(this.xcrBseDt) // 환율기준일자
                     .infPrtYn(this.infPrtYn == null ? "N" : this.infPrtYn) // 정보보호여부 (기본값 "N")
                     .indRsn(this.indRsn) // 증감사유
-                    .pulCgpr(this.pulCgpr) // 추진담당자
-                    .pulDpm(this.pulDpm) // 추진부서
+                    .cgpr(this.cgpr) // 담당자
+                    .biceDpm(this.biceDpm) // 담당부서
+                    .biceTem(this.biceTem) // 담당팀
+                    .abusC(this.abusC) // 사업코드
+                    .itMngcTp(this.itMngcTp) // 전산업무비유형
+                    .itMngcDtt(this.itMngcDtt) // 전산업무비구분
                     .lstYn("Y") // 최종여부: 신규는 항상 최신
                     .build();
         }
@@ -166,9 +186,9 @@ public class CostDto {
     @Builder
     @Schema(name = "CostDto.UpdateRequest", description = "전산업무비 수정 요청")
     public static class UpdateRequest {
-        /** 비목명 */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
@@ -214,13 +234,29 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        /** 담당팀 */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        /** 전산업무비구분 */
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String itMngcDtt;
     }
 
     /**
@@ -250,9 +286,9 @@ public class CostDto {
         @Schema(description = "최종여부", example = "Y")
         private String lstYn;
 
-        /** 비목명 */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
@@ -298,21 +334,41 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
 
-        /** 추진부서명: pulDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
-        @Schema(description = "추진부서명")
-        private String pulDpmNm;
+        /** 담당팀 */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
 
-        /** 추진담당자명: pulCgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 */
-        @Schema(description = "추진담당자명")
-        private String pulCgprNm;
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        /** 전산업무비구분 */
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String itMngcDtt;
+
+        /** 담당부서명: biceDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
+        @Schema(description = "담당부서명")
+        private String biceDpmNm;
+
+        /** 담당팀명: biceTem(팀코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
+        @Schema(description = "담당팀명")
+        private String biceTemNm;
+
+        /** 담당자명: cgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 */
+        @Schema(description = "담당자명")
+        private String cgprNm;
 
         /** 삭제여부 (Soft Delete 상태, "Y": 삭제됨, "N": 정상) */
         @Schema(description = "삭제여부", example = "N")
@@ -341,7 +397,7 @@ public class CostDto {
                     .itMngcNo(entity.getItMngcNo()) // 전산관리비관리번호
                     .itMngcSno(entity.getItMngcSno()) // 전산관리비일련번호
                     .lstYn(entity.getLstYn()) // 최종여부
-                    .ioeNm(entity.getIoeNm()) // 비목명
+                    .ioeC(entity.getIoeC()) // 비목코드
                     .cttNm(entity.getCttNm()) // 계약명
                     .cttTp(entity.getCttTp()) // 계약구분
                     .cttOpp(entity.getCttOpp()) // 계약상대처
@@ -353,8 +409,12 @@ public class CostDto {
                     .xcrBseDt(entity.getXcrBseDt()) // 환율기준일자
                     .infPrtYn(entity.getInfPrtYn()) // 정보보호여부
                     .indRsn(entity.getIndRsn()) // 증감사유
-                    .pulCgpr(entity.getPulCgpr()) // 추진담당자
-                    .pulDpm(entity.getPulDpm()) // 추진부서
+                    .cgpr(entity.getCgpr()) // 담당자
+                    .biceDpm(entity.getBiceDpm()) // 담당부서
+                    .biceTem(entity.getBiceTem()) // 담당팀
+                    .abusC(entity.getAbusC()) // 사업코드
+                    .itMngcTp(entity.getItMngcTp()) // 전산업무비유형
+                    .itMngcDtt(entity.getItMngcDtt()) // 전산업무비구분
                     .delYn(entity.getDelYn()) // 삭제여부
                     .build();
         }
@@ -397,9 +457,13 @@ public class CostDto {
         @Schema(description = "계약구분 (예: 유지보수, 신규계약). 미입력 시 전체 조회")
         private String cttTp;
 
-        /** 추진부서 코드 필터. null이면 전체 조회 */
-        @Schema(description = "추진부서 코드. 미입력 시 전체 조회")
-        private String pulDpm;
+        /** 연관부서 코드 필터. null이면 전체 조회 */
+        @Schema(description = "연관부서 코드. 미입력 시 전체 조회")
+        private String biceDpm;
+
+        /** 연관팀 코드 필터. null이면 전체 조회 */
+        @Schema(description = "연관팀 코드. 미입력 시 전체 조회")
+        private String biceTem;
 
         /** 정보보호여부 필터 ('Y'=정보보호, 'N'=일반). null이면 전체 조회 */
         @Schema(description = "정보보호여부 (Y/N). 미입력 시 전체 조회")
@@ -411,7 +475,7 @@ public class CostDto {
          * @return 모든 필드가 null 또는 빈 문자열이면 true
          */
         public boolean isEmpty() {
-            return isBlank(apfSts) && isBlank(cttTp) && isBlank(pulDpm) && isBlank(infPrtYn);
+            return isBlank(apfSts) && isBlank(cttTp) && isBlank(biceDpm) && isBlank(biceTem) && isBlank(infPrtYn);
         }
 
         private boolean isBlank(String value) {
