@@ -131,7 +131,7 @@ public class CostController {
      * <li>{@code GET /api/cost?apfSts=none&cttTp=유지보수} → 복합 조건</li>
      * </ul>
      *
-     * @param condition 검색 조건 (apfSts, cttTp, pulDpm, infPrtYn). 미입력 시 전체 조회
+     * @param condition 검색 조건 (apfSts, cttTp, biceDpm, biceTem, infPrtYn). 미입력 시 전체 조회
      * @return HTTP 200 + 전산관리비 목록 ({@link CostDto.Response} 리스트)
      */
     @Operation(

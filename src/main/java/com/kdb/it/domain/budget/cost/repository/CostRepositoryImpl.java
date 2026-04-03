@@ -143,9 +143,13 @@ public class CostRepositoryImpl implements CostRepositoryCustom {
         if (condition.getCttTp() != null && !condition.getCttTp().isBlank()) {
             builder.and(bcostm.cttTp.eq(condition.getCttTp()));
         }
-        // 추진부서 필터
-        if (condition.getPulDpm() != null && !condition.getPulDpm().isBlank()) {
-            builder.and(bcostm.pulDpm.eq(condition.getPulDpm()));
+        // 연관부서 필터
+        if (condition.getBiceDpm() != null && !condition.getBiceDpm().isBlank()) {
+            builder.and(bcostm.biceDpm.eq(condition.getBiceDpm()));
+        }
+        // 연관팀 필터
+        if (condition.getBiceTem() != null && !condition.getBiceTem().isBlank()) {
+            builder.and(bcostm.biceTem.eq(condition.getBiceTem()));
         }
         // 정보보호여부 필터
         if (condition.getInfPrtYn() != null && !condition.getInfPrtYn().isBlank()) {
