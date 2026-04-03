@@ -4,6 +4,8 @@ import com.kdb.it.common.iam.entity.CuserI;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -59,6 +61,19 @@ public interface UserRepository extends JpaRepository<CuserI, String>, UserRepos
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "organization",
             "organization.parentOrganization" })
     Optional<CuserI> findByEno(String eno);
+
+    /**
+     * 사번(ENO) 목록으로 사용자 다건 조회 — 이름 일괄 변환용(배치 조회)
+     *
+     * <p>
+     * ENO → 이름 변환 시 N+1 쿼리를 방지하기 위해 사용합니다.
+     * 조직 정보는 불필요하므로 EntityGraph 없이 기본 조회합니다.
+     * </p>
+     *
+     * @param enos 조회할 사번 컬렉션
+     * @return 해당 사번들의 사용자 목록
+     */
+    List<CuserI> findByEnoIn(Collection<String> enos);
 
     /**
      * 사번(ENO) 존재 여부 확인

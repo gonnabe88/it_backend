@@ -28,6 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 관리자 기능 서비스
@@ -62,44 +67,28 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
 
     // =========================================================================
-    // 공통 유틸
-    // =========================================================================
-
-    /**
-     * 사원번호(ENO)를 사용자명으로 변환합니다.
-     * 사용자가 존재하지 않으면 원래 ENO를 그대로 반환합니다.
-     *
-     * @param eno 사원번호
-     * @return 사용자명 또는 원래 ENO
-     */
-    private String resolveUserName(String eno) {
-        // Plan SC: ENO → 이름 표기 요구사항 (C-05)
-        if (eno == null) return null;
-        return userRepository.findByEno(eno)
-                .map(user -> user.getUsrNm())
-                .orElse(eno);
-    }
-
-    // =========================================================================
     // 공통코드 (TAAABB_CCODEM)
     // =========================================================================
 
     /**
      * 삭제되지 않은 전체 공통코드 목록을 조회합니다.
-     * 최초생성자·마지막수정자 사원번호를 이름으로 변환하여 반환합니다.
+     * 최초생성자·마지막수정자 사원번호를 이름으로 일괄 변환하여 반환합니다.
      *
      * @return 공통코드 응답 DTO 목록
      */
     public List<AdminDto.CodeResponse> getCodes() {
-        return codeRepository.findAll().stream()
-                .filter(c -> "N".equals(c.getDelYn()))
-                .sorted((a, b) -> {
-                    // 코드순서 오름차순 정렬 (null은 마지막)
-                    int sqnA = a.getCdSqn() != null ? a.getCdSqn() : Integer.MAX_VALUE;
-                    int sqnB = b.getCdSqn() != null ? b.getCdSqn() : Integer.MAX_VALUE;
-                    return Integer.compare(sqnA, sqnB);
-                })
-                .map(this::toCodeResponse)
+        List<Ccodem> codes = codeRepository.findAllActive();
+
+        // 감사 필드의 고유 ENO를 한 번의 배치 쿼리로 이름 조회 (N+1 방지)
+        Set<String> enos = codes.stream()
+                .flatMap(c -> Stream.of(c.getFstEnrUsid(), c.getLstChgUsid()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, String> userNameMap = userRepository.findByEnoIn(enos).stream()
+                .collect(Collectors.toMap(u -> u.getEno(), u -> u.getUsrNm()));
+
+        return codes.stream()
+                .map(c -> toCodeResponse(c, userNameMap))
                 .toList();
     }
 
@@ -163,8 +152,11 @@ public class AdminService {
 
     /**
      * Ccodem 엔티티를 CodeResponse DTO로 변환합니다.
+     *
+     * @param c           공통코드 엔티티
+     * @param userNameMap ENO → 사용자명 매핑 (배치 조회 결과)
      */
-    private AdminDto.CodeResponse toCodeResponse(Ccodem c) {
+    private AdminDto.CodeResponse toCodeResponse(Ccodem c, Map<String, String> userNameMap) {
         return new AdminDto.CodeResponse(
                 c.getCdId(),
                 c.getCdNm(),
@@ -177,10 +169,10 @@ public class AdminService {
                 c.getCdSqn(),
                 c.getFstEnrDtm(),
                 c.getFstEnrUsid(),
-                resolveUserName(c.getFstEnrUsid()),
+                userNameMap.getOrDefault(c.getFstEnrUsid(), c.getFstEnrUsid()),
                 c.getLstChgDtm(),
                 c.getLstChgUsid(),
-                resolveUserName(c.getLstChgUsid())
+                userNameMap.getOrDefault(c.getLstChgUsid(), c.getLstChgUsid())
         );
     }
 
