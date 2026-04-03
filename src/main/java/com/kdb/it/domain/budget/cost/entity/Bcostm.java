@@ -38,8 +38,7 @@ import lombok.experimental.SuperBuilder;
  * </p>
  */
 @Entity // JPA 엔티티로 등록
-@org.hibernate.annotations.Comment("전산관리비(IT 관리비) 마스터")
-@Table(name = "TAAABB_BCOSTM") // 매핑할 DB 테이블명
+@Table(name = "TAAABB_BCOSTM", comment = "전산관리비(IT 관리비) 마스터") // 매핑할 DB 테이블명
 @IdClass(BcostmId.class) // 복합키 클래스 지정
 @Getter // 모든 필드의 getter 자동 생성 (Lombok)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
@@ -49,109 +48,88 @@ public class Bcostm extends BaseEntity {
 
     /** 전산업무비코드(IT관리비관리번호): 복합 기본키의 첫 번째 컬럼 (예: COST_2026_0001) */
     @Id
-    @org.hibernate.annotations.Comment("전산업무비코드")
-    @Column(name = "IT_MNGC_NO", nullable = false, length = 128)
+    @Column(name = "IT_MNGC_NO", nullable = false, length = 128, comment = "전산업무비코드")
     private String itMngcNo;
 
     /** 전산업무비일련번호(IT관리비일련번호): 복합 기본키의 두 번째 컬럼 (버전 구분용, 1부터 시작) */
     @Id
-    @org.hibernate.annotations.Comment("전산업무비일련번호")
-    @Column(name = "IT_MNGC_SNO", nullable = false)
+    @Column(name = "IT_MNGC_SNO", nullable = false, comment = "전산업무비일련번호")
     private Integer itMngcSno;
 
     /** 최종여부: 'Y'=현재 유효한 레코드, 'N'=이전 버전 레코드 */
-    @org.hibernate.annotations.Comment("최종여부")
-    @Column(name = "LST_YN", length = 4)
+    @Column(name = "LST_YN", length = 4, comment = "최종여부")
     private String lstYn;
 
     /** 비목코드 */
-    @org.hibernate.annotations.Comment("비목코드")
-    @Column(name = "IOE_C", length = 400)
+    @Column(name = "IOE_C", length = 400, comment = "비목코드")
     private String ioeC;
 
     /** 계약명: 실제 계약서상의 명칭 (예: 2026년 서버 유지보수 계약) */
-    @org.hibernate.annotations.Comment("계약명")
-    @Column(name = "CTT_NM", length = 800)
+    @Column(name = "CTT_NM", length = 800, comment = "계약명")
     private String cttNm;
 
     /** 계약구분: 계약의 성격 구분 (예: 유지보수, 임차, 구독) */
-    @org.hibernate.annotations.Comment("계약구분")
-    @Column(name = "CTT_TP", length = 400)
+    @Column(name = "CTT_TP", length = 400, comment = "계약구분")
     private String cttTp;
 
     /** 계약상대처: 계약 상대방 업체명 (예: (주)IT솔루션) */
-    @org.hibernate.annotations.Comment("계약상대처")
-    @Column(name = "CTT_OPP", length = 400)
+    @Column(name = "CTT_OPP", length = 400, comment = "계약상대처")
     private String cttOpp;
 
     /** 전산업무비예산: 해당 항목의 연간 예산 금액 (최대 15자리, 소수점 2자리) */
-    @org.hibernate.annotations.Comment("전산업무비예산")
-    @Column(name = "IT_MNGC_BG", precision = 15, scale = 2)
+    @Column(name = "IT_MNGC_BG", precision = 15, scale = 2, comment = "전산업무비예산")
     private BigDecimal itMngcBg;
 
     /** 지급주기: 비용 지급 주기 (예: 매월, 분기, 반기, 연간) */
-    @org.hibernate.annotations.Comment("지급주기")
-    @Column(name = "DFR_CLE", length = 40)
+    @Column(name = "DFR_CLE", length = 40, comment = "지급주기")
     private String dfrCle;
 
     /** 지급예정월(최초지급일자): 첫 번째 지급 예정 날짜 */
-    @org.hibernate.annotations.Comment("지급예정월")
-    @Column(name = "FST_DFR_DT")
+    @Column(name = "FST_DFR_DT", comment = "지급예정월")
     private LocalDate fstDfrDt;
 
     /** 통화: 비용 통화 코드 (예: KRW, USD, EUR) */
-    @org.hibernate.annotations.Comment("통화")
-    @Column(name = "CUR", length = 40)
+    @Column(name = "CUR", length = 40, comment = "통화")
     private String cur;
 
     /** 환율: 외화 계약 시 적용 환율 (최대 9자리) */
-    @org.hibernate.annotations.Comment("환율")
-    @Column(name = "XCR", precision = 9)
+    @Column(name = "XCR", precision = 9, comment = "환율")
     private BigDecimal xcr;
 
     /** 환율기준일자: 환율을 적용한 기준 날짜 */
-    @org.hibernate.annotations.Comment("환율기준일자")
-    @Column(name = "XCR_BSE_DT")
+    @Column(name = "XCR_BSE_DT", comment = "환율기준일자")
     private LocalDate xcrBseDt;
 
     /** 정보보호여부: 정보보호 관련 항목 여부 (Y/N) */
-    @org.hibernate.annotations.Comment("정보보호여부")
-    @Column(name = "INF_PRT_YN", length = 4)
+    @Column(name = "INF_PRT_YN", length = 4, comment = "정보보호여부")
     private String infPrtYn;
 
     /** 증감사유: 전년 대비 예산 증감 이유 (최대 4000자) */
-    @org.hibernate.annotations.Comment("증감사유")
-    @Column(name = "IND_RSN", length = 4000)
+    @Column(name = "IND_RSN", length = 4000, comment = "증감사유")
     private String indRsn;
 
     /** 담당자: 해당 비용 항목의 담당자 사번 또는 이름 */
-    @org.hibernate.annotations.Comment("담당자")
-    @Column(name = "CGPR", length = 128)
+    @Column(name = "CGPR", length = 128, comment = "담당자")
     private String cgpr;
 
     /** 담당부서: 해당 비용 항목의 담당 부서 코드 */
-    @org.hibernate.annotations.Comment("담당부서")
-    @Column(name = "BICE_DPM", length = 100)
+    @Column(name = "BICE_DPM", length = 100, comment = "담당부서")
     private String biceDpm;
 
     /** 담당팀: 해당 비용 항목의 담당 팀 코드 */
-    @org.hibernate.annotations.Comment("담당팀")
-    @Column(name = "BICE_TEM", length = 100)
+    @Column(name = "BICE_TEM", length = 100, comment = "담당팀")
     private String biceTem;
 
     /** 사업코드 */
-    @org.hibernate.annotations.Comment("사업코드")
-    @Column(name = "ABUS_C", length = 100)
+    @Column(name = "ABUS_C", length = 100, comment = "사업코드")
     private String abusC;
 
     /** 전산업무비유형 */
-    @org.hibernate.annotations.Comment("전산업무비유형")
-    @Column(name = "IT_MNGC_TP", length = 100)
+    @Column(name = "IT_MNGC_TP", length = 100, comment = "전산업무비유형")
     private String itMngcTp;
 
     /** 전산업무비구분 */
-    @org.hibernate.annotations.Comment("전산업무비구분")
-    @Column(name = "IT_MNGC_DTT", length = 100)
+    @Column(name = "IT_MNGC_DTT", length = 100, comment = "전산업무비구분")
     private String itMngcDtt;
 
     /**
