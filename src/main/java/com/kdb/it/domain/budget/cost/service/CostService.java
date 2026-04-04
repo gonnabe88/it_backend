@@ -2,7 +2,9 @@ package com.kdb.it.domain.budget.cost.service;
 
 import com.kdb.it.domain.budget.cost.dto.CostDto;
 import com.kdb.it.domain.budget.cost.entity.Bcostm;
+import com.kdb.it.domain.budget.cost.entity.Btermm;
 import com.kdb.it.domain.budget.cost.repository.CostRepository;
+import com.kdb.it.domain.budget.cost.repository.BtermmRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,9 @@ public class CostService {
     /** 전산관리비 데이터 접근 리포지토리 (TAAABB_BCOSTM) */
     private final CostRepository costRepository;
 
+    /** 단말기관리마스터 데이터 접근 리포지토리 (TAAABB_BTERMM) */
+    private final BtermmRepository btermmRepository;
+
     /** 신청서-원본 데이터 연결 리포지토리 (TAAABB_CAPPLA): 결재 상태 확인용 */
     private final com.kdb.it.common.approval.repository.ApplicationMapRepository capplaRepository;
 
@@ -88,6 +93,11 @@ public class CostService {
         setApplicationInfo(response, response.getItMngcNo(), response.getItMngcSno());
         // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
         setCodeNames(response);
+
+        // 연관된 단말기 목록 조회 및 설정
+        List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(response.getItMngcNo(), response.getItMngcSno(), "N");
+        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+
         return response;
     }
 
@@ -108,6 +118,13 @@ public class CostService {
                     setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
                     // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
                     setCodeNames(response);
+
+                    // 금융정보단말기(IT_MNGC_TP_002)인 경우에만 단말기 목록 조회 (성능 최적화)
+                    if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
+                        List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(cost.getItMngcNo(), cost.getItMngcSno(), "N");
+                        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+                    }
+
                     return response;
                 })
                 .toList();
@@ -139,6 +156,13 @@ public class CostService {
                     setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
                     // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
                     setCodeNames(response);
+
+                    // 금융정보단말기(IT_MNGC_TP_002)인 경우에만 단말기 목록 조회 (성능 최적화)
+                    if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
+                        List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(cost.getItMngcNo(), cost.getItMngcSno(), "N");
+                        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+                    }
+
                     return response;
                 })
                 .toList();
@@ -192,6 +216,24 @@ public class CostService {
         // 엔티티 생성 및 저장 (LST_YN='Y': 최신 이력)
         Bcostm bcostm = request.toEntity(nextSno);
         costRepository.save(bcostm);
+
+        // 연관된 단말기 목록 저장
+        if (request.getTerminals() != null && !request.getTerminals().isEmpty()) {
+            for (CostDto.TerminalDto tDto : request.getTerminals()) {
+                // 단말기관리번호(TMN_MNG_NO)가 없으면 자동 생성
+                if (tDto.getTmnMngNo() == null || tDto.getTmnMngNo().isEmpty()) {
+                    tDto.setTmnMngNo(generateTmnMngNo());
+                }
+                // 일련번호(TMN_SNO)가 없으면 "1"로 설정
+                if (tDto.getTmnSno() == null || tDto.getTmnSno().isEmpty()) {
+                    tDto.setTmnSno("1");
+                }
+
+                Btermm btermm = tDto.toEntity();
+                btermm.setBcostmInfo(bcostm.getItMngcNo(), bcostm.getItMngcSno());
+                btermmRepository.save(btermm);
+            }
+        }
 
         return bcostm.getItMngcNo(); // 저장된 관리번호 반환
     }
@@ -247,7 +289,25 @@ public class CostService {
                 request.getBiceTem(), // 담당팀
                 request.getAbusC(), // 사업코드
                 request.getItMngcTp(), // 전산업무비유형
-                request.getItMngcDtt()); // 전산업무비구분
+                request.getPulDtt()); // 전산업무비구분
+
+        // 연관된 단말기 목록 업데이트 (기존 데이터 Soft Delete 후 재등록)
+        List<Btermm> existingTerminals = btermmRepository.findByItMngcNoAndItMngcSno(target.getItMngcNo(), target.getItMngcSno());
+        for (Btermm et : existingTerminals) {
+            et.delete(); // Soft Delete
+        }
+
+        if (request.getTerminals() != null && !request.getTerminals().isEmpty()) {
+            for (CostDto.TerminalDto tDto : request.getTerminals()) {
+                // 수정 시에는 항상 새 PK를 발급하여 Soft Delete된 기존 레코드와 충돌 방지
+                tDto.setTmnMngNo(generateTmnMngNo());
+                tDto.setTmnSno("1");
+
+                Btermm btermm = tDto.toEntity();
+                btermm.setBcostmInfo(target.getItMngcNo(), target.getItMngcSno());
+                btermmRepository.save(btermm);
+            }
+        }
 
         return target.getItMngcNo(); // 수정된 관리번호 반환
     }
@@ -277,6 +337,12 @@ public class CostService {
         // 모든 이력에 대해 Soft Delete 처리 (DEL_YN='Y')
         for (Bcostm cost : costs) {
             cost.delete(); // BaseEntity.delete() 호출 → DEL_YN='Y'
+            
+            // 연관된 단말기 목록도 Soft Delete 처리
+            List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSno(cost.getItMngcNo(), cost.getItMngcSno());
+            for (Btermm t : terminals) {
+                t.delete();
+            }
         }
     }
 
@@ -384,5 +450,15 @@ public class CostService {
             cuserIRepository.findById(response.getCgpr())
                     .ifPresent(user -> response.setCgprNm(user.getUsrNm()));
         }
+    }
+
+    /**
+     * 단말기관리번호(TMN_MNG_NO) 자동 생성 헬퍼 메서드
+     * 형식: TER_{yyyy}_{seq:04d}
+     */
+    private String generateTmnMngNo() {
+        Long seq = btermmRepository.getNextSequenceValue();
+        String year = String.valueOf(java.time.LocalDate.now().getYear());
+        return String.format("TER_%s_%04d", year, seq);
     }
 }

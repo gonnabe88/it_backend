@@ -134,9 +134,12 @@ public class CostDto {
         @Schema(description = "전산업무비유형", example = "TP01")
         private String itMngcTp;
 
-        /** 전산업무비구분 */
         @Schema(description = "전산업무비구분", example = "DTT01")
-        private String itMngcDtt;
+        private String pulDtt;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
 
         /**
          * 요청 DTO를 {@link Bcostm} 엔티티로 변환합니다.
@@ -165,7 +168,7 @@ public class CostDto {
                     .biceTem(this.biceTem) // 담당팀
                     .abusC(this.abusC) // 사업코드
                     .itMngcTp(this.itMngcTp) // 전산업무비유형
-                    .itMngcDtt(this.itMngcDtt) // 전산업무비구분
+                    .pulDtt(this.pulDtt) // 전산업무비구분
                     .lstYn("Y") // 최종여부: 신규는 항상 최신
                     .build();
         }
@@ -254,9 +257,12 @@ public class CostDto {
         @Schema(description = "전산업무비유형", example = "TP01")
         private String itMngcTp;
 
-        /** 전산업무비구분 */
         @Schema(description = "전산업무비구분", example = "DTT01")
-        private String itMngcDtt;
+        private String pulDtt;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
     }
 
     /**
@@ -354,9 +360,12 @@ public class CostDto {
         @Schema(description = "전산업무비유형", example = "TP01")
         private String itMngcTp;
 
-        /** 전산업무비구분 */
         @Schema(description = "전산업무비구분", example = "DTT01")
-        private String itMngcDtt;
+        private String pulDtt;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
 
         /** 담당부서명: biceDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
         @Schema(description = "담당부서명")
@@ -414,7 +423,7 @@ public class CostDto {
                     .biceTem(entity.getBiceTem()) // 담당팀
                     .abusC(entity.getAbusC()) // 사업코드
                     .itMngcTp(entity.getItMngcTp()) // 전산업무비유형
-                    .itMngcDtt(entity.getItMngcDtt()) // 전산업무비구분
+                    .pulDtt(entity.getPulDtt()) // 전산업무비구분
                     .delYn(entity.getDelYn()) // 삭제여부
                     .build();
         }
@@ -500,5 +509,109 @@ public class CostDto {
         /** 조회할 전산관리비관리번호 목록 */
         @Schema(description = "전산업무비코드 목록", example = "[\"COST_2026_0001\", \"COST_2026_0002\"]")
         private List<String> itMngcNos;
+    }
+
+    /**
+     * 금융정보단말기 정보 DTO
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(name = "CostDto.TerminalDto", description = "금융정보단말기 정보")
+    public static class TerminalDto {
+        @Schema(description = "단말기관리번호", example = "TER_2026_0001")
+        private String tmnMngNo;
+
+        @Schema(description = "단말기일련번호", example = "1")
+        private String tmnSno;
+
+        @Schema(description = "단말기명", example = "대면업무용 단말기")
+        private String tmnNm;
+
+        @Schema(description = "단말기이용방법", example = "본회선 활용")
+        private String tmnTuzManr;
+
+        @Schema(description = "단말기용도", example = "창구업무 및 대민지원")
+        private String tmnUsg;
+
+        @Schema(description = "단말기서비스", example = "인터넷/금융 전용망")
+        private String tmnSvc;
+
+        @Schema(description = "단말기금액", example = "1500000")
+        private BigDecimal tmlAmt;
+
+        @Schema(description = "통화", example = "KRW")
+        private String cur;
+
+        @Schema(description = "환율", example = "1")
+        private BigDecimal xcr;
+
+        @Schema(description = "환율기준일자", example = "2026-04-03")
+        private LocalDate xcrBseDt;
+
+        @Schema(description = "지급주기", example = "매월")
+        private String dfrCle;
+
+        @Schema(description = "증감사유", example = "노후 교체에 따른 한시적 인상")
+        private String indRsn;
+
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
+
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        @Schema(description = "비고", example = "특이사항 없음")
+        private String rmk;
+
+        /** DTO → Entity 변환 (itMngcNo, itMngcSno는 서비스에서 설정) */
+        public com.kdb.it.domain.budget.cost.entity.Btermm toEntity() {
+            return com.kdb.it.domain.budget.cost.entity.Btermm.builder()
+                    .tmnMngNo(this.tmnMngNo)
+                    .tmnSno(this.tmnSno)
+                    .tmnNm(this.tmnNm)
+                    .tmnTuzManr(this.tmnTuzManr)
+                    .tmnUsg(this.tmnUsg)
+                    .tmnSvc(this.tmnSvc)
+                    .tmlAmt(this.tmlAmt)
+                    .cur(this.cur)
+                    .xcr(this.xcr)
+                    .xcrBseDt(this.xcrBseDt)
+                    .dfrCle(this.dfrCle)
+                    .indRsn(this.indRsn)
+                    .cgpr(this.cgpr)
+                    .biceTem(this.biceTem)
+                    .biceDpm(this.biceDpm)
+                    .rmk(this.rmk)
+                    .delYn("N")
+                    .build();
+        }
+
+        /** Entity → DTO 변환 */
+        public static TerminalDto fromEntity(com.kdb.it.domain.budget.cost.entity.Btermm entity) {
+            return TerminalDto.builder()
+                    .tmnMngNo(entity.getTmnMngNo())
+                    .tmnSno(entity.getTmnSno())
+                    .tmnNm(entity.getTmnNm())
+                    .tmnTuzManr(entity.getTmnTuzManr())
+                    .tmnUsg(entity.getTmnUsg())
+                    .tmnSvc(entity.getTmnSvc())
+                    .tmlAmt(entity.getTmlAmt())
+                    .cur(entity.getCur())
+                    .xcr(entity.getXcr())
+                    .xcrBseDt(entity.getXcrBseDt())
+                    .dfrCle(entity.getDfrCle())
+                    .indRsn(entity.getIndRsn())
+                    .cgpr(entity.getCgpr())
+                    .biceTem(entity.getBiceTem())
+                    .biceDpm(entity.getBiceDpm())
+                    .rmk(entity.getRmk())
+                    .build();
+        }
     }
 }

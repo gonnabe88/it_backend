@@ -179,6 +179,7 @@ public class AuthService {
                     .empNm(user.getUsrNm())             // 사용자명
                     .athIds(athIds)                     // 자격등급 ID 목록
                     .bbrC(user.getBbrC())               // 소속 부서코드
+                    .temC(user.getTemC())               // 소속 팀코드
                     .build();
 
         } catch (RuntimeException e) {

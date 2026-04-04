@@ -98,6 +98,20 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 공통코드 일괄 업로드 (Upsert)
+     * 코드ID가 이미 존재하면 수정, 없으면 신규 생성합니다.
+     *
+     * @param req 일괄 업로드 요청 DTO (codes 목록)
+     * @return 200 OK + { created, updated } 건수
+     */
+    @PostMapping("/codes/bulk")
+    @Operation(summary = "공통코드 일괄 업로드", description = "엑셀에서 파싱한 코드 목록을 일괄 생성/수정(Upsert)합니다.")
+    public ResponseEntity<java.util.Map<String, Integer>> bulkUpsertCodes(
+            @RequestBody AdminDto.BulkCodeRequest req) {
+        return ResponseEntity.ok(adminService.bulkUpsertCodes(req));
+    }
+
     // =========================================================================
     // 자격등급 관리 (TAAABB_CAUTHI) — M3
     // =========================================================================

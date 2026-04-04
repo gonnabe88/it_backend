@@ -129,8 +129,8 @@ public class Bcostm extends BaseEntity {
     private String itMngcTp;
 
     /** 전산업무비구분 */
-    @Column(name = "IT_MNGC_DTT", length = 100, comment = "전산업무비구분")
-    private String itMngcDtt;
+    @Column(name = "PUL_DTT", length = 100, comment = "전산업무비구분")
+    private String pulDtt;
 
     /**
      * 전산관리비 정보 업데이트 메서드
@@ -157,11 +157,11 @@ public class Bcostm extends BaseEntity {
      * @param biceTem  담당팀
      * @param abusC    사업코드
      * @param itMngcTp 전산업무비유형
-     * @param itMngcDtt 전산업무비구분
+     * @param pulDtt 전산업무비구분
      */
     public void update(String ioeC, String cttNm, String cttTp, String cttOpp, BigDecimal itMngcBg,
             String dfrCle, LocalDate fstDfrDt, String cur, BigDecimal xcr, LocalDate xcrBseDt,
-            String infPrtYn, String indRsn, String cgpr, String biceDpm, String biceTem, String abusC, String itMngcTp, String itMngcDtt) {
+            String infPrtYn, String indRsn, String cgpr, String biceDpm, String biceTem, String abusC, String itMngcTp, String pulDtt) {
         this.ioeC = ioeC;
         this.cttNm = cttNm;
         this.cttTp = cttTp;
@@ -179,6 +179,6 @@ public class Bcostm extends BaseEntity {
         this.biceTem = biceTem;
         this.abusC = abusC;
         this.itMngcTp = itMngcTp;
-        this.itMngcDtt = itMngcDtt;
+        this.pulDtt = pulDtt;
     }
 }

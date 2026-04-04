@@ -34,6 +34,14 @@ public class AdminDto {
     ) {}
 
     /**
+     * 공통코드 일괄 업로드(Upsert) 요청 DTO
+     */
+    @Schema(name = "AdminDto.BulkCodeRequest", description = "공통코드 일괄 업로드 요청")
+    public record BulkCodeRequest(
+            @Schema(description = "업로드할 코드 목록") java.util.List<CodeRequest> codes
+    ) {}
+
+    /**
      * 공통코드 조회 응답 DTO
      * 최초생성자·마지막수정자 사원번호를 이름으로 변환하여 제공합니다.
      */

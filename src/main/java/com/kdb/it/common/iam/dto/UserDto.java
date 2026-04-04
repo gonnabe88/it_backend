@@ -69,6 +69,10 @@ public class UserDto {
         @Schema(description = "부점명")
         private String bbrNm;
 
+        /** 팀코드 (TEM_C) */
+        @Schema(description = "팀코드")
+        private String temC;
+
         /** 팀명 (TEM_NM) */
         @Schema(description = "팀명")
         private String temNm;
@@ -98,6 +102,7 @@ public class UserDto {
                     .eno(user.getEno()) // 행번(사번)
                     .bbrC(user.getBbrC()) // 부점코드
                     .bbrNm(bbrNm) // 부점명 (연관관계에서 조회)
+                    .temC(user.getTemC()) // 팀코드
                     .temNm(user.getTemNm()) // 팀명
                     .usrNm(user.getUsrNm()) // 사용자명
                     .ptCNm(user.getPtCNm()) // 직위명
@@ -135,6 +140,10 @@ public class UserDto {
         /** 부점명 (연관관계의 CorgnI.bbrNm) */
         @Schema(description = "부점명")
         private String bbrNm;
+
+        /** 팀코드 (TEM_C) */
+        @Schema(description = "팀코드")
+        private String temC;
 
         /** 팀명 */
         @Schema(description = "팀명")
@@ -180,6 +189,7 @@ public class UserDto {
                     .eno(user.getEno()) // 행번(사번)
                     .bbrC(user.getBbrC()) // 부점코드
                     .bbrNm(bbrNm) // 부점명 (연관관계에서 조회)
+                    .temC(user.getTemC()) // 팀코드
                     .temNm(user.getTemNm()) // 팀명
                     .usrNm(user.getUsrNm()) // 사용자명
                     .ptCNm(user.getPtCNm()) // 직위명

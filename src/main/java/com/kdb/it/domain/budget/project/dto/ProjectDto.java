@@ -198,7 +198,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /**
          * 품목 목록
@@ -256,7 +256,7 @@ public class ProjectDto {
                     .prjSts(prjSts) // 프로젝트상태
                     .prjYy(prjYy) // 사업연도
                     .ornYn(ornYn) // 경상여부
-                    .prjDtt(prjDtt) // 사업구분
+                    .pulDtt(pulDtt) // 사업구분
                     .build();
         }
     }
@@ -411,7 +411,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /**
          * 품목 목록 (동기화 대상)
@@ -590,7 +590,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /** 최초 등록 일시 (JPA Auditing) */
         @Schema(description = "최초생성시간")
@@ -722,7 +722,7 @@ public class ProjectDto {
                     .delYn(project.getDelYn()) // 삭제여부
                     .prjYy(project.getPrjYy()) // 사업연도
                     .ornYn(project.getOrnYn()) // 경상여부
-                    .prjDtt(project.getPrjDtt()) // 사업구분
+                    .pulDtt(project.getPulDtt()) // 사업구분
                     .fstEnrDtm(project.getFstEnrDtm()) // 최초 등록 일시
                     .fstEnrUsid(project.getFstEnrUsid()) // 최초 등록자
                     .lstChgDtm(project.getLstChgDtm()) // 마지막 수정 일시
