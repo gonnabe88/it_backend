@@ -127,11 +127,9 @@ public class CostController {
      * <li>{@code GET /api/cost} → 전체 조회</li>
      * <li>{@code GET /api/cost?apfSts=none} → 신청서가 없는 전산관리비만</li>
      * <li>{@code GET /api/cost?apfSts=결재중} → 결재중인 전산관리비만</li>
-     * <li>{@code GET /api/cost?cttTp=유지보수} → 유지보수 계약만</li>
-     * <li>{@code GET /api/cost?apfSts=none&cttTp=유지보수} → 복합 조건</li>
      * </ul>
      *
-     * @param condition 검색 조건 (apfSts, cttTp, biceDpm, biceTem, infPrtYn). 미입력 시 전체 조회
+     * @param condition 검색 조건 (apfSts, biceDpm, biceTem, infPrtYn). 미입력 시 전체 조회
      * @return HTTP 200 + 전산관리비 목록 ({@link CostDto.Response} 리스트)
      */
     @Operation(

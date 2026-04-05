@@ -68,11 +68,7 @@ public class Bcostm extends BaseEntity {
     @Column(name = "CTT_NM", length = 800, comment = "계약명")
     private String cttNm;
 
-    /** 계약구분: 계약의 성격 구분 (예: 유지보수, 임차, 구독) */
-    @Column(name = "CTT_TP", length = 400, comment = "계약구분")
-    private String cttTp;
-
-    /** 계약상대처: 계약 상대방 업체명 (예: (주)IT솔루션) */
+    /** 계약상대처: 계약 상대방 업체�� (예: (주)IT���루션) */
     @Column(name = "CTT_OPP", length = 400, comment = "계약상대처")
     private String cttOpp;
 
@@ -120,6 +116,10 @@ public class Bcostm extends BaseEntity {
     @Column(name = "BICE_TEM", length = 100, comment = "담당팀")
     private String biceTem;
 
+    /** 예산연도 (4자리 숫자, 예: 2026) */
+    @Column(name = "BG_YY", length = 4, comment = "예산연도")
+    private String bgYy;
+
     /** 사업코드 */
     @Column(name = "ABUS_C", length = 100, comment = "사업코드")
     private String abusC;
@@ -142,7 +142,6 @@ public class Bcostm extends BaseEntity {
      *
      * @param ioeC     비목코드
      * @param cttNm    계약명
-     * @param cttTp    계약구분
      * @param cttOpp   계약상대처
      * @param itMngcBg 전산업무비예산
      * @param dfrCle   지급주기
@@ -157,14 +156,14 @@ public class Bcostm extends BaseEntity {
      * @param biceTem  담당팀
      * @param abusC    사업코드
      * @param itMngcTp 전산업무비유형
-     * @param pulDtt 전산업무비구분
+     * @param pulDtt   전산업무비구분
+     * @param bgYy     예산연도
      */
-    public void update(String ioeC, String cttNm, String cttTp, String cttOpp, BigDecimal itMngcBg,
+    public void update(String ioeC, String cttNm, String cttOpp, BigDecimal itMngcBg,
             String dfrCle, LocalDate fstDfrDt, String cur, BigDecimal xcr, LocalDate xcrBseDt,
-            String infPrtYn, String indRsn, String cgpr, String biceDpm, String biceTem, String abusC, String itMngcTp, String pulDtt) {
+            String infPrtYn, String indRsn, String cgpr, String biceDpm, String biceTem, String abusC, String itMngcTp, String pulDtt, String bgYy) {
         this.ioeC = ioeC;
         this.cttNm = cttNm;
-        this.cttTp = cttTp;
         this.cttOpp = cttOpp;
         this.itMngcBg = itMngcBg;
         this.dfrCle = dfrCle;
@@ -180,5 +179,6 @@ public class Bcostm extends BaseEntity {
         this.abusC = abusC;
         this.itMngcTp = itMngcTp;
         this.pulDtt = pulDtt;
+        this.bgYy = bgYy;
     }
 }

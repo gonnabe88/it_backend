@@ -47,7 +47,7 @@ public class ProjectRepositoryImpl implements ProjectRepositoryCustom {
      * [처리 순서]
      * 1. DEL_YN='N' 기본 조건 설정
      * 2. apfSts 조건 분기 처리 (none / 특정값 / null)
-     * 3. 나머지 단순 필드 조건 추가 (prjYy, prjSts, prjTp, itDpm, svnDpm)
+     * 3. 나머지 단순 필드 조건 추가 (bgYy, prjSts, prjTp, itDpm, svnDpm)
      * 4. BooleanBuilder로 조합된 WHERE 절로 쿼리 실행
      * </p>
      *
@@ -106,8 +106,8 @@ public class ProjectRepositoryImpl implements ProjectRepositoryCustom {
         // === 단순 필드 조건 처리 (null이면 해당 조건 미적용) ===
 
         // 사업연도 필터
-        if (condition.getPrjYy() != null && !condition.getPrjYy().isBlank()) {
-            builder.and(bprojm.prjYy.eq(condition.getPrjYy()));
+        if (condition.getBgYy() != null && !condition.getBgYy().isBlank()) {
+            builder.and(bprojm.bgYy.eq(condition.getBgYy()));
         }
         // 프로젝트상태 필터
         if (condition.getPrjSts() != null && !condition.getPrjSts().isBlank()) {

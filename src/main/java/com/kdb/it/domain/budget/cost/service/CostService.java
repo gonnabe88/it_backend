@@ -66,6 +66,9 @@ public class CostService {
     /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
     private final com.kdb.it.common.approval.repository.ApproverRepository cdecimRepository;
 
+    /** 공통코드 리포지토리 (TAAABB_CCODEM): 비목코드 → 자본예산/일반관리비 구분용 */
+    private final com.kdb.it.common.code.repository.CodeRepository ccodemRepository;
+
     /**
      * 특정 전산관리비 단건 조회
      *
@@ -93,10 +96,14 @@ public class CostService {
         setApplicationInfo(response, response.getItMngcNo(), response.getItMngcSno());
         // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
         setCodeNames(response);
+        // 비목코드 기준 자본예산/일반관리비 분류
+        setBudgetCategory(response);
 
         // 연관된 단말기 목록 조회 및 설정
         List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(response.getItMngcNo(), response.getItMngcSno(), "N");
-        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+        List<CostDto.TerminalDto> terminalDtos = terminals.stream().map(CostDto.TerminalDto::fromEntity).toList();
+        setTerminalCodeNames(terminalDtos);
+        response.setTerminals(terminalDtos);
 
         return response;
     }
@@ -118,11 +125,15 @@ public class CostService {
                     setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
                     // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
                     setCodeNames(response);
+                    // 비목코드 기준 자본예산/일반관리비 분류
+                    setBudgetCategory(response);
 
                     // 금융정보단말기(IT_MNGC_TP_002)인 경우에만 단말기 목록 조회 (성능 최적화)
                     if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
                         List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(cost.getItMngcNo(), cost.getItMngcSno(), "N");
-                        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+                        List<CostDto.TerminalDto> terminalDtos = terminals.stream().map(CostDto.TerminalDto::fromEntity).toList();
+                        setTerminalCodeNames(terminalDtos);
+                        response.setTerminals(terminalDtos);
                     }
 
                     return response;
@@ -146,7 +157,7 @@ public class CostService {
      * <li>null/미입력: 결재상태 필터 없음</li>
      * </ul>
      *
-     * @param condition 검색 조건 DTO (apfSts, cttTp, pulDpm, infPrtYn)
+     * @param condition 검색 조건 DTO (apfSts, biceDpm, biceTem, infPrtYn)
      * @return 조건에 맞는 전산관리비 응답 DTO 목록
      */
     public List<CostDto.Response> searchCostList(CostDto.SearchCondition condition) {
@@ -156,11 +167,15 @@ public class CostService {
                     setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
                     // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
                     setCodeNames(response);
+                    // 비목코드 기준 자본예산/일반관리비 분류
+                    setBudgetCategory(response);
 
                     // 금융정보단말기(IT_MNGC_TP_002)인 경우에만 단말기 목록 조회 (성능 최적화)
                     if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
                         List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSnoAndDelYn(cost.getItMngcNo(), cost.getItMngcSno(), "N");
-                        response.setTerminals(terminals.stream().map(CostDto.TerminalDto::fromEntity).toList());
+                        List<CostDto.TerminalDto> terminalDtos = terminals.stream().map(CostDto.TerminalDto::fromEntity).toList();
+                        setTerminalCodeNames(terminalDtos);
+                        response.setTerminals(terminalDtos);
                     }
 
                     return response;
@@ -274,7 +289,6 @@ public class CostService {
         target.update(
                 request.getIoeC(), // 비목코드
                 request.getCttNm(), // 계약명
-                request.getCttTp(), // 계약구분
                 request.getCttOpp(), // 계약상대처
                 request.getItMngcBg(), // 전산관리비예산
                 request.getDfrCle(), // 지급주기
@@ -289,7 +303,8 @@ public class CostService {
                 request.getBiceTem(), // 담당팀
                 request.getAbusC(), // 사업코드
                 request.getItMngcTp(), // 전산업무비유형
-                request.getPulDtt()); // 전산업무비구분
+                request.getPulDtt(), // 전산업무비구분
+                request.getBgYy()); // 예산연도
 
         // 연관된 단말기 목록 업데이트 (기존 데이터 Soft Delete 후 재등록)
         List<Btermm> existingTerminals = btermmRepository.findByItMngcNoAndItMngcSno(target.getItMngcNo(), target.getItMngcSno());
@@ -417,6 +432,54 @@ public class CostService {
     }
 
     /**
+     * 전산관리비 응답 DTO에 자본예산/일반관리비 설정 (내부 헬퍼 메서드)
+     *
+     * <p>
+     * 비목코드(ioeC)를 공통코드에서 조회하여 코드값구분(cttTp) 기준으로 분류합니다.
+     * </p>
+     * <ul>
+     * <li>자본예산: cttTp가 IOE_CPIT인 경우 → assetBg = itMngcBg, costBg = 0</li>
+     * <li>일반관리비: cttTp가 IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE인 경우 → assetBg = 0, costBg = itMngcBg</li>
+     * </ul>
+     *
+     * @param response 예산 구분을 설정할 응답 DTO
+     */
+    private void setBudgetCategory(CostDto.Response response) {
+        java.math.BigDecimal totalBg = response.getItMngcBg() != null ? response.getItMngcBg() : java.math.BigDecimal.ZERO;
+
+        if (response.getIoeC() == null || response.getIoeC().isEmpty()) {
+            response.setAssetBg(java.math.BigDecimal.ZERO);
+            response.setCostBg(java.math.BigDecimal.ZERO);
+            return;
+        }
+
+        // 비목코드로 공통코드 조회하여 cttTp 확인
+        java.util.Optional<com.kdb.it.common.code.entity.Ccodem> codeOpt =
+                ccodemRepository.findByCdIdWithValidDate(response.getIoeC(), null);
+
+        if (codeOpt.isPresent()) {
+            String cttTp = codeOpt.get().getCttTp();
+            // 자본예산 대상 코드값구분
+            if ("IOE_CPIT".equals(cttTp)) {
+                response.setAssetBg(totalBg);
+                response.setCostBg(java.math.BigDecimal.ZERO);
+                return;
+            }
+            // 일반관리비 대상 코드값구분
+            java.util.Set<String> costCttTps = java.util.Set.of("IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE");
+            if (costCttTps.contains(cttTp)) {
+                response.setAssetBg(java.math.BigDecimal.ZERO);
+                response.setCostBg(totalBg);
+                return;
+            }
+        }
+
+        // 어느 분류에도 해당하지 않는 경우
+        response.setAssetBg(java.math.BigDecimal.ZERO);
+        response.setCostBg(java.math.BigDecimal.ZERO);
+    }
+
+    /**
      * 전산관리비 응답 DTO에 부서명/사용자명 설정 (내부 헬퍼 메서드)
      *
      * <p>
@@ -449,6 +512,25 @@ public class CostService {
         if (response.getCgpr() != null && !response.getCgpr().isEmpty()) {
             cuserIRepository.findById(response.getCgpr())
                     .ifPresent(user -> response.setCgprNm(user.getUsrNm()));
+        }
+    }
+
+    /**
+     * 단말기 DTO 목록에 담당자명(cgprNm) 설정 (내부 헬퍼 메서드)
+     *
+     * <p>
+     * 각 단말기의 담당자 사번(cgpr)으로 TAAABB_CUSERI에서 사용자명(USR_NM)을 조회하여
+     * cgprNm 필드에 설정합니다.
+     * </p>
+     *
+     * @param terminalDtos 담당자명을 설정할 단말기 DTO 목록
+     */
+    private void setTerminalCodeNames(List<CostDto.TerminalDto> terminalDtos) {
+        for (CostDto.TerminalDto tDto : terminalDtos) {
+            if (tDto.getCgpr() != null && !tDto.getCgpr().isEmpty()) {
+                cuserIRepository.findById(tDto.getCgpr())
+                        .ifPresent(user -> tDto.setCgprNm(user.getUsrNm()));
+            }
         }
     }
 

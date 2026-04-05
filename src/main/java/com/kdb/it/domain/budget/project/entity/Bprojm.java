@@ -175,9 +175,9 @@ public class Bprojm extends BaseEntity {
     @Column(name = "PRJ_STS", length = 32, comment = "프로젝트상태")
     private String prjSts;
 
-    /** 사업연도: 사업 연도 (4자리 숫자, 예: "2026") */
-    @Column(name = "PRJ_YY", length = 4, comment = "사업연도")
-    private String prjYy;
+    /** 예산연도: 예산 연도 (4자리 숫자, 예: "2026") */
+    @Column(name = "BG_YY", length = 4, comment = "예산연도")
+    private String bgYy;
 
     /** 주관본부/부문: 사업을 총괄하는 본부 또는 부문 명칭 (최대 32자) */
     @Column(name = "SVN_HDQ", length = 32, comment = "주관본부")
@@ -228,7 +228,7 @@ public class Bprojm extends BaseEntity {
      * @param rprSts     보고상태
      * @param prjPulPtt  프로젝트추진가능성 (0~100 정수)
      * @param prjSts     프로젝트상태
-     * @param prjYy      사업연도
+     * @param bgYy       예산연도
      * @param svnHdq     주관본부/부문
      * @param prjSno     프로젝트순번
      * @param ornYn      경상여부 ('Y'=경상사업, 'N'=일반 정보화사업)
@@ -239,7 +239,7 @@ public class Bprojm extends BaseEntity {
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-            LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String prjYy, String svnHdq,
+            LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String bgYy, String svnHdq,
             Integer prjSno, String ornYn, String pulDtt) {
         this.prjSno = prjSno;
         this.prjNm = prjNm;
@@ -272,7 +272,7 @@ public class Bprojm extends BaseEntity {
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
         this.prjSts = prjSts;
-        this.prjYy = prjYy;
+        this.bgYy = bgYy;
         this.svnHdq = svnHdq;
         this.ornYn = ornYn;
         this.pulDtt = pulDtt;
@@ -315,7 +315,7 @@ public class Bprojm extends BaseEntity {
      * @param rprSts     보고상태
      * @param prjPulPtt  프로젝트추진가능성 (0~100 정수)
      * @param prjSts     프로젝트상태
-     * @param prjYy      사업연도
+     * @param bgYy       예산연도
      * @param svnHdq     주관본부/부문
      * @param ornYn      경상여부 ('Y'=경상사업, 'N'=일반 정보화사업)
      * @param pulDtt     사업구분 ('신규', '계속')
@@ -325,7 +325,7 @@ public class Bprojm extends BaseEntity {
             String svnDpmTlr, String itDpmTlr, String edrt, String prjDes,
             String saf, String ncs, String xptEff, String plm, String prjRng, String pulPsg,
             String hrfPln, String bzDtt, String tchnTp, String mnUsr, String dplYn,
-            LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String prjYy, String svnHdq,
+            LocalDate lblFsgTlm, String rprSts, Integer prjPulPtt, String prjSts, String bgYy, String svnHdq,
             String ornYn, String pulDtt) {
         this.prjNm = prjNm;
         this.prjTp = prjTp;
@@ -356,7 +356,7 @@ public class Bprojm extends BaseEntity {
         this.rprSts = rprSts;
         this.prjPulPtt = prjPulPtt;
         this.prjSts = prjSts;
-        this.prjYy = prjYy;
+        this.bgYy = bgYy;
         this.svnHdq = svnHdq;
         this.ornYn = ornYn;
         this.pulDtt = pulDtt;

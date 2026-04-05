@@ -1,0 +1,132 @@
+package com.kdb.it.domain.budget.work.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * 예산 작업 관련 DTO 클래스 모음
+ *
+ * <p>
+ * 예산 편성률 적용(TAAABB_BBUGTM)의 요청/응답 DTO를
+ * 정적 중첩 클래스(Static Nested Class) 형태로 관리합니다.
+ * </p>
+ *
+ * <p>
+ * 포함된 DTO:
+ * </p>
+ * <ul>
+ * <li>{@link ApplyRequest}: 편성률 일괄 적용 요청</li>
+ * <li>{@link RateItem}: 개별 비목 편성률</li>
+ * <li>{@link IoeCategoryResponse}: 편성비목 목록 조회 응답</li>
+ * <li>{@link SummaryResponse}: 편성 결과 요약 응답</li>
+ * <li>{@link SummaryItem}: 비목별 요약 항목</li>
+ * <li>{@link SummaryTotals}: 합계</li>
+ * <li>{@link ApplyResponse}: 편성률 적용 결과 응답</li>
+ * </ul>
+ *
+ * // Design Ref: §4.3 — BudgetWorkDto (record 기반 DTO)
+ */
+public class BudgetWorkDto {
+
+    /**
+     * 편성률 일괄 적용 요청 DTO
+     *
+     * @param bgYy  예산년도 (예: 2026)
+     * @param rates 비목별 편성률 목록
+     */
+    @Schema(name = "BudgetWorkApplyRequest", description = "편성률 일괄 적용 요청")
+    public record ApplyRequest(
+            @Schema(description = "예산년도", example = "2026") String bgYy,
+            @Schema(description = "비목별 편성률 목록") List<RateItem> rates
+    ) {}
+
+    /**
+     * 개별 비목 편성률 DTO
+     *
+     * @param cdId  편성비목 코드ID (예: DUP-IOE-237)
+     * @param dupRt 편성률 (0~100)
+     */
+    @Schema(name = "BudgetWorkRateItem", description = "개별 비목 편성률")
+    public record RateItem(
+            @Schema(description = "편성비목 코드ID", example = "DUP-IOE-237") String cdId,
+            @Schema(description = "편성률 (0~100)", example = "80") Integer dupRt
+    ) {}
+
+    /**
+     * 편성비목 목록 조회 응답 DTO
+     *
+     * @param cdId          편성비목 코드ID
+     * @param cdNm          편성비목명
+     * @param cdva          코드값
+     * @param prefix        비목 접두어 (IOE_C/GCL_DTT 매칭용)
+     * @param dupRt         기존 편성률 (미적용 시 null)
+     * @param requestAmount 결재완료 요청금액 합계
+     */
+    @Schema(name = "BudgetWorkIoeCategoryResponse", description = "편성비목 목록 조회 응답")
+    public record IoeCategoryResponse(
+            @Schema(description = "편성비목 코드ID", example = "DUP-IOE-237") String cdId,
+            @Schema(description = "편성비목명", example = "전산임차료(SW)") String cdNm,
+            @Schema(description = "코드값") String cdva,
+            @Schema(description = "비목 접두어", example = "237") String prefix,
+            @Schema(description = "기존 편성률 (0~100)") Integer dupRt,
+            @Schema(description = "결재완료 요청금액 합계") BigDecimal requestAmount
+    ) {}
+
+    /**
+     * 편성 결과 요약 응답 DTO
+     *
+     * @param data   비목별 요약 항목 목록
+     * @param totals 합계
+     */
+    @Schema(name = "BudgetWorkSummaryResponse", description = "편성 결과 요약 응답")
+    public record SummaryResponse(
+            @Schema(description = "비목별 요약 항목 목록") List<SummaryItem> data,
+            @Schema(description = "합계") SummaryTotals totals
+    ) {}
+
+    /**
+     * 비목별 요약 항목 DTO
+     *
+     * @param ioeCategory   비목명
+     * @param ioePrefix     비목 접두어
+     * @param requestAmount 결재완료 요청금액 합계
+     * @param dupAmount     편성금액 합계
+     * @param dupRt         편성률
+     */
+    @Schema(name = "BudgetWorkSummaryItem", description = "비목별 요약 항목")
+    public record SummaryItem(
+            @Schema(description = "비목명", example = "전산임차료(SW)") String ioeCategory,
+            @Schema(description = "비목 접두어", example = "237") String ioePrefix,
+            @Schema(description = "결재완료 요청금액 합계") BigDecimal requestAmount,
+            @Schema(description = "편성금액 합계") BigDecimal dupAmount,
+            @Schema(description = "편성률 (0~100)") Integer dupRt
+    ) {}
+
+    /**
+     * 합계 DTO
+     *
+     * @param requestAmount 요청금액 총합계
+     * @param dupAmount     편성금액 총합계
+     */
+    @Schema(name = "BudgetWorkSummaryTotals", description = "합계")
+    public record SummaryTotals(
+            @Schema(description = "요청금액 총합계") BigDecimal requestAmount,
+            @Schema(description = "편성금액 총합계") BigDecimal dupAmount
+    ) {}
+
+    /**
+     * 편성률 적용 결과 응답 DTO
+     *
+     * @param message      처리 결과 메시지
+     * @param totalRecords 처리된 총 레코드 수
+     * @param summary      편성 결과 요약
+     */
+    @Schema(name = "BudgetWorkApplyResponse", description = "편성률 적용 결과 응답")
+    public record ApplyResponse(
+            @Schema(description = "처리 결과 메시지") String message,
+            @Schema(description = "처리된 총 레코드 수") int totalRecords,
+            @Schema(description = "편성 결과 요약") SummaryResponse summary
+    ) {}
+}

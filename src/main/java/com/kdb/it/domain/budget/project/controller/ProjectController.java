@@ -73,11 +73,11 @@ public class ProjectController {
      * <li>{@code GET /api/projects} → 전체 조회</li>
      * <li>{@code GET /api/projects?apfSts=none} → 신청서가 없는 프로젝트만</li>
      * <li>{@code GET /api/projects?apfSts=결재중} → 결재중인 프로젝트만</li>
-     * <li>{@code GET /api/projects?prjYy=2026} → 2026년 사업만</li>
-     * <li>{@code GET /api/projects?apfSts=none&prjYy=2026} → 복합 조건</li>
+     * <li>{@code GET /api/projects?bgYy=2026} → 2026년 사업만</li>
+     * <li>{@code GET /api/projects?apfSts=none&bgYy=2026} → 복합 조건</li>
      * </ul>
      *
-     * @param condition 검색 조건 (apfSts, prjYy, prjSts, prjTp, itDpm, svnDpm). 미입력 시 전체 조회
+     * @param condition 검색 조건 (apfSts, bgYy, prjSts, prjTp, itDpm, svnDpm). 미입력 시 전체 조회
      * @return HTTP 200 + 정보화사업 목록 ({@link ProjectDto.Response} 리스트)
      */
     @GetMapping

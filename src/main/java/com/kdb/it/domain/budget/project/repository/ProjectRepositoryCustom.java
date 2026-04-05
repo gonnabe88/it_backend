@@ -34,7 +34,7 @@ public interface ProjectRepositoryCustom {
      *
      * <p>구현: {@link ProjectRepositoryImpl#searchByCondition(ProjectDto.SearchCondition)}</p>
      *
-     * @param condition 검색 조건 DTO (apfSts, prjYy, prjSts, prjTp, itDpm, svnDpm)
+     * @param condition 검색 조건 DTO (apfSts, bgYy, prjSts, prjTp, itDpm, svnDpm)
      * @return 조건에 맞는 정보화사업 목록 (DEL_YN='N' 필터 항상 적용)
      */
     List<Bprojm> searchByCondition(ProjectDto.SearchCondition condition);
