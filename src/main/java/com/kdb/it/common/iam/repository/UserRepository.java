@@ -71,4 +71,17 @@ public interface UserRepository extends JpaRepository<CuserI, String>, UserRepos
      * @return 사번이 존재하면 true, 없으면 false
      */
     boolean existsByEno(String eno);
+
+    /**
+     * 팀코드(TEM_C)로 사용자 목록 조회
+     *
+     * <p>
+     * 협의회 당연위원 자동 매핑 시 심의유형별 고정 팀코드로 위원 후보를 조회합니다.
+     * (예: 예산팀=12004, PMO팀=18010, 디지털기획팀=18501 등)
+     * </p>
+     *
+     * @param temC 팀코드 (5자리 이내)
+     * @return 해당 팀의 사용자 목록
+     */
+    java.util.List<CuserI> findByTemC(String temC);
 }

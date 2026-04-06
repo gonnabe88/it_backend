@@ -2,6 +2,7 @@ package com.kdb.it;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Spring Boot 애플리케이션 통합 테스트 클래스
@@ -23,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>테스트 실행: {@code ./mvnw test} 또는 IDE에서 직접 실행</p>
  */
 @SpringBootTest // 전체 Spring Application Context 로드
+@ActiveProfiles("test") // application-test.properties 로드 (DB 제외, 더미 환경변수 사용)
 class ItApplicationTests {
 
 	/**
