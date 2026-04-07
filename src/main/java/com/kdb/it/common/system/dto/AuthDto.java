@@ -87,6 +87,22 @@ public class AuthDto {
         /** 비밀번호 (평문, 저장 시 SHA-256+Base64로 암호화) */
         @Schema(description = "비밀번호")
         private String password;
+
+        /** 부서코드 (BBR_C) */
+        @Schema(description = "부서코드")
+        private String bbrC;
+
+        /** 직위명 (예: 부장, 팀장, 대리) */
+        @Schema(description = "직위명")
+        private String ptCNm;
+
+        /** 팀코드 */
+        @Schema(description = "팀코드")
+        private String temC;
+
+        /** 팀명 */
+        @Schema(description = "팀명")
+        private String temNm;
     }
 
     /**
