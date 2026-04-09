@@ -2,6 +2,8 @@ package com.kdb.it.domain.council.service;
 
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.system.security.CustomUserDetails;
+import com.kdb.it.domain.budget.project.entity.BprojmId;
+import com.kdb.it.domain.budget.project.repository.ProjectRepository;
 import com.kdb.it.domain.council.dto.CouncilDto;
 import com.kdb.it.domain.council.entity.Basctm;
 import com.kdb.it.domain.council.entity.Bpovwm;
@@ -46,6 +48,9 @@ public class CouncilService {
     /** 사용자 정보 리포지토리 — 평가위원 역할 확인용 */
     private final UserRepository userRepository;
 
+    /** 정보화사업 리포지토리 — 사업명/전결권자 조회용 */
+    private final ProjectRepository projectRepository;
+
     // =========================================================================
     // 조회
     // =========================================================================
@@ -65,7 +70,7 @@ public class CouncilService {
         if (userDetails.isAdmin()) {
             // 관리자: 전체 부서 대상으로 결재완료 사업(미신청 포함) + 기신청 협의회 통합 조회
             List<Object[]> rows = councilRepository.findProjectsForCouncilAll(
-                    "정실협 진행중", "예산 작성", "계획 작성", "결재완료");
+                    "\uc815\uc2e4\ud611 \uc9c4\ud589\uc911", "\uc608\uc0b0 \uc791\uc131", "\uacc4\ud68d \uc791\uc131", "\uacb0\uc7ac\uc644\ub8cc");
             log.info("[CouncilList] admin query result count={}", rows.size());
             return rows.stream().map(row -> toListResponseFromRow(row)).collect(Collectors.toList());
         }
@@ -79,7 +84,7 @@ public class CouncilService {
 
         // 일반사용자: SVN_DPM = 사용자 BBR_C 조건으로 결재완료 사업 + 기신청 협의회 통합 조회
         List<Object[]> rows = councilRepository.findProjectsForCouncilByDepartment(
-                userDetails.getBbrC(), "정실협 진행중", "예산 작성", "계획 작성", "결재완료");
+                userDetails.getBbrC(), "\uc815\uc2e4\ud611 \uc9c4\ud589\uc911", "\uc608\uc0b0 \uc791\uc131", "\uacc4\ud68d \uc791\uc131", "\uacb0\uc7ac\uc644\ub8cc");
         log.info("[CouncilList] user query bbrC={}, result count={}", userDetails.getBbrC(), rows.size());
         return rows.stream().map(row -> toListResponseFromRow(row)).collect(Collectors.toList());
     }
@@ -125,6 +130,11 @@ public class CouncilService {
                 .build();
 
         councilRepository.save(council);
+
+        // 사업 상태를 '정실협 진행중'으로 전이
+        councilRepository.updateProjectStatus(request.prjMngNo(), request.prjSno(),
+                "\uc815\uc2e4\ud611 \uc9c4\ud589\uc911");
+
         return asctId;
     }
 
@@ -283,8 +293,31 @@ public class CouncilService {
 
     /**
      * Basctm → DetailResponse 변환
+     * BPROJM에서 사업명(prjNm)과 전결권자(edrt)를 함께 조회합니다.
      */
     private CouncilDto.DetailResponse toDetailResponse(Basctm council) {
+        // BPROJM에서 타당성검토표 기본값 필드 조회
+        String prjNm = null;
+        String edrt = null;
+        java.time.LocalDate sttDt = null;
+        java.time.LocalDate endDt = null;
+        String ncs = null;
+        java.math.BigDecimal prjBg = null;
+        String prjDes = null;
+        String xptEff = null;
+        var projectOpt = projectRepository.findById(new BprojmId(council.getPrjMngNo(), council.getPrjSno()));
+        if (projectOpt.isPresent()) {
+            var p = projectOpt.get();
+            prjNm  = p.getPrjNm();
+            edrt   = p.getEdrt();
+            sttDt  = p.getSttDt();
+            endDt  = p.getEndDt();
+            ncs    = p.getNcs();
+            prjBg  = p.getPrjBg();
+            prjDes = p.getPrjDes();
+            xptEff = p.getXptEff();
+        }
+
         return new CouncilDto.DetailResponse(
                 council.getAsctId(),
                 council.getPrjMngNo(),
@@ -293,7 +326,15 @@ public class CouncilService {
                 council.getDbrTp(),
                 council.getCnrcDt(),
                 council.getCnrcTm(),
-                council.getCnrcPlc()
+                council.getCnrcPlc(),
+                prjNm,
+                edrt,
+                sttDt,
+                endDt,
+                ncs,
+                prjBg,
+                prjDes,
+                xptEff
         );
     }
 }

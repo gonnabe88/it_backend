@@ -106,7 +106,23 @@ public class CouncilDto {
         /** 회의시간 */
         String cnrcTm,
         /** 회의장소 */
-        String cnrcPlc
+        String cnrcPlc,
+        /** 사업명 (BPROJM.PRJ_NM) */
+        String prjNm,
+        /** 전결권자 (BPROJM.EDRT) */
+        String edrt,
+        /** 사업기간 시작일 (BPROJM.STT_DT) */
+        java.time.LocalDate sttDt,
+        /** 사업기간 종료일 (BPROJM.END_DT) */
+        java.time.LocalDate endDt,
+        /** 필요성 (BPROJM.NCS) */
+        String ncs,
+        /** 소요예산 (BPROJM.PRJ_BG) */
+        java.math.BigDecimal prjBg,
+        /** 사업내용 (BPROJM.PRJ_DES) */
+        String prjDes,
+        /** 기대효과 (BPROJM.XPT_EFF) */
+        String xptEff
     ) {}
 
     // =========================================================================

@@ -3,6 +3,7 @@ package com.kdb.it.domain.council.repository;
 import com.kdb.it.domain.council.dto.CouncilDto;
 import com.kdb.it.domain.council.entity.Basctm;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -56,6 +57,20 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
      */
     @Query(value = "SELECT S_ASCT.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
+
+    /**
+     * 사업 PRJ_STS 업데이트 (협의회 신청 시 상태 전이용)
+     *
+     * @param prjMngNo 프로젝트관리번호
+     * @param prjSno   프로젝트순번
+     * @param prjSts   변경할 상태값
+     */
+    @Modifying
+    @Query(value = "UPDATE TAAABB_BPROJM SET PRJ_STS = :prjSts WHERE PRJ_MNG_NO = :prjMngNo AND PRJ_SNO = :prjSno",
+            nativeQuery = true)
+    int updateProjectStatus(@Param("prjMngNo") String prjMngNo,
+                            @Param("prjSno") Integer prjSno,
+                            @Param("prjSts") String prjSts);
 
     /**
      * 소관부서(BBR_C) 기준 협의회 목록 조회 (일반사용자용)

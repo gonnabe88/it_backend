@@ -85,9 +85,11 @@ public class FeasibilityService {
         // 협의회 존재 확인
         councilService.findActiveCouncil(asctId);
 
-        // 사업개요 조회
-        Bpovwm overview = projectOverviewRepository.findByAsctIdAndDelYn(asctId, "N")
-                .orElseThrow(() -> new IllegalArgumentException("아직 작성된 타당성검토표가 없습니다. asctId=" + asctId));
+        // 사업개요 조회 — 최초 진입 시 미작성 상태이면 null 반환 (프론트에서 DEFAULT_FORM으로 초기화)
+        java.util.Optional<Bpovwm> overviewOpt = projectOverviewRepository.findByAsctIdAndDelYn(asctId, "N");
+        if (overviewOpt.isEmpty()) {
+            return null;
+        }
 
         // 자체점검 6개 항목 조회
         List<Bchklc> checkItems = feasibilityCheckRepository.findByAsctIdAndDelYn(asctId, "N");
@@ -95,7 +97,7 @@ public class FeasibilityService {
         // 성과지표 목록 조회 (순번 오름차순)
         List<Bperfm> performances = performanceRepository.findByAsctIdAndDelYnOrderByDtpSnoAsc(asctId, "N");
 
-        return toFeasibilityResponse(overview, checkItems, performances);
+        return toFeasibilityResponse(overviewOpt.get(), checkItems, performances);
     }
 
     // =========================================================================
