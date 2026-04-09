@@ -8,6 +8,7 @@ import com.kdb.it.domain.council.entity.Bpovwm;
 import com.kdb.it.domain.council.repository.CouncilRepository;
 import com.kdb.it.domain.council.repository.ProjectOverviewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
  *
  * <p>Design Ref: §2.1 Architecture Decision — Clean Architecture, 서비스 분리</p>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -57,11 +59,15 @@ public class CouncilService {
      * @return 권한에 맞는 협의회 목록
      */
     public List<CouncilDto.ListResponse> getCouncilList(CustomUserDetails userDetails) {
+        log.info("[CouncilList] eno={}, isAdmin={}, isCommitteeMember={}, bbrC={}",
+                userDetails.getEno(), userDetails.isAdmin(), isCommitteeMember(userDetails), userDetails.getBbrC());
+
         if (userDetails.isAdmin()) {
             // 관리자: 전체 부서 대상으로 결재완료 사업(미신청 포함) + 기신청 협의회 통합 조회
-            return councilRepository.findProjectsForCouncilAll().stream()
-                    .map(row -> toListResponseFromRow(row))
-                    .collect(Collectors.toList());
+            List<Object[]> rows = councilRepository.findProjectsForCouncilAll(
+                    "정실협 진행중", "예산 작성", "계획 작성", "결재완료");
+            log.info("[CouncilList] admin query result count={}", rows.size());
+            return rows.stream().map(row -> toListResponseFromRow(row)).collect(Collectors.toList());
         }
 
         if (isCommitteeMember(userDetails)) {
@@ -72,9 +78,10 @@ public class CouncilService {
         }
 
         // 일반사용자: SVN_DPM = 사용자 BBR_C 조건으로 결재완료 사업 + 기신청 협의회 통합 조회
-        return councilRepository.findProjectsForCouncilByDepartment(userDetails.getBbrC()).stream()
-                .map(row -> toListResponseFromRow(row))
-                .collect(Collectors.toList());
+        List<Object[]> rows = councilRepository.findProjectsForCouncilByDepartment(
+                userDetails.getBbrC(), "정실협 진행중", "예산 작성", "계획 작성", "결재완료");
+        log.info("[CouncilList] user query bbrC={}, result count={}", userDetails.getBbrC(), rows.size());
+        return rows.stream().map(row -> toListResponseFromRow(row)).collect(Collectors.toList());
     }
 
     /**

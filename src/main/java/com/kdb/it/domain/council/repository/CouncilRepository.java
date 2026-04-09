@@ -129,11 +129,9 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
                AND a.DEL_YN     = 'N'
             WHERE p.DEL_YN = 'N'
               AND (
-                  /* 협의회 신청된 건: PRJ_STS = '정실협 진행중' */
-                  (a.ASCT_ID IS NOT NULL AND p.PRJ_STS = '정실협 진행중')
+                  (a.ASCT_ID IS NOT NULL AND p.PRJ_STS = :stsInProgress)
                   OR
-                  /* 협의회 미신청 결재완료 사업: PRJ_STS = '예산 작성' */
-                  (a.ASCT_ID IS NULL AND p.PRJ_STS = '예산 작성'
+                  (a.ASCT_ID IS NULL AND p.PRJ_STS IN (:stsPending1, :stsPending2)
                   AND EXISTS (
                       SELECT 1
                       FROM TAAABB_CAPPLA ca
@@ -141,7 +139,7 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
                       WHERE ca.ORC_TB_CD  = 'BPROJM'
                         AND ca.ORC_PK_VL  = p.PRJ_MNG_NO
                         AND ca.ORC_SNO_VL = p.PRJ_SNO
-                        AND cm.APF_STS    = '결재완료'
+                        AND cm.APF_STS    = :apfSts
                         AND ca.APF_REL_SNO = (
                             SELECT MAX(ca2.APF_REL_SNO)
                             FROM TAAABB_CAPPLA ca2
@@ -153,7 +151,11 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
               )
             ORDER BY p.FST_ENR_DTM DESC
             """, nativeQuery = true)
-    List<Object[]> findProjectsForCouncilAll();
+    List<Object[]> findProjectsForCouncilAll(
+            @Param("stsInProgress") String stsInProgress,
+            @Param("stsPending1") String stsPending1,
+            @Param("stsPending2") String stsPending2,
+            @Param("apfSts") String apfSts);
 
     /**
      * 일반사용자용 협의회 신청 대상 목록 조회 (통합)
@@ -194,11 +196,9 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
             WHERE p.SVN_DPM = :svnDpm
               AND p.DEL_YN  = 'N'
               AND (
-                  /* 협의회 신청된 건: PRJ_STS = '정실협 진행중' */
-                  (a.ASCT_ID IS NOT NULL AND p.PRJ_STS = '정실협 진행중')
+                  (a.ASCT_ID IS NOT NULL AND p.PRJ_STS = :stsInProgress)
                   OR
-                  /* 협의회 미신청 결재완료 사업: PRJ_STS = '예산 작성' */
-                  (a.ASCT_ID IS NULL AND p.PRJ_STS = '예산 작성'
+                  (a.ASCT_ID IS NULL AND p.PRJ_STS IN (:stsPending1, :stsPending2)
                   AND EXISTS (
                       SELECT 1
                       FROM TAAABB_CAPPLA ca
@@ -206,7 +206,7 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
                       WHERE ca.ORC_TB_CD  = 'BPROJM'
                         AND ca.ORC_PK_VL  = p.PRJ_MNG_NO
                         AND ca.ORC_SNO_VL = p.PRJ_SNO
-                        AND cm.APF_STS    = '결재완료'
+                        AND cm.APF_STS    = :apfSts
                         AND ca.APF_REL_SNO = (
                             SELECT MAX(ca2.APF_REL_SNO)
                             FROM TAAABB_CAPPLA ca2
@@ -218,5 +218,10 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
               )
             ORDER BY p.FST_ENR_DTM DESC
             """, nativeQuery = true)
-    List<Object[]> findProjectsForCouncilByDepartment(@Param("svnDpm") String svnDpm);
+    List<Object[]> findProjectsForCouncilByDepartment(
+            @Param("svnDpm") String svnDpm,
+            @Param("stsInProgress") String stsInProgress,
+            @Param("stsPending1") String stsPending1,
+            @Param("stsPending2") String stsPending2,
+            @Param("apfSts") String apfSts);
 }
