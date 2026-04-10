@@ -1,9 +1,10 @@
 # 프로젝트 백로그 (Project Backlog)
 
-> 마지막 갱신일: 2026-03-25
+> 마지막 갱신일: 2026-04-10
 
 ## 코드 품질
 
+*(현재 해결이 필요한 코드 품질 이슈 없음)*
 
 ## 완료된 항목
 
@@ -48,3 +49,8 @@
 - [x] 전체 소스 코드 주석 전수 점검 (81개 파일) — 한글 JavaDoc/인라인 주석 표준 충족 확인 (2026-03-25)
 - [x] 테스트 코드 (ProjectServiceTest, AuthControllerTest 등) 컴파일 오류 및 도메인 패키지 이동 문제 수정 (2026-03-26)
 - [x] 엔티티 클래스 전수 검사하여 데이터베이스 스키마 JPA 3.2 주석(`@Table(comment=...)`, `@Column`) 부착 (2026-03-30)
+- [x] 전체 프로젝트 문서/주석 리프레시 — AdminController JavaDoc 보강, README/CLAUDE/TASK.md 최신화 (2026-04-10)
+- [x] 정보화실무협의회(council) 도메인 구현 — CouncilController(23 엔드포인트), 8개 서비스, 14개 엔티티, 9개 Repository (2026-04-05)
+- [x] 시스템관리(admin) 모듈 구현 — AdminController/AdminService, @PreAuthorize ROLE_ADMIN 이중 보호 (2026-04-04)
+- [x] 예산작업(budget/work) 구현 — BudgetWorkController(3 API), Bbugtm 엔티티, 편성률 Upsert (2026-04-04)
+- [x] 정보기술부문 계획(budget/plan) 구현 — PlanController, Bplanm/Bproja 엔티티, JSON 스냅샷 저장 (2026-04-02)

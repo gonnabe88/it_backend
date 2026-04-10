@@ -116,12 +116,25 @@ public class AdminController {
     // 자격등급 관리 (TAAABB_CAUTHI) — M3
     // =========================================================================
 
+    /**
+     * 자격등급 목록 조회
+     * 삭제되지 않은(DEL_YN='N') 전체 자격등급을 반환합니다.
+     *
+     * @return 자격등급 응답 DTO 목록
+     */
     @GetMapping("/auth-grades")
     @Operation(summary = "자격등급 목록 조회", description = "삭제되지 않은 전체 자격등급을 반환합니다.")
     public ResponseEntity<List<AdminDto.AuthGradeResponse>> getAuthGrades() {
         return ResponseEntity.ok(adminService.getAuthGrades());
     }
 
+    /**
+     * 자격등급 추가
+     * ATH_ID 중복 시 400 Bad Request를 반환합니다.
+     *
+     * @param req 자격등급 생성 요청 DTO
+     * @return 201 Created
+     */
     @PostMapping("/auth-grades")
     @Operation(summary = "자격등급 추가", description = "새로운 자격등급을 추가합니다. ATH_ID 중복 시 400 반환.")
     public ResponseEntity<Void> createAuthGrade(@Valid @RequestBody AdminDto.AuthGradeRequest req) {
@@ -129,6 +142,13 @@ public class AdminController {
         return ResponseEntity.status(201).build();
     }
 
+    /**
+     * 자격등급 수정
+     *
+     * @param athId 자격등급ID
+     * @param req   자격등급 수정 요청 DTO
+     * @return 200 OK
+     */
     @PutMapping("/auth-grades/{athId}")
     @Operation(summary = "자격등급 수정", description = "자격등급 정보를 수정합니다.")
     public ResponseEntity<Void> updateAuthGrade(
@@ -138,6 +158,13 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 자격등급 논리 삭제 (Soft Delete)
+     * DEL_YN='Y' 처리 -- 물리 삭제 아님.
+     *
+     * @param athId 자격등급ID
+     * @return 204 No Content
+     */
     @DeleteMapping("/auth-grades/{athId}")
     @Operation(summary = "자격등급 삭제(논리)", description = "DEL_YN='Y'로 논리 삭제합니다.")
     public ResponseEntity<Void> deleteAuthGrade(@PathVariable("athId") String athId) {
@@ -149,12 +176,25 @@ public class AdminController {
     // 역할 관리 (TAAABB_CROLEI) — M4
     // =========================================================================
 
+    /**
+     * 역할(사용자-자격등급 매핑) 목록 조회
+     * 삭제되지 않은(DEL_YN='N') 전체 역할 목록을 반환합니다.
+     *
+     * @return 역할 응답 DTO 목록
+     */
     @GetMapping("/roles")
     @Operation(summary = "역할 목록 조회", description = "삭제되지 않은 전체 역할(사용자↔자격등급 매핑)을 반환합니다.")
     public ResponseEntity<List<AdminDto.RoleResponse>> getRoles() {
         return ResponseEntity.ok(adminService.getRoles());
     }
 
+    /**
+     * 역할 추가 (사용자에게 자격등급 부여)
+     * 복합키(athId+eno) 중복 시 400 Bad Request를 반환합니다.
+     *
+     * @param req 역할 생성 요청 DTO
+     * @return 201 Created
+     */
     @PostMapping("/roles")
     @Operation(summary = "역할 추가", description = "사용자에게 자격등급을 부여합니다. 복합키 중복 시 400 반환.")
     public ResponseEntity<Void> createRole(@Valid @RequestBody AdminDto.RoleRequest req) {
@@ -162,6 +202,14 @@ public class AdminController {
         return ResponseEntity.status(201).build();
     }
 
+    /**
+     * 역할 사용여부 수정
+     *
+     * @param athId 자격등급ID
+     * @param eno   사원번호
+     * @param req   역할 수정 요청 DTO
+     * @return 200 OK
+     */
     @PutMapping("/roles/{athId}/{eno}")
     @Operation(summary = "역할 수정", description = "역할 사용여부를 수정합니다.")
     public ResponseEntity<Void> updateRole(
@@ -172,6 +220,13 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 역할 논리 삭제 (Soft Delete)
+     *
+     * @param athId 자격등급ID
+     * @param eno   사원번호
+     * @return 204 No Content
+     */
     @DeleteMapping("/roles/{athId}/{eno}")
     @Operation(summary = "역할 삭제(논리)", description = "DEL_YN='Y'로 논리 삭제합니다.")
     public ResponseEntity<Void> deleteRole(
@@ -185,12 +240,25 @@ public class AdminController {
     // 사용자 관리 (TAAABB_CUSERI) — M5
     // =========================================================================
 
+    /**
+     * 사용자 목록 조회
+     * 삭제되지 않은(DEL_YN='N') 전체 사용자를 반환합니다.
+     *
+     * @return 사용자 응답 DTO 목록
+     */
     @GetMapping("/users")
     @Operation(summary = "사용자 목록 조회", description = "삭제되지 않은 전체 사용자를 반환합니다.")
     public ResponseEntity<List<AdminDto.UserResponse>> getUsers() {
         return ResponseEntity.ok(adminService.getUsers());
     }
 
+    /**
+     * 사용자 추가
+     * ENO 중복 시 400 Bad Request를 반환합니다.
+     *
+     * @param req 사용자 생성 요청 DTO
+     * @return 201 Created
+     */
     @PostMapping("/users")
     @Operation(summary = "사용자 추가", description = "신규 사용자를 추가합니다. ENO 중복 시 400 반환.")
     public ResponseEntity<Void> createUser(@Valid @RequestBody AdminDto.UserRequest req) {
@@ -198,6 +266,14 @@ public class AdminController {
         return ResponseEntity.status(201).build();
     }
 
+    /**
+     * 사용자 기본정보 수정
+     * password 필드가 포함된 경우 비밀번호도 함께 변경됩니다.
+     *
+     * @param eno 사원번호
+     * @param req 사용자 수정 요청 DTO
+     * @return 200 OK
+     */
     @PutMapping("/users/{eno}")
     @Operation(summary = "사용자 수정", description = "사용자 기본정보를 수정합니다. password 포함 시 비밀번호도 변경됩니다.")
     public ResponseEntity<Void> updateUser(
@@ -207,6 +283,12 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 사용자 논리 삭제 (Soft Delete)
+     *
+     * @param eno 사원번호
+     * @return 204 No Content
+     */
     @DeleteMapping("/users/{eno}")
     @Operation(summary = "사용자 삭제(논리)", description = "DEL_YN='Y'로 논리 삭제합니다.")
     public ResponseEntity<Void> deleteUser(@PathVariable("eno") String eno) {
@@ -218,12 +300,25 @@ public class AdminController {
     // 조직 관리 (TAAABB_CORGNI) — M6
     // =========================================================================
 
+    /**
+     * 조직 목록 조회
+     * 삭제되지 않은(DEL_YN='N') 전체 조직을 반환합니다.
+     *
+     * @return 조직 응답 DTO 목록
+     */
     @GetMapping("/organizations")
     @Operation(summary = "조직 목록 조회", description = "삭제되지 않은 전체 조직을 반환합니다.")
     public ResponseEntity<List<AdminDto.OrgResponse>> getOrganizations() {
         return ResponseEntity.ok(adminService.getOrganizations());
     }
 
+    /**
+     * 조직 추가
+     * 조직코드 중복 시 400 Bad Request를 반환합니다.
+     *
+     * @param req 조직 생성 요청 DTO
+     * @return 201 Created
+     */
     @PostMapping("/organizations")
     @Operation(summary = "조직 추가", description = "신규 조직을 추가합니다. 조직코드 중복 시 400 반환.")
     public ResponseEntity<Void> createOrganization(@Valid @RequestBody AdminDto.OrgRequest req) {
@@ -231,6 +326,13 @@ public class AdminController {
         return ResponseEntity.status(201).build();
     }
 
+    /**
+     * 조직 정보 수정
+     *
+     * @param orgC 조직코드
+     * @param req  조직 수정 요청 DTO
+     * @return 200 OK
+     */
     @PutMapping("/organizations/{orgC}")
     @Operation(summary = "조직 수정", description = "조직 정보를 수정합니다.")
     public ResponseEntity<Void> updateOrganization(
@@ -240,6 +342,12 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 조직 논리 삭제 (Soft Delete)
+     *
+     * @param orgC 조직코드
+     * @return 204 No Content
+     */
     @DeleteMapping("/organizations/{orgC}")
     @Operation(summary = "조직 삭제(논리)", description = "DEL_YN='Y'로 논리 삭제합니다.")
     public ResponseEntity<Void> deleteOrganization(@PathVariable("orgC") String orgC) {
@@ -251,6 +359,12 @@ public class AdminController {
     // 로그인 이력 조회 (TAAABB_CLOGNH) — M7
     // =========================================================================
 
+    /**
+     * 전체 로그인 이력 페이지네이션 조회 (최신순)
+     *
+     * @param pageable 페이지 정보 (기본: 50건, lgnDtm 내림차순)
+     * @return 페이지네이션된 로그인 이력 응답
+     */
     @GetMapping("/login-history")
     @Operation(summary = "로그인 이력 조회", description = "전체 로그인 이력을 최신순으로 페이지네이션하여 반환합니다.")
     public ResponseEntity<Page<AdminDto.LoginHistoryResponse>> getLoginHistory(
@@ -262,6 +376,12 @@ public class AdminController {
     // JWT 토큰 조회 (TAAABB_CRTOKM) — M7
     // =========================================================================
 
+    /**
+     * JWT 갱신토큰 목록 조회
+     * 보안상 토큰값은 앞 20자만 마스킹하여 표시합니다.
+     *
+     * @return 갱신토큰 응답 DTO 목록
+     */
     @GetMapping("/tokens")
     @Operation(summary = "JWT 갱신토큰 목록 조회", description = "전체 갱신토큰 목록을 반환합니다. 토큰값은 앞 20자만 표시.")
     public ResponseEntity<List<AdminDto.TokenResponse>> getTokens() {
@@ -272,6 +392,12 @@ public class AdminController {
     // 첨부파일 조회 (TAAABB_CFILEM) — M7
     // =========================================================================
 
+    /**
+     * 첨부파일 목록 조회
+     * 삭제되지 않은(DEL_YN='N') 전체 첨부파일을 반환합니다.
+     *
+     * @return 첨부파일 응답 DTO 목록
+     */
     @GetMapping("/files")
     @Operation(summary = "첨부파일 목록 조회", description = "삭제되지 않은 전체 첨부파일 목록을 반환합니다.")
     public ResponseEntity<List<AdminDto.FileResponse>> getFiles() {
@@ -282,6 +408,12 @@ public class AdminController {
     // 대시보드 통계 — M8
     // =========================================================================
 
+    /**
+     * 일별 로그인 통계 조회 (대시보드용)
+     * 최근 30일간 일별 로그인 성공 건수를 집계하여 반환합니다.
+     *
+     * @return 일별 로그인 통계 DTO 목록 (날짜 오름차순)
+     */
     @GetMapping("/dashboard/login-stats")
     @Operation(summary = "일별 로그인 통계", description = "최근 30일간 일별 로그인 성공 건수를 반환합니다.")
     public ResponseEntity<List<AdminDto.LoginStatResponse>> getLoginStats() {
