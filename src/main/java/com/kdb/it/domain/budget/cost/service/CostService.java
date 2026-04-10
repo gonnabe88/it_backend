@@ -388,31 +388,40 @@ public class CostService {
      */
     private void setBudgetCategory(CostDto.Response response) {
         BigDecimal totalBg = response.getItMngcBg() != null ? response.getItMngcBg() : BigDecimal.ZERO;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        // 세부 자본예산 필드 초기화
+        response.setAssetBg(zero);
+        response.setDevBg(zero);
+        response.setMachBg(zero);
+        response.setIntanBg(zero);
+        response.setCostBg(zero);
 
         if (response.getIoeC() == null || response.getIoeC().isEmpty()) {
-            response.setAssetBg(BigDecimal.ZERO);
-            response.setCostBg(BigDecimal.ZERO);
             return;
         }
 
         Optional<Ccodem> codeOpt = ccodemRepository.findByCdIdWithValidDate(response.getIoeC(), null);
 
         if (codeOpt.isPresent()) {
-            String cttTp = codeOpt.get().getCttTp();
+            Ccodem code = codeOpt.get();
+            String cttTp = code.getCttTp();
             if ("IOE_CPIT".equals(cttTp)) {
                 response.setAssetBg(totalBg);
-                response.setCostBg(BigDecimal.ZERO);
+                // 코드설명(cdDes) 기준으로 세부 분류
+                String cdDes = code.getCdDes() != null ? code.getCdDes() : "";
+                switch (cdDes) {
+                    case "개발비" -> response.setDevBg(totalBg);
+                    case "기계장치" -> response.setMachBg(totalBg);
+                    case "기타무형자산" -> response.setIntanBg(totalBg);
+                }
                 return;
             }
             if (COST_CTT_TPS.contains(cttTp)) {
-                response.setAssetBg(BigDecimal.ZERO);
                 response.setCostBg(totalBg);
                 return;
             }
         }
-
-        response.setAssetBg(BigDecimal.ZERO);
-        response.setCostBg(BigDecimal.ZERO);
     }
 
     /** 응답 DTO에 신청서 정보, 코드명, 예산 구분을 일괄 설정 */

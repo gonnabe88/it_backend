@@ -665,11 +665,23 @@ public class ProjectService {
      */
     private void setBudgetSummaryFromItems(ProjectDto.Response response,
             List<com.kdb.it.domain.budget.project.entity.Bitemm> bitemms) {
-        // 공통코드에서 자본예산 대상 비목코드(cdId) 조회 (cttTp = IOE_CPIT)
-        java.util.Set<String> assetTypes = ccodemRepository.findByCttTpWithValidDate("IOE_CPIT", null)
-                .stream()
+        // 공통코드에서 자본예산 대상 비목코드 조회 (cttTp = IOE_CPIT)
+        List<com.kdb.it.common.code.entity.Ccodem> assetCodes = ccodemRepository
+                .findByCttTpWithValidDate("IOE_CPIT", null);
+        java.util.Set<String> assetTypes = assetCodes.stream()
                 .map(com.kdb.it.common.code.entity.Ccodem::getCdId)
                 .collect(java.util.stream.Collectors.toSet());
+
+        // 자본예산 비목코드를 코드설명(cdDes) 기준으로 세부 분류 (개발비/기계장치/기타무형자산)
+        java.util.Map<String, java.util.Set<String>> assetSubTypes = assetCodes.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        c -> c.getCdDes() != null ? c.getCdDes() : "",
+                        java.util.stream.Collectors.mapping(
+                                com.kdb.it.common.code.entity.Ccodem::getCdId,
+                                java.util.stream.Collectors.toSet())));
+        java.util.Set<String> devTypes = assetSubTypes.getOrDefault("개발비", java.util.Collections.emptySet());
+        java.util.Set<String> machTypes = assetSubTypes.getOrDefault("기계장치", java.util.Collections.emptySet());
+        java.util.Set<String> intanTypes = assetSubTypes.getOrDefault("기타무형자산", java.util.Collections.emptySet());
 
         // 공통코드에서 일반관리비 대상 비목코드(cdId) 조회 (cttTp = IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE)
         java.util.Set<String> costTypes = java.util.stream.Stream.of("IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE")
@@ -677,27 +689,49 @@ public class ProjectService {
                 .map(com.kdb.it.common.code.entity.Ccodem::getCdId)
                 .collect(java.util.stream.Collectors.toSet());
 
-        // 자본예산 ���계 계산 (gclAmt × xcr, xcr이 null이면 1로 간주)
-        java.math.BigDecimal assetBg = bitemms.stream()
-                .filter(item -> item.getGclDtt() != null && assetTypes.contains(item.getGclDtt()))
-                .filter(item -> item.getGclAmt() != null)
-                .map(item -> {
-                    java.math.BigDecimal xcr = item.getXcr() != null ? item.getXcr() : java.math.BigDecimal.ONE;
+        // 품목별 금액 계산 헬퍼 (gclAmt × xcr, xcr이 null이거나 0이면 1로 간주)
+        java.util.function.Function<com.kdb.it.domain.budget.project.entity.Bitemm, java.math.BigDecimal> calcAmt =
+                item -> {
+                    java.math.BigDecimal xcr = (item.getXcr() != null && item.getXcr().compareTo(java.math.BigDecimal.ZERO) != 0)
+                            ? item.getXcr() : java.math.BigDecimal.ONE;
                     return item.getGclAmt().multiply(xcr);
-                })
+                };
+
+        // 유효한 품목만 필터링 (gclDtt, gclAmt가 null이 아닌 항목)
+        List<com.kdb.it.domain.budget.project.entity.Bitemm> validItems = bitemms.stream()
+                .filter(item -> item.getGclDtt() != null && item.getGclAmt() != null)
+                .collect(java.util.stream.Collectors.toList());
+
+        // 자본예산 합계 계산
+        java.math.BigDecimal assetBg = validItems.stream()
+                .filter(item -> assetTypes.contains(item.getGclDtt()))
+                .map(calcAmt)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
-        // 일반관리비 합계 계산 (gclAmt × xcr, xcr이 null이면 1로 간주)
-        java.math.BigDecimal costBg = bitemms.stream()
-                .filter(item -> item.getGclDtt() != null && costTypes.contains(item.getGclDtt()))
-                .filter(item -> item.getGclAmt() != null)
-                .map(item -> {
-                    java.math.BigDecimal xcr = item.getXcr() != null ? item.getXcr() : java.math.BigDecimal.ONE;
-                    return item.getGclAmt().multiply(xcr);
-                })
+        // 자본예산 세부 분류 합계 계산
+        java.math.BigDecimal devBg = validItems.stream()
+                .filter(item -> devTypes.contains(item.getGclDtt()))
+                .map(calcAmt)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal machBg = validItems.stream()
+                .filter(item -> machTypes.contains(item.getGclDtt()))
+                .map(calcAmt)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal intanBg = validItems.stream()
+                .filter(item -> intanTypes.contains(item.getGclDtt()))
+                .map(calcAmt)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        // 일반관리비 합계 계산
+        java.math.BigDecimal costBg = validItems.stream()
+                .filter(item -> costTypes.contains(item.getGclDtt()))
+                .map(calcAmt)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
         response.setAssetBg(assetBg);
+        response.setDevBg(devBg);
+        response.setMachBg(machBg);
+        response.setIntanBg(intanBg);
         response.setCostBg(costBg);
     }
 
