@@ -173,10 +173,11 @@ public class ApplicationService {
                     if (targetOccurrences.containsKey(id)
                             && targetOccurrences.get(id).contains(currentJsonOccurrence)) {
                         if (approverNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-                            // date 필드에 현재 날짜를 "yyyy.MM.dd" 형식으로 기록
+                            // date 필드에 현재 날짜·시각을 ISO 형식("yyyy-MM-dd'T'HH:mm:ss")으로 기록
+                            // 프론트엔드 splitDateTime()이 'T' 구분자로 날짜/시간을 분리합니다.
                             ((com.fasterxml.jackson.databind.node.ObjectNode) approverNode)
-                                    .put("date", LocalDate.now()
-                                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd")));
+                                    .put("date", java.time.LocalDateTime.now()
+                                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
                             updated = true;
                         }
                     }
@@ -263,6 +264,8 @@ public class ApplicationService {
 
         // 2. 결재선 생성: 요청받은 결재자 사번 목록을 순번(dcdSqn)대로 저장
         List<String> approverEnos = request.getApproverEnos();
+        List<Cdecim> savedApprovers = new java.util.ArrayList<>();
+
         for (int i = 0; i < approverEnos.size(); i++) {
             Cdecim cdecim = Cdecim.builder()
                     .dcdMngNo(apfMngNo) // 결재관리번호 (FK)
@@ -271,6 +274,19 @@ public class ApplicationService {
                     .lstDcdYn(i == approverEnos.size() - 1 ? "Y" : "N") // 마지막 결재자 여부
                     .build();
             approverRepository.save(cdecim);
+            savedApprovers.add(cdecim);
+        }
+
+        // 3. 기안자 == 1차 결재자(팀장) 자동 승인 처리
+        //    기안자와 첫 번째 결재자가 동일한 경우, 신청 행위 자체를 묵시적 1차 승인으로 간주합니다.
+        //    - Cdecim 레코드를 즉시 승인 상태로 전환하여 이후 2차 결재자(부서장)가 바로 결재 가능하게 합니다.
+        //    - updateApprovalLineInDetail()을 호출하여 JSON 결재선의 팀장 date 필드도 함께 기록합니다.
+        //      (이 처리가 없으면 JSON date가 빈 문자열로 남아 PDF 상 팀장 결재 시각이 누락됩니다.)
+        if (!approverEnos.isEmpty() && approverEnos.get(0).equals(request.getRqsEno())) {
+            Cdecim firstApprover = savedApprovers.get(0);
+            firstApprover.approve("기안자 자동 승인", "승인");
+            approverRepository.save(firstApprover);
+            updateApprovalLineInDetail(capplm, savedApprovers, java.util.List.of(firstApprover));
         }
 
         return apfMngNo; // 생성된 신청관리번호 반환
