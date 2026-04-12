@@ -1,5 +1,6 @@
 package com.kdb.it.domain.budget.status.repository;
 
+import com.kdb.it.common.iam.entity.QCorgnI;
 import com.kdb.it.domain.budget.cost.entity.QBcostm;
 import com.kdb.it.domain.budget.project.entity.QBitemm;
 import com.kdb.it.domain.budget.project.entity.QBprojm;
@@ -59,6 +60,18 @@ public class BudgetStatusQueryRepositoryImpl implements BudgetStatusQueryReposit
         QBprojm p = QBprojm.bprojm;
         QBitemm i = QBitemm.bitemm;
         QBbugtm b = new QBbugtm("b");
+        QCorgnI svnOrg = new QCorgnI("svnOrg");  // 주관부서 조직 조인용
+        QCorgnI itOrg = new QCorgnI("itOrg");     // IT담당부서 조직 조인용
+
+        // 담당자 행번 → 이름 변환용 스칼라 서브쿼리 (JPQL 엔티티명 사용)
+        StringExpression svnDpmTlrNm = Expressions.stringTemplate(
+                "(SELECT u.usrNm FROM CuserI u WHERE u.eno = {0})", p.svnDpmTlr);
+        StringExpression svnDpmCgprNm = Expressions.stringTemplate(
+                "(SELECT u.usrNm FROM CuserI u WHERE u.eno = {0})", p.svnDpmCgpr);
+        StringExpression itDpmTlrNm = Expressions.stringTemplate(
+                "(SELECT u.usrNm FROM CuserI u WHERE u.eno = {0})", p.itDpmTlr);
+        StringExpression itDpmCgprNm = Expressions.stringTemplate(
+                "(SELECT u.usrNm FROM CuserI u WHERE u.eno = {0})", p.itDpmCgpr);
 
         // 편성요청 금액: BITEMM의 GCL_AMT * COALESCE(XCR, 1)를 품목구분별로 피벗
         NumberExpression<BigDecimal> reqDev = sumItemAmtByPrefix(i, IOE_DEV);
@@ -81,13 +94,15 @@ public class BudgetStatusQueryRepositoryImpl implements BudgetStatusQueryReposit
         List<Tuple> tuples = queryFactory
                 .select(
                         p.prjMngNo, p.prjTp, p.pulDtt, p.prjNm, p.prjDes,
-                        p.svnHdq, p.svnDpm, p.svnDpmTlr, p.svnDpmCgpr,
-                        p.itDpm, p.itDpmTlr, p.itDpmCgpr,
+                        p.svnHdq, p.svnDpm, svnOrg.bbrNm, p.svnDpmTlr, svnDpmTlrNm, p.svnDpmCgpr, svnDpmCgprNm,
+                        p.itDpm, itOrg.bbrNm, p.itDpmTlr, itDpmTlrNm, p.itDpmCgpr, itDpmCgprNm,
                         p.prjPulPtt, p.sttDt, p.endDt, p.rprSts, p.edrt,
                         reqDev, reqMach, reqIntan, reqRent, reqTravel, reqService, reqMisc,
                         adjDev, adjMach, adjIntan, adjRent, adjTravel, adjService, adjMisc
                 )
                 .from(p)
+                .leftJoin(svnOrg).on(svnOrg.prlmOgzCCone.eq(p.svnDpm))
+                .leftJoin(itOrg).on(itOrg.prlmOgzCCone.eq(p.itDpm))
                 .leftJoin(i).on(
                         i.prjMngNo.eq(p.prjMngNo),
                         i.prjSno.eq(p.prjSno),
@@ -108,8 +123,8 @@ public class BudgetStatusQueryRepositoryImpl implements BudgetStatusQueryReposit
                 )
                 .groupBy(
                         p.prjMngNo, p.prjSno, p.prjTp, p.pulDtt, p.prjNm, p.prjDes,
-                        p.svnHdq, p.svnDpm, p.svnDpmTlr, p.svnDpmCgpr,
-                        p.itDpm, p.itDpmTlr, p.itDpmCgpr,
+                        p.svnHdq, p.svnDpm, svnOrg.bbrNm, p.svnDpmTlr, p.svnDpmCgpr,
+                        p.itDpm, itOrg.bbrNm, p.itDpmTlr, p.itDpmCgpr,
                         p.prjPulPtt, p.sttDt, p.endDt, p.rprSts, p.edrt
                 )
                 .orderBy(p.prjMngNo.asc())
@@ -143,8 +158,12 @@ public class BudgetStatusQueryRepositoryImpl implements BudgetStatusQueryReposit
             return new BudgetStatusDto.ProjectResponse(
                     t.get(p.prjMngNo), t.get(p.prjTp), t.get(p.pulDtt),
                     t.get(p.prjNm), t.get(p.prjDes),
-                    t.get(p.svnHdq), t.get(p.svnDpm), t.get(p.svnDpmTlr), t.get(p.svnDpmCgpr),
-                    t.get(p.itDpm), t.get(p.itDpmTlr), t.get(p.itDpmCgpr),
+                    t.get(p.svnHdq), t.get(p.svnDpm), t.get(svnOrg.bbrNm),
+                    t.get(p.svnDpmTlr), t.get(svnDpmTlrNm),
+                    t.get(p.svnDpmCgpr), t.get(svnDpmCgprNm),
+                    t.get(p.itDpm), t.get(itOrg.bbrNm),
+                    t.get(p.itDpmTlr), t.get(itDpmTlrNm),
+                    t.get(p.itDpmCgpr), t.get(itDpmCgprNm),
                     t.get(p.prjPulPtt), t.get(p.sttDt), t.get(p.endDt),
                     t.get(p.rprSts), t.get(p.edrt),
                     rDev, rMach, rIntan, rAsset,
