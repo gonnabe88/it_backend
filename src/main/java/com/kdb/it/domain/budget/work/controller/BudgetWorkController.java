@@ -116,4 +116,27 @@ public class BudgetWorkController {
             @RequestParam("bgYy") String bgYy) {
         return ResponseEntity.ok(budgetWorkService.getSummary(bgYy));
     }
+
+    /**
+     * 사업별 편성 결과 조회 (API-04)
+     *
+     * <p>
+     * BBUGTM에서 예산년도별 편성 결과를 사업(원본PK) 기준으로 집계하여 반환합니다.
+     * </p>
+     *
+     * @param bgYy 예산년도 (예: 2026)
+     * @return HTTP 200 + 사업별 편성 결과 요약 (사업명, 요청금액, 편성금액 + 합계)
+     */
+    @Operation(summary = "사업별 편성 결과 조회",
+            description = "예산년도별 편성 결과를 사업(정보화사업/전산업무비)별로 집계하여 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = BudgetWorkDto.ProjectSummaryResponse.class)))
+    })
+    @GetMapping("/project-summary")
+    public ResponseEntity<BudgetWorkDto.ProjectSummaryResponse> getProjectSummary(
+            @Parameter(description = "예산년도", required = true, example = "2026")
+            @RequestParam("bgYy") String bgYy) {
+        return ResponseEntity.ok(budgetWorkService.getProjectSummary(bgYy));
+    }
 }

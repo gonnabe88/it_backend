@@ -3,7 +3,11 @@ package com.kdb.it.domain.budget.work.service;
 import com.kdb.it.common.code.entity.Ccodem;
 import com.kdb.it.common.code.repository.CodeRepository;
 import com.kdb.it.domain.budget.cost.entity.Bcostm;
+import com.kdb.it.domain.budget.cost.repository.CostRepository;
 import com.kdb.it.domain.budget.project.entity.Bitemm;
+import com.kdb.it.domain.budget.project.entity.Bprojm;
+import com.kdb.it.domain.budget.project.repository.ProjectItemRepository;
+import com.kdb.it.domain.budget.project.repository.ProjectRepository;
 import com.kdb.it.domain.budget.work.dto.BudgetWorkDto;
 import com.kdb.it.domain.budget.work.entity.Bbugtm;
 import com.kdb.it.domain.budget.work.repository.BbugtmRepository;
@@ -15,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -46,6 +52,15 @@ public class BudgetWorkService {
 
     /** 공통코드 리포지토리 (TAAABB_CCODEM): 편성비목(DUP_IOE) 조회용 */
     private final CodeRepository codeRepository;
+
+    /** 정보화사업 리포지토리 (TAAABB_BPROJM): 사업명 조회용 */
+    private final ProjectRepository projectRepository;
+
+    /** 품목 리포지토리 (TAAABB_BITEMM): 품목→프로젝트 매핑용 */
+    private final ProjectItemRepository projectItemRepository;
+
+    /** 전산업무비 리포지토리 (TAAABB_BCOSTM): 계약명 조회용 */
+    private final CostRepository costRepository;
 
     /**
      * 편성비목 목록 조회 (API-01)
@@ -88,8 +103,8 @@ public class BudgetWorkService {
                     .orElse(null);
 
             return new BudgetWorkDto.IoeCategoryResponse(
-                    code.getCdId(), code.getCdNm(), code.getCdva(),
-                    prefix, dupRt, requestAmount);
+                    code.getCdId(), code.getCdDes() != null ? code.getCdDes() : code.getCdNm(),
+                    code.getCdva(), prefix, dupRt, requestAmount);
         }).toList();
     }
 
@@ -219,46 +234,305 @@ public class BudgetWorkService {
     public BudgetWorkDto.SummaryResponse getSummary(String bgYy) {
         List<Bbugtm> budgets = bbugtmRepository.findByBgYyAndDelYn(bgYy, "N");
 
-        // 비목명 매핑용 코드 조회
-        List<Ccodem> ioeCodes = codeRepository.findByCttTpWithValidDate("DUP_IOE", null);
+        // 편성비목 그룹 코드 조회 (DUP_IOE: 접두어 → 그룹명 매핑)
+        List<Ccodem> dupIoeCodes = codeRepository.findByCttTpWithValidDate("DUP_IOE", null);
+
+        // 세부 비목 코드 조회 (IOE_CPIT, IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE)
+        // cdId → cdDes 매핑 (코드설명 기준으로 비목명 표시)
+        List<String> detailCttTps = List.of("IOE_CPIT", "IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE");
+        Map<String, String> detailCodeNameMap = new LinkedHashMap<>();
+        Map<String, Boolean> detailCodeCapitalMap = new LinkedHashMap<>();
+        for (String cttTp : detailCttTps) {
+            boolean isCapital = "IOE_CPIT".equals(cttTp);
+            for (Ccodem code : codeRepository.findByCttTpWithValidDate(cttTp, null)) {
+                detailCodeNameMap.put(code.getCdId(), code.getCdDes() != null ? code.getCdDes() : code.getCdNm());
+                detailCodeCapitalMap.put(code.getCdId(), isCapital);
+            }
+        }
+
+        // 접두어 → 그룹명 매핑 (DUP_IOE 기반, cdDes 우선 사용)
+        Map<String, String> prefixToGroupName = new LinkedHashMap<>();
+        List<String> prefixOrder = new ArrayList<>();
+        for (Ccodem code : dupIoeCodes) {
+            String prefix = extractPrefix(code.getCdId());
+            prefixToGroupName.put(prefix, code.getCdDes() != null ? code.getCdDes() : code.getCdNm());
+            prefixOrder.add(prefix);
+        }
+
+        // BBUGTM 데이터를 실제 ioeC 단위로 그룹핑
+        Map<String, List<Bbugtm>> budgetsByIoeC = new LinkedHashMap<>();
+        for (Bbugtm b : budgets) {
+            if (b.getIoeC() != null) {
+                budgetsByIoeC.computeIfAbsent(b.getIoeC(), k -> new ArrayList<>()).add(b);
+            }
+        }
 
         List<BudgetWorkDto.SummaryItem> items = new ArrayList<>();
         BigDecimal totalRequest = BigDecimal.ZERO;
         BigDecimal totalDup = BigDecimal.ZERO;
 
-        for (Ccodem code : ioeCodes) {
-            String prefix = extractPrefix(code.getCdId());
+        // 편성비목 접두어 순서대로 처리 (DUP_IOE 코드 순서 유지)
+        for (String prefix : prefixOrder) {
+            String groupName = prefixToGroupName.get(prefix);
 
-            // 편성금액 합계 (BBUGTM에서 접두어 매칭)
-            BigDecimal dupAmount = budgets.stream()
-                    .filter(b -> b.getIoeC() != null && b.getIoeC().startsWith(prefix))
-                    .map(Bbugtm::getDupBg)
-                    .filter(v -> v != null)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            // 요청금액 합계 (결재완료 원본 데이터)
-            BigDecimal requestAmount = bbugtmRepository.sumApprovedAmountByPrefix(prefix, bgYy);
-            if (requestAmount == null) {
-                requestAmount = BigDecimal.ZERO;
+            // CCODEM 세부 코드 중 이 접두어에 해당하는 코드 수집 (BBUGTM 데이터 유무와 무관)
+            List<String> detailCodesForPrefix = new ArrayList<>();
+            for (String cdId : detailCodeNameMap.keySet()) {
+                if (cdId.startsWith(prefix)) {
+                    detailCodesForPrefix.add(cdId);
+                }
             }
 
-            // 편성률 (동일 접두어 내 동일한 값)
-            Integer dupRt = budgets.stream()
-                    .filter(b -> b.getIoeC() != null && b.getIoeC().startsWith(prefix))
-                    .map(Bbugtm::getDupRt)
-                    .findFirst()
-                    .orElse(0);
+            // BBUGTM에만 있고 CCODEM에는 없는 ioeC도 포함
+            for (String ioeC : budgetsByIoeC.keySet()) {
+                if (ioeC.startsWith(prefix) && !detailCodesForPrefix.contains(ioeC)) {
+                    detailCodesForPrefix.add(ioeC);
+                }
+            }
 
-            items.add(new BudgetWorkDto.SummaryItem(
-                    code.getCdNm(), prefix, requestAmount, dupAmount, dupRt));
+            // 세부 코드가 하나도 없으면 그룹명으로 0건 행 표시
+            if (detailCodesForPrefix.isEmpty()) {
+                items.add(new BudgetWorkDto.SummaryItem(
+                        groupName, prefix, prefix, groupName, false,
+                        BigDecimal.ZERO, BigDecimal.ZERO, null));
+                continue;
+            }
 
-            totalRequest = totalRequest.add(requestAmount);
-            totalDup = totalDup.add(dupAmount);
+            // cdDes(stripGroupPrefix 적용) 기준으로 동일 비목명 병합 (순서 유지)
+            Map<String, List<String>> nameToIoeCodes = new LinkedHashMap<>();
+            for (String ioeC : detailCodesForPrefix) {
+                String rawName = detailCodeNameMap.getOrDefault(ioeC, ioeC);
+                String detailName = stripGroupPrefix(rawName);
+                nameToIoeCodes.computeIfAbsent(detailName, k -> new ArrayList<>()).add(ioeC);
+            }
+
+            // 병합된 비목별 요약 행 생성
+            for (Map.Entry<String, List<String>> nameEntry : nameToIoeCodes.entrySet()) {
+                String detailName = nameEntry.getKey();
+                List<String> ioeCodes = nameEntry.getValue();
+
+                // 병합 대상 BBUGTM 레코드 수집
+                List<Bbugtm> allRecords = new ArrayList<>();
+                for (String ioeC : ioeCodes) {
+                    allRecords.addAll(budgetsByIoeC.getOrDefault(ioeC, List.of()));
+                }
+
+                // 대표 ioeC (첫 번째 코드)
+                String representativeIoeC = ioeCodes.get(0);
+
+                // 편성금액 합계
+                BigDecimal dupAmount = allRecords.stream()
+                        .map(Bbugtm::getDupBg)
+                        .filter(v -> v != null)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                // 요청금액 역산: dupBg × 100 / dupRt
+                BigDecimal requestAmount = BigDecimal.ZERO;
+                for (Bbugtm b : allRecords) {
+                    if (b.getDupBg() != null && b.getDupRt() != null && b.getDupRt() > 0) {
+                        requestAmount = requestAmount.add(
+                                b.getDupBg().multiply(BigDecimal.valueOf(100))
+                                        .divide(BigDecimal.valueOf(b.getDupRt()), 2, java.math.RoundingMode.HALF_UP));
+                    }
+                }
+
+                // 편성률 (BBUGTM 레코드가 있으면 해당 값, 없으면 null)
+                Integer dupRt = allRecords.stream()
+                        .map(Bbugtm::getDupRt)
+                        .findFirst()
+                        .orElse(null);
+
+                // 자본예산 여부: 대표 코드의 cttTp가 IOE_CPIT이면 자본예산
+                boolean capital = Boolean.TRUE.equals(detailCodeCapitalMap.get(representativeIoeC));
+
+                items.add(new BudgetWorkDto.SummaryItem(
+                        detailName, representativeIoeC, prefix, groupName, capital,
+                        requestAmount, dupAmount, dupRt));
+
+                totalRequest = totalRequest.add(requestAmount);
+                totalDup = totalDup.add(dupAmount);
+            }
         }
 
         return new BudgetWorkDto.SummaryResponse(
                 items,
                 new BudgetWorkDto.SummaryTotals(totalRequest, totalDup));
+    }
+
+    /**
+     * 세부 비목명에서 그룹 접두어를 제거
+     *
+     * <p>{@code "전산임차료 - 국내전산임차료"} → {@code "국내전산임차료"}</p>
+     * <p>{@code "전산용역비 - 외주용역 - 외주운영/관제 등"} → {@code "외주용역 - 외주운영/관제 등"}</p>
+     *
+     * @param fullName CCODEM의 cdNm 원본
+     * @return 그룹 접두어가 제거된 세부 비목명
+     */
+    private String stripGroupPrefix(String fullName) {
+        int dashIdx = fullName.indexOf(" - ");
+        if (dashIdx >= 0) {
+            return fullName.substring(dashIdx + 3);
+        }
+        return fullName;
+    }
+
+    /**
+     * 사업별 편성 결과 조회 (API-04)
+     *
+     * <p>
+     * BBUGTM 데이터를 원본PK(사업/전산업무비)별로 그룹핑하여
+     * 각 사업의 요청금액/편성금액 합계 및 비목별 상세를 반환합니다.
+     * </p>
+     *
+     * [처리 순서]
+     * 1. CCODEM에서 편성비목 코드 + 편성률 조회 (컬럼 헤더용)
+     * 2. BBUGTM에서 해당 연도 데이터 조회
+     * 3. orcPkVl + ioeC 기준으로 이중 그룹핑
+     * 4. orcTb에 따라 BPROJM 또는 BCOSTM에서 사업명/계약명 조회
+     *
+     * @param bgYy 예산년도
+     * @return 사업별 편성 결과 요약 (비목 컬럼 정보, 사업별 비목별 금액, 합계)
+     */
+    public BudgetWorkDto.ProjectSummaryResponse getProjectSummary(String bgYy) {
+        // 1. 편성비목 코드 조회 (컬럼 헤더용)
+        List<Ccodem> ioeCodes = codeRepository.findByCttTpWithValidDate("DUP_IOE", null);
+        List<Bbugtm> budgets = bbugtmRepository.findByBgYyAndDelYn(bgYy, "N");
+
+        // 비목별 편성률 맵 (prefix → dupRt)
+        Map<String, Integer> rateByPrefix = new LinkedHashMap<>();
+        for (Bbugtm b : budgets) {
+            if (b.getIoeC() != null && b.getDupRt() != null) {
+                for (Ccodem code : ioeCodes) {
+                    String prefix = extractPrefix(code.getCdId());
+                    if (b.getIoeC().startsWith(prefix)) {
+                        rateByPrefix.putIfAbsent(prefix, b.getDupRt());
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 컬럼 헤더 정보 구성
+        List<BudgetWorkDto.ProjectSummaryCategory> categoryHeaders = new ArrayList<>();
+        for (Ccodem code : ioeCodes) {
+            String prefix = extractPrefix(code.getCdId());
+            Integer dupRt = rateByPrefix.getOrDefault(prefix, 0);
+            categoryHeaders.add(new BudgetWorkDto.ProjectSummaryCategory(prefix, code.getCdDes() != null ? code.getCdDes() : code.getCdNm(), dupRt));
+        }
+
+        // 2. 사업별 + 비목별 이중 그룹핑
+        // BITEMM → prjMngNo로 변환하여 프로젝트 단위로 그룹핑
+        // key: 프로젝트관리번호 또는 전산업무비관리번호, value: { prefix → [요청금액, 편성금액] }
+        Map<String, Map<String, BigDecimal[]>> projectCategoryMap = new LinkedHashMap<>();
+        Map<String, String> orcTbMap = new LinkedHashMap<>();
+
+        // BITEMM gclMngNo → prjMngNo 캐시 (중복 DB 조회 방지)
+        Map<String, String> itemToPrjCache = new LinkedHashMap<>();
+
+        for (Bbugtm b : budgets) {
+            if (b.getOrcPkVl() == null) continue;
+
+            // 그룹핑 키 결정: BITEMM은 프로젝트 단위로 통합
+            String groupKey;
+            String groupOrcTb;
+            if ("BITEMM".equals(b.getOrcTb())) {
+                // gclMngNo → prjMngNo 변환
+                groupKey = itemToPrjCache.computeIfAbsent(b.getOrcPkVl(), gclMngNo -> {
+                    List<Bitemm> items = projectItemRepository.findByGclMngNoAndDelYn(gclMngNo, "N");
+                    return items.isEmpty() ? gclMngNo : items.get(0).getPrjMngNo();
+                });
+                groupOrcTb = "BPROJM";
+            } else {
+                groupKey = b.getOrcPkVl();
+                groupOrcTb = b.getOrcTb();
+            }
+
+            orcTbMap.putIfAbsent(groupKey, groupOrcTb);
+            projectCategoryMap.computeIfAbsent(groupKey, k -> new LinkedHashMap<>());
+
+            // ioeC에서 매칭되는 prefix 찾기
+            String matchedPrefix = null;
+            for (Ccodem code : ioeCodes) {
+                String prefix = extractPrefix(code.getCdId());
+                if (b.getIoeC() != null && b.getIoeC().startsWith(prefix)) {
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+            if (matchedPrefix == null) continue;
+
+            Map<String, BigDecimal[]> catMap = projectCategoryMap.get(groupKey);
+            catMap.computeIfAbsent(matchedPrefix, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+
+            BigDecimal[] amounts = catMap.get(matchedPrefix);
+            // 요청금액 역산: dupBg / (dupRt / 100)
+            if (b.getDupBg() != null && b.getDupRt() != null && b.getDupRt() > 0) {
+                BigDecimal requestAmt = b.getDupBg()
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(b.getDupRt()), 2, RoundingMode.HALF_UP);
+                amounts[0] = amounts[0].add(requestAmt);
+            }
+            if (b.getDupBg() != null) {
+                amounts[1] = amounts[1].add(b.getDupBg());
+            }
+        }
+
+        // 3. 응답 구성
+        List<BudgetWorkDto.ProjectSummaryItem> items = new ArrayList<>();
+        BigDecimal totalRequest = BigDecimal.ZERO;
+        BigDecimal totalDup = BigDecimal.ZERO;
+
+        for (Map.Entry<String, Map<String, BigDecimal[]>> entry : projectCategoryMap.entrySet()) {
+            String orcPkVl = entry.getKey();
+            Map<String, BigDecimal[]> catMap = entry.getValue();
+            String orcTb = orcTbMap.get(orcPkVl);
+            String name = resolveProjectName(orcTb, orcPkVl);
+
+            // 비목별 금액 맵 구성
+            Map<String, BudgetWorkDto.CategoryAmount> categoryAmounts = new LinkedHashMap<>();
+            BigDecimal projectRequest = BigDecimal.ZERO;
+            BigDecimal projectDup = BigDecimal.ZERO;
+
+            for (Map.Entry<String, BigDecimal[]> catEntry : catMap.entrySet()) {
+                BigDecimal[] amounts = catEntry.getValue();
+                categoryAmounts.put(catEntry.getKey(),
+                        new BudgetWorkDto.CategoryAmount(amounts[0], amounts[1]));
+                projectRequest = projectRequest.add(amounts[0]);
+                projectDup = projectDup.add(amounts[1]);
+            }
+
+            items.add(new BudgetWorkDto.ProjectSummaryItem(
+                    orcPkVl, orcTb, name, projectRequest, projectDup, categoryAmounts));
+
+            totalRequest = totalRequest.add(projectRequest);
+            totalDup = totalDup.add(projectDup);
+        }
+
+        return new BudgetWorkDto.ProjectSummaryResponse(
+                categoryHeaders, items,
+                new BudgetWorkDto.SummaryTotals(totalRequest, totalDup));
+    }
+
+    /**
+     * 원본테이블 유형에 따라 사업명/계약명 조회
+     *
+     * @param orcTb   원본테이블 (BPROJM/BCOSTM)
+     * @param orcPkVl 원본PK값
+     * @return 사업명 또는 계약명
+     */
+    private String resolveProjectName(String orcTb, String orcPkVl) {
+        if ("BPROJM".equals(orcTb)) {
+            return projectRepository.findByPrjMngNoAndDelYn(orcPkVl, "N")
+                    .map(Bprojm::getPrjNm)
+                    .orElse(orcPkVl);
+        } else if ("BCOSTM".equals(orcTb)) {
+            List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(orcPkVl, "N");
+            if (!costs.isEmpty()) {
+                return costs.get(0).getCttNm();
+            }
+            return orcPkVl;
+        }
+        return orcPkVl;
     }
 
     /**

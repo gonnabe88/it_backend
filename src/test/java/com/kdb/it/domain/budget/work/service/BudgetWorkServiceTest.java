@@ -115,12 +115,24 @@ class BudgetWorkServiceTest {
     // getSummary — 편성 결과 조회
     // =========================================================================
 
+    /** 세부 비목 코드 타입 목록 (getSummary에서 조회하는 cttTp들) */
+    private static final List<String> DETAIL_CTT_TPS = List.of(
+            "IOE_CPIT", "IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE");
+
+    /** 세부 코드 조회 mock 헬퍼: 모든 세부 cttTp에 대해 빈 목록 반환 */
+    private void mockEmptyDetailCodes() {
+        for (String cttTp : DETAIL_CTT_TPS) {
+            given(codeRepository.findByCttTpWithValidDate(cttTp, null)).willReturn(List.of());
+        }
+    }
+
     @Test
     @DisplayName("getSummary - 비목이 없으면 빈 목록과 합계 0을 반환한다")
     void getSummary_비목없음_빈결과반환() {
         // given
         given(bbugtmRepository.findByBgYyAndDelYn("2026", "N")).willReturn(List.of());
         given(codeRepository.findByCttTpWithValidDate("DUP_IOE", null)).willReturn(List.of());
+        mockEmptyDetailCodes();
 
         // when
         BudgetWorkDto.SummaryResponse result = budgetWorkService.getSummary("2026");
@@ -132,10 +144,11 @@ class BudgetWorkServiceTest {
     }
 
     @Test
-    @DisplayName("getSummary - 비목 1개의 편성금액 합계를 올바르게 계산한다")
-    void getSummary_비목1개_합계계산() {
-        // given
-        Ccodem code = Ccodem.builder().cdId("DUP-IOE-237").cdNm("자산비").build();
+    @DisplayName("getSummary - 세부 비목 단위로 편성금액 합계를 올바르게 계산한다")
+    void getSummary_세부비목_합계계산() {
+        // given: DUP_IOE 그룹 코드 1개 + BBUGTM 세부 데이터 1건
+        Ccodem dupCode = Ccodem.builder().cdId("DUP-IOE-237").cdNm("전산임차료").build();
+        Ccodem detailCode = Ccodem.builder().cdId("IOE-237-0700").cdNm("국외전산임차료").cttTp("IOE_IDR").build();
         Bbugtm bbugtm = Bbugtm.builder()
                 .ioeC("IOE-237-0700")
                 .dupBg(BigDecimal.valueOf(800000))
@@ -143,17 +156,28 @@ class BudgetWorkServiceTest {
                 .build();
 
         given(bbugtmRepository.findByBgYyAndDelYn("2026", "N")).willReturn(List.of(bbugtm));
-        given(codeRepository.findByCttTpWithValidDate("DUP_IOE", null)).willReturn(List.of(code));
-        given(bbugtmRepository.sumApprovedAmountByPrefix("IOE-237", "2026"))
-                .willReturn(BigDecimal.valueOf(1000000));
+        given(codeRepository.findByCttTpWithValidDate("DUP_IOE", null)).willReturn(List.of(dupCode));
+        // 세부 코드: IOE_IDR에 detailCode 반환, 나머지는 빈 목록
+        for (String cttTp : DETAIL_CTT_TPS) {
+            if ("IOE_IDR".equals(cttTp)) {
+                given(codeRepository.findByCttTpWithValidDate(cttTp, null)).willReturn(List.of(detailCode));
+            } else {
+                given(codeRepository.findByCttTpWithValidDate(cttTp, null)).willReturn(List.of());
+            }
+        }
 
         // when
         BudgetWorkDto.SummaryResponse result = budgetWorkService.getSummary("2026");
 
-        // then
+        // then: 세부 ioeC 단위로 1건 반환, 요청금액은 역산(800000 * 100 / 80 = 1000000)
         assertThat(result.data()).hasSize(1);
-        assertThat(result.data().get(0).dupAmount()).isEqualByComparingTo(BigDecimal.valueOf(800000));
-        assertThat(result.data().get(0).requestAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000000));
+        BudgetWorkDto.SummaryItem item = result.data().get(0);
+        assertThat(item.ioeCategory()).isEqualTo("국외전산임차료");
+        assertThat(item.ioeC()).isEqualTo("IOE-237-0700");
+        assertThat(item.groupName()).isEqualTo("전산임차료");
+        assertThat(item.capital()).isFalse(); // IOE_IDR = 일반관리비
+        assertThat(item.dupAmount()).isEqualByComparingTo(BigDecimal.valueOf(800000));
+        assertThat(item.requestAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000000));
         assertThat(result.totals().requestAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000000));
         assertThat(result.totals().dupAmount()).isEqualByComparingTo(BigDecimal.valueOf(800000));
     }
@@ -170,6 +194,7 @@ class BudgetWorkServiceTest {
         given(bbugtmRepository.generateBgMngNo("2026")).willReturn("BG-2026-0001");
         given(bbugtmRepository.findByBgYyAndDelYn("2026", "N")).willReturn(List.of());
         given(codeRepository.findByCttTpWithValidDate("DUP_IOE", null)).willReturn(List.of());
+        mockEmptyDetailCodes();
 
         // when
         BudgetWorkDto.ApplyResponse result = budgetWorkService.applyRates(request);

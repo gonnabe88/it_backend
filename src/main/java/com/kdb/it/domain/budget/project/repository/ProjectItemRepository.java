@@ -50,6 +50,18 @@ public interface ProjectItemRepository extends JpaRepository<Bitemm, BitemmId> {
      *
      * @return 시퀀스의 다음 값 (Long)
      */
+    /**
+     * 품목관리번호로 품목 조회 (삭제되지 않은 항목)
+     *
+     * <p>BBUGTM에서 ORC_PK_VL(gclMngNo)로 원본 품목을 역추적하여
+     * 소속 프로젝트(prjMngNo)를 확인하는 데 사용됩니다.</p>
+     *
+     * @param gclMngNo 품목관리번호
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @return 해당 품목 목록
+     */
+    List<Bitemm> findByGclMngNoAndDelYn(String gclMngNo, String delYn);
+
     @org.springframework.data.jpa.repository.Query(value = "SELECT S_GCL.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
 }
