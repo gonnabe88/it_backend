@@ -267,6 +267,31 @@ public class BudgetWorkService {
             }
         }
 
+        // 결재완료 원본 데이터에서 요청금액을 직접 계산 (BBUGTM 유무와 무관)
+        // BCOSTM: ioeC별 itMngcBg 합계
+        Map<String, BigDecimal> approvedCostAmountByIoeC = new LinkedHashMap<>();
+        // BITEMM: gclDtt별 gclAmt * coalesce(xcr, 1) 합계
+        Map<String, BigDecimal> approvedItemAmountByIoeC = new LinkedHashMap<>();
+
+        for (String prefix : prefixOrder) {
+            // 결재완료 전산업무비 요청금액 집계
+            List<Bcostm> approvedCosts = bbugtmRepository.findApprovedCostsByPrefix(prefix, bgYy);
+            for (Bcostm cost : approvedCosts) {
+                if (cost.getIoeC() != null && cost.getItMngcBg() != null) {
+                    approvedCostAmountByIoeC.merge(cost.getIoeC(), cost.getItMngcBg(), BigDecimal::add);
+                }
+            }
+            // 결재완료 품목 요청금액 집계 (환율 적용)
+            List<Bitemm> approvedItems = bbugtmRepository.findApprovedItemsByPrefix(prefix, bgYy);
+            for (Bitemm item : approvedItems) {
+                if (item.getGclDtt() != null && item.getGclAmt() != null) {
+                    BigDecimal xcrVal = item.getXcr() != null ? item.getXcr() : BigDecimal.ONE;
+                    BigDecimal amountKrw = item.getGclAmt().multiply(xcrVal);
+                    approvedItemAmountByIoeC.merge(item.getGclDtt(), amountKrw, BigDecimal::add);
+                }
+            }
+        }
+
         List<BudgetWorkDto.SummaryItem> items = new ArrayList<>();
         BigDecimal totalRequest = BigDecimal.ZERO;
         BigDecimal totalDup = BigDecimal.ZERO;
@@ -285,6 +310,18 @@ public class BudgetWorkService {
 
             // BBUGTM에만 있고 CCODEM에는 없는 ioeC도 포함
             for (String ioeC : budgetsByIoeC.keySet()) {
+                if (ioeC.startsWith(prefix) && !detailCodesForPrefix.contains(ioeC)) {
+                    detailCodesForPrefix.add(ioeC);
+                }
+            }
+
+            // 원본 데이터에만 있고 CCODEM/BBUGTM에 없는 ioeC도 포함
+            for (String ioeC : approvedCostAmountByIoeC.keySet()) {
+                if (ioeC.startsWith(prefix) && !detailCodesForPrefix.contains(ioeC)) {
+                    detailCodesForPrefix.add(ioeC);
+                }
+            }
+            for (String ioeC : approvedItemAmountByIoeC.keySet()) {
                 if (ioeC.startsWith(prefix) && !detailCodesForPrefix.contains(ioeC)) {
                     detailCodesForPrefix.add(ioeC);
                 }
@@ -320,20 +357,19 @@ public class BudgetWorkService {
                 // 대표 ioeC (첫 번째 코드)
                 String representativeIoeC = ioeCodes.get(0);
 
-                // 편성금액 합계
+                // 편성금액 합계 (BBUGTM 기반)
                 BigDecimal dupAmount = allRecords.stream()
                         .map(Bbugtm::getDupBg)
                         .filter(v -> v != null)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                // 요청금액 역산: dupBg × 100 / dupRt
+                // 요청금액: 결재완료 원본 데이터(BCOSTM/BITEMM)에서 직접 계산
                 BigDecimal requestAmount = BigDecimal.ZERO;
-                for (Bbugtm b : allRecords) {
-                    if (b.getDupBg() != null && b.getDupRt() != null && b.getDupRt() > 0) {
-                        requestAmount = requestAmount.add(
-                                b.getDupBg().multiply(BigDecimal.valueOf(100))
-                                        .divide(BigDecimal.valueOf(b.getDupRt()), 2, java.math.RoundingMode.HALF_UP));
-                    }
+                for (String ioeC : ioeCodes) {
+                    requestAmount = requestAmount.add(
+                            approvedCostAmountByIoeC.getOrDefault(ioeC, BigDecimal.ZERO));
+                    requestAmount = requestAmount.add(
+                            approvedItemAmountByIoeC.getOrDefault(ioeC, BigDecimal.ZERO));
                 }
 
                 // 편성률 (BBUGTM 레코드가 있으면 해당 값, 없으면 null)

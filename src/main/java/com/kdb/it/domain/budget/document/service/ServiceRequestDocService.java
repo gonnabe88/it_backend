@@ -3,6 +3,7 @@ package com.kdb.it.domain.budget.document.service;
 import com.kdb.it.domain.budget.document.entity.Brdocm;
 import com.kdb.it.domain.budget.document.dto.ServiceRequestDocDto;
 import com.kdb.it.domain.budget.document.repository.ServiceRequestDocRepository;
+import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,9 @@ public class ServiceRequestDocService {
     /** 요구사항 정의서 데이터 접근 리포지토리 (TAAABB_BRDOCM) */
     private final ServiceRequestDocRepository serviceRequestDocRepository;
 
+    /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사번→사용자명 조회용 */
+    private final UserRepository cuserIRepository;
+
     /**
      * 요구사항 정의서 목록 조회
      *
@@ -47,7 +51,15 @@ public class ServiceRequestDocService {
      */
     public List<ServiceRequestDocDto.Response> getDocumentList() {
         return serviceRequestDocRepository.findAllByDelYn("N").stream()
-                .map(ServiceRequestDocDto.Response::fromEntity)
+                .map(entity -> {
+                    ServiceRequestDocDto.Response response = ServiceRequestDocDto.Response.fromEntity(entity);
+                    // 최초생성자 사번 → 사용자명 매핑
+                    if (response.getFstEnrUsid() != null && !response.getFstEnrUsid().isEmpty()) {
+                        cuserIRepository.findById(response.getFstEnrUsid())
+                                .ifPresent(user -> response.setFstEnrUsNm(user.getUsrNm()));
+                    }
+                    return response;
+                })
                 .toList();
     }
 
