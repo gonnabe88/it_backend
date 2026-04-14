@@ -681,6 +681,16 @@ public class ProjectDto {
         @Schema(description = "일반관리비")
         private BigDecimal costBg;
 
+        /** 예산 합계 일괄 설정 (Lombok 어노테이션 프로세싱 문제 방지용 명시적 메서드) */
+        public void setBudgetAmounts(BigDecimal assetBg, BigDecimal devBg, BigDecimal machBg,
+                BigDecimal intanBg, BigDecimal costBg) {
+            this.assetBg = assetBg;
+            this.devBg = devBg;
+            this.machBg = machBg;
+            this.intanBg = intanBg;
+            this.costBg = costBg;
+        }
+
         /** 신청서 상세 정보 (신청서명, 신청자, 결재자 목록 등) */
         @Schema(description = "신청서 상세 정보")
         private ApplicationInfoDto applicationInfo;

@@ -1,8 +1,6 @@
 package com.kdb.it.domain.budget.work.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 import java.math.BigDecimal;
@@ -17,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.kdb.it.common.code.entity.Ccodem;
 import com.kdb.it.common.code.repository.CodeRepository;
+import com.kdb.it.domain.budget.cost.entity.Bcostm;
 import com.kdb.it.domain.budget.work.dto.BudgetWorkDto;
 import com.kdb.it.domain.budget.work.entity.Bbugtm;
 import com.kdb.it.domain.budget.work.repository.BbugtmRepository;
@@ -165,11 +164,15 @@ class BudgetWorkServiceTest {
                 given(codeRepository.findByCttTpWithValidDate(cttTp, null)).willReturn(List.of());
             }
         }
+        // 결재완료 원본 데이터: 요청금액 1,000,000
+        Bcostm approvedCost = Bcostm.builder().ioeC("IOE-237-0700").itMngcBg(BigDecimal.valueOf(1000000)).build();
+        given(bbugtmRepository.findApprovedCostsByPrefix("IOE-237", "2026")).willReturn(List.of(approvedCost));
+        given(bbugtmRepository.findApprovedItemsByPrefix("IOE-237", "2026")).willReturn(List.of());
 
         // when
         BudgetWorkDto.SummaryResponse result = budgetWorkService.getSummary("2026");
 
-        // then: 세부 ioeC 단위로 1건 반환, 요청금액은 역산(800000 * 100 / 80 = 1000000)
+        // then: 세부 ioeC 단위로 1건 반환, 요청금액은 결재완료 원본 데이터 기반
         assertThat(result.data()).hasSize(1);
         BudgetWorkDto.SummaryItem item = result.data().get(0);
         assertThat(item.ioeCategory()).isEqualTo("국외전산임차료");

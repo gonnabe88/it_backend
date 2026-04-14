@@ -728,11 +728,7 @@ public class ProjectService {
                 .map(calcAmt)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
-        response.setAssetBg(assetBg);
-        response.setDevBg(devBg);
-        response.setMachBg(machBg);
-        response.setIntanBg(intanBg);
-        response.setCostBg(costBg);
+        response.setBudgetAmounts(assetBg, devBg, machBg, intanBg, costBg);
     }
 
     /**
