@@ -74,8 +74,11 @@ public class ProjectService {
     /** 결재 정보 리포지토�� (TAAABB_CDECIM): 결재선 목록 조회용 */
     private final com.kdb.it.common.approval.repository.ApproverRepository cdecimRepository;
 
-    /** 공통코드 리포지토리 (TAAABB_CCODEM): 비목코드 → 자본예산/일반관리비 구��용 */
+    /** 공통코드 리포지토리 (TAAABB_CCODEM): 비목코드 → 자본예산/일반관리비 구분용 */
     private final com.kdb.it.common.code.repository.CodeRepository ccodemRepository;
+
+    /** 공통코드 서비스: 예산 신청 기간 검증용 */
+    private final com.kdb.it.common.code.service.CodeService codeService;
 
     /**
      * 전체 정보화사업 목록 조회
@@ -211,6 +214,9 @@ public class ProjectService {
      */
     @Transactional
     public String createProject(ProjectDto.CreateRequest request) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         String prjMngNo = request.getPrjMngNo();
 
         // 프로젝트관리번호가 없으면 자동 채번
@@ -310,6 +316,9 @@ public class ProjectService {
      */
     @Transactional
     public String updateProject(String prjMngNo, ProjectDto.UpdateRequest request) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         // 프로젝트 조회 (삭제되지 않은 항목만)
         Bprojm project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));
@@ -476,6 +485,9 @@ public class ProjectService {
      */
     @Transactional
     public void deleteProject(String prjMngNo) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         // 프로젝트 조회 (삭제되지 않은 항목만)
         Bprojm project = projectRepository.findByPrjMngNoAndDelYn(prjMngNo, "N")
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + prjMngNo));

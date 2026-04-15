@@ -105,4 +105,21 @@ public class CodeController {
         codeService.deleteCcodem(cdId);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * 예산 신청 기간 조회
+     *
+     * <p>
+     * 공통코드 BG-RQS-STA(시작일자)와 BG-RQS-END(종료일자)를 조회하여
+     * 예산 신청 가능 기간을 반환합니다.
+     * </p>
+     *
+     * @return HTTP 200 + 시작일자/종료일자
+     */
+    @GetMapping("/budget-period")
+    @Operation(summary = "예산 신청 기간 조회", description = "공통코드(BG-RQS-STA/END)에서 예산 신청 가능 기간을 조회합니다.")
+    public ResponseEntity<CodeDto.BudgetPeriodResponse> getBudgetPeriod() {
+        CodeDto.BudgetPeriodResponse response = codeService.getBudgetPeriod();
+        return ResponseEntity.ok(response);
+    }
 }

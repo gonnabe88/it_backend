@@ -95,6 +95,28 @@ public class BudgetWorkController {
     }
 
     /**
+     * 사업별 편성률 적용 (API-05, REQ-2)
+     *
+     * <p>
+     * 각 사업별로 자본예산/일반관리비 편성률을 분리 적용합니다.
+     * </p>
+     *
+     * @param request 사업별 편성률 적용 요청 (예산년도 + 사업별 편성률 목록)
+     * @return HTTP 200 + 적용 결과 (처리 메시지, 레코드 수, 요약)
+     */
+    @Operation(summary = "사업별 편성률 적용",
+            description = "사업별로 자본예산/일반관리비 편성률을 분리 적용하여 BBUGTM에 저장합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "적용 성공",
+                    content = @Content(schema = @Schema(implementation = BudgetWorkDto.ApplyResponse.class)))
+    })
+    @PostMapping("/apply-items")
+    public ResponseEntity<BudgetWorkDto.ApplyResponse> applyItemRates(
+            @RequestBody BudgetWorkDto.ItemApplyRequest request) {
+        return ResponseEntity.ok(budgetWorkService.applyItemRates(request));
+    }
+
+    /**
      * 편성 결과 조회 (API-03)
      *
      * <p>

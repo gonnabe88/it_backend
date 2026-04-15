@@ -216,6 +216,133 @@ public class BudgetWorkService {
     }
 
     /**
+     * 사업별 편성률 적용 (API-05, REQ-2)
+     *
+     * <p>
+     * 각 사업(정보화사업/전산업무비)별로 자본예산 편성률과 일반관리비 편성률을 분리 적용합니다.
+     * IOE_CPIT 계열 비목코드 → assetDupRt, 나머지 → costDupRt 적용.
+     * </p>
+     *
+     * @param request 사업별 편성률 적용 요청 (예산년도 + 사업별 편성률 목록)
+     * @return 적용 결과 (처리 메시지, 레코드 수, 요약)
+     */
+    @Transactional
+    public BudgetWorkDto.ApplyResponse applyItemRates(BudgetWorkDto.ItemApplyRequest request) {
+        String bgYy = request.bgYy();
+        String bgMngNo = bbugtmRepository.generateBgMngNo(bgYy);
+        int snoCounter = 0;
+        int totalRecords = 0;
+
+        /* 자본예산 비목코드(IOE_CPIT) 목록 조회 — 자본/경상 구분용 */
+        List<Ccodem> capitalCodes = codeRepository.findByCttTpWithValidDate("IOE_CPIT", null);
+        java.util.Set<String> capitalPrefixes = new java.util.HashSet<>();
+        for (Ccodem code : capitalCodes) {
+            /* IOE-351-0100 → IOE-351 추출 (3세그먼트에서 2세그먼트로 축약) */
+            String cdId = code.getCdId();
+            int lastDash = cdId.lastIndexOf('-');
+            if (lastDash > 0) {
+                capitalPrefixes.add(cdId.substring(0, lastDash));
+            }
+            capitalPrefixes.add(cdId); // 전체 코드도 추가
+        }
+
+        for (BudgetWorkDto.ItemRate item : request.items()) {
+            Integer assetDupRt = item.assetDupRt() != null ? item.assetDupRt() : 100;
+            Integer costDupRt = item.costDupRt() != null ? item.costDupRt() : 100;
+
+            if ("BPROJM".equals(item.orcTb())) {
+                /* 정보화사업: BITEMM에서 해당 프로젝트의 품목 조회 */
+                List<Bitemm> items = projectItemRepository.findByPrjMngNoAndDelYn(
+                        item.orcPkVl(), "N");
+                for (Bitemm bitemm : items) {
+                    boolean isCapital = isCapitalIoeCode(bitemm.getGclDtt(), capitalPrefixes);
+                    int dupRt = isCapital ? assetDupRt : costDupRt;
+
+                    BigDecimal xcrVal = bitemm.getXcr() != null ? bitemm.getXcr() : BigDecimal.ONE;
+                    BigDecimal amountKrw = bitemm.getGclAmt() != null ? bitemm.getGclAmt().multiply(xcrVal) : BigDecimal.ZERO;
+                    BigDecimal dupBg = calculateDupBg(amountKrw, dupRt);
+
+                    Optional<Bbugtm> existing = bbugtmRepository
+                            .findByBgYyAndOrcTbAndOrcPkVlAndOrcSnoVlAndIoeCAndDelYn(
+                                    bgYy, "BITEMM", bitemm.getGclMngNo(),
+                                    bitemm.getGclSno(), bitemm.getGclDtt(), "N");
+
+                    if (existing.isPresent()) {
+                        existing.get().update(dupBg, dupRt);
+                    } else {
+                        snoCounter++;
+                        Bbugtm bbugtm = Bbugtm.builder()
+                                .bgMngNo(bgMngNo)
+                                .bgSno(snoCounter)
+                                .bgYy(bgYy)
+                                .orcTb("BITEMM")
+                                .orcPkVl(bitemm.getGclMngNo())
+                                .orcSnoVl(bitemm.getGclSno())
+                                .ioeC(bitemm.getGclDtt())
+                                .dupBg(dupBg)
+                                .dupRt(dupRt)
+                                .build();
+                        bbugtmRepository.save(bbugtm);
+                    }
+                    totalRecords++;
+                }
+            } else if ("BCOSTM".equals(item.orcTb())) {
+                /* 전산업무비: 해당 전산업무비 단건 처리 */
+                List<Bcostm> costList = costRepository.findByItMngcNoAndDelYn(item.orcPkVl(), "N");
+                for (Bcostm cost : costList) {
+                    boolean isCapital = isCapitalIoeCode(cost.getIoeC(), capitalPrefixes);
+                    int dupRt = isCapital ? assetDupRt : costDupRt;
+                    BigDecimal dupBg = calculateDupBg(cost.getItMngcBg(), dupRt);
+
+                    Optional<Bbugtm> existing = bbugtmRepository
+                            .findByBgYyAndOrcTbAndOrcPkVlAndOrcSnoVlAndIoeCAndDelYn(
+                                    bgYy, "BCOSTM", cost.getItMngcNo(),
+                                    cost.getItMngcSno(), cost.getIoeC(), "N");
+
+                    if (existing.isPresent()) {
+                        existing.get().update(dupBg, dupRt);
+                    } else {
+                        snoCounter++;
+                        Bbugtm bbugtm = Bbugtm.builder()
+                                .bgMngNo(bgMngNo)
+                                .bgSno(snoCounter)
+                                .bgYy(bgYy)
+                                .orcTb("BCOSTM")
+                                .orcPkVl(cost.getItMngcNo())
+                                .orcSnoVl(cost.getItMngcSno())
+                                .ioeC(cost.getIoeC())
+                                .dupBg(dupBg)
+                                .dupRt(dupRt)
+                                .build();
+                        bbugtmRepository.save(bbugtm);
+                    }
+                    totalRecords++;
+                }
+            }
+        }
+
+        BudgetWorkDto.SummaryResponse summary = getSummary(bgYy);
+        return new BudgetWorkDto.ApplyResponse("사업별 편성률 적용 완료", totalRecords, summary);
+    }
+
+    /**
+     * IOE 코드가 자본예산 비목인지 판별
+     *
+     * @param ioeC            비목코드 (예: IOE-351-0100)
+     * @param capitalPrefixes 자본예산 비목 접두어 Set (IOE-351, IOE-351-0100 등)
+     * @return true이면 자본예산
+     */
+    private boolean isCapitalIoeCode(String ioeC, java.util.Set<String> capitalPrefixes) {
+        if (ioeC == null) return false;
+        if (capitalPrefixes.contains(ioeC)) return true;
+        /* 접두어 매칭: IOE-351-0100이 IOE-351로 시작하는지 확인 */
+        for (String prefix : capitalPrefixes) {
+            if (ioeC.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    /**
      * 편성 결과 조회 (API-03)
      *
      * <p>

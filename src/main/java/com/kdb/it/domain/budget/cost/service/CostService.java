@@ -73,6 +73,9 @@ public class CostService {
     private final ApproverRepository cdecimRepository;
     private final CodeRepository ccodemRepository;
 
+    /** 공통코드 서비스: 예산 신청 기간 검증용 */
+    private final com.kdb.it.common.code.service.CodeService codeService;
+
     /** 일반관리비 대상 코드값구분 */
     private static final Set<String> COST_CTT_TPS = Set.of("IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE");
 
@@ -186,6 +189,9 @@ public class CostService {
      */
     @Transactional
     public String createCost(CostDto.CreateRequest request) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         String itMngcNo = request.getItMngcNo();
 
         if (itMngcNo == null || itMngcNo.isEmpty()) {
@@ -241,6 +247,9 @@ public class CostService {
      */
     @Transactional
     public String updateCost(String itMngcNo, CostDto.UpdateRequest request) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(itMngcNo, "N");
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);
@@ -296,6 +305,9 @@ public class CostService {
      */
     @Transactional
     public void deleteCost(String itMngcNo) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(itMngcNo, "N");
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);

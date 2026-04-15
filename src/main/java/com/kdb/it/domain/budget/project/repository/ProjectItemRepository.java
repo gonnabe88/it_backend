@@ -62,6 +62,17 @@ public interface ProjectItemRepository extends JpaRepository<Bitemm, BitemmId> {
      */
     List<Bitemm> findByGclMngNoAndDelYn(String gclMngNo, String delYn);
 
+    /**
+     * 프로젝트 관리번호와 삭제여부로 품목 목록 조회 (순번 무관)
+     *
+     * <p>사업별 편성률 적용(REQ-2) 시 해당 사업의 모든 유효 품목을 조회하는 데 사용됩니다.</p>
+     *
+     * @param prjMngNo 프로젝트 관리번호
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @return 해당 프로젝트의 유효 품목 목록
+     */
+    List<Bitemm> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
+
     @org.springframework.data.jpa.repository.Query(value = "SELECT S_GCL.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
 }

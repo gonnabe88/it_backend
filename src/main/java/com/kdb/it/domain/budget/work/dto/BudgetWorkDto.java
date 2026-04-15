@@ -56,6 +56,34 @@ public class BudgetWorkDto {
     ) {}
 
     /**
+     * 사업별 편성률 적용 요청 DTO (REQ-2: 비목별 → 사업별 전환)
+     *
+     * @param bgYy  예산년도 (예: 2026)
+     * @param items 사업별 편성률 목록
+     */
+    @Schema(name = "BudgetWorkItemApplyRequest", description = "사업별 편성률 적용 요청")
+    public record ItemApplyRequest(
+            @Schema(description = "예산년도", example = "2026") String bgYy,
+            @Schema(description = "사업별 편성률 목록") List<ItemRate> items
+    ) {}
+
+    /**
+     * 개별 사업 편성률 DTO (자본예산/일반관리비 분리)
+     *
+     * @param orcTb      원본 테이블 (TAAABB_BPROJM / TAAABB_BCOSTM)
+     * @param orcPkVl    원본 PK (prjMngNo / itMngcNo)
+     * @param assetDupRt 자본예산 편성률 (0~100, null=해당없음)
+     * @param costDupRt  일반관리비 편성률 (0~100)
+     */
+    @Schema(name = "BudgetWorkItemRate", description = "개별 사업 편성률 (자본예산/일반관리비 분리)")
+    public record ItemRate(
+            @Schema(description = "원본 테이블", example = "BPROJM") String orcTb,
+            @Schema(description = "원본 PK", example = "PRJ-2026-0001") String orcPkVl,
+            @Schema(description = "자본예산 편성률 (0~100, null=해당없음)") Integer assetDupRt,
+            @Schema(description = "일반관리비 편성률 (0~100)") Integer costDupRt
+    ) {}
+
+    /**
      * 편성비목 목록 조회 응답 DTO
      *
      * @param cdId          편성비목 코드ID
