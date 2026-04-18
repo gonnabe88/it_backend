@@ -56,6 +56,18 @@ public interface ApplicationMapRepository extends JpaRepository<Cappla, String> 
                         Integer orcSnoVl);
 
         /**
+         * 여러 원본 데이터 PK에 대해 신청서 관계 목록 일괄 조회 (최신순)
+         *
+         * <p>N개의 프로젝트/비용 목록 조회 시 N+1 문제를 방지하기 위한 배치 조회 메서드입니다.</p>
+         *
+         * @param orcTbCd  원본 테이블 코드 (예: 'BPROJM', 'BCOSTM')
+         * @param orcPkVls 원본 데이터 PK 값 목록
+         * @return 관련 신청서 관계 목록 (APF_REL_SNO 역순 정렬)
+         */
+        java.util.List<Cappla> findByOrcTbCdAndOrcPkVlInOrderByApfRelSnoDesc(
+                        String orcTbCd, java.util.List<String> orcPkVls);
+
+        /**
          * 원본 데이터에 특정 상태의 신청서가 존재하는지 확인
          *
          * <p>

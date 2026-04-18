@@ -3,9 +3,18 @@ package com.kdb.it.domain.budget.project.service;
 import com.kdb.it.domain.budget.project.entity.Bprojm;
 import com.kdb.it.domain.budget.project.dto.ProjectDto;
 import com.kdb.it.domain.budget.project.repository.ProjectRepository;
+import com.kdb.it.common.approval.dto.ApplicationInfoDto;
+import com.kdb.it.common.approval.entity.Cappla;
+import com.kdb.it.common.approval.entity.Capplm;
+import com.kdb.it.common.approval.entity.Cdecim;
+import com.kdb.it.common.iam.entity.CorgnI;
+import com.kdb.it.common.iam.entity.CuserI;
 import com.kdb.it.common.system.security.CustomUserDetails;
 import com.kdb.it.common.util.HtmlSanitizer;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -95,18 +104,12 @@ public class ProjectService {
      * @return 전체 정보화사업 응답 DTO 목록 (신청서 정보 포함, 품목 제외)
      */
     public List<ProjectDto.Response> getProjectList() {
-        return projectRepository.findAllByDelYn("N").stream()
-                .map(project -> {
-                    ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
-                    // 각 프로젝트의 최신 신청서 정보(신청관리번호, 결재상태) 조회 및 설정
-                    setApplicationInfo(response, project.getPrjMngNo(), project.getPrjSno());
-                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
-                    setCodeNames(response);
-                    // 품목 기준 자본예산/일반관리비 합계 계산 및 설정
-                    setBudgetSummary(response, project.getPrjMngNo(), project.getPrjSno());
-                    return response;
-                })
-                .toList();
+        List<Bprojm> projects = projectRepository.findAllByDelYn("N");
+        List<ProjectDto.Response> responses = projects.stream()
+                .map(ProjectDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichProjectListBatch(projects, responses);
+        return responses;
     }
 
     /**
@@ -134,18 +137,12 @@ public class ProjectService {
      * @return 조건에 맞는 정보화사업 응답 DTO 목록 (신청서 정보 포함, 품목 제외)
      */
     public List<ProjectDto.Response> searchProjectList(ProjectDto.SearchCondition condition) {
-        return projectRepository.searchByCondition(condition).stream()
-                .map(project -> {
-                    ProjectDto.Response response = ProjectDto.Response.fromEntity(project);
-                    // 각 프로젝트의 최신 신청서 정보(신청관리번호, 결재상태) 조회 및 설정
-                    setApplicationInfo(response, project.getPrjMngNo(), project.getPrjSno());
-                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
-                    setCodeNames(response);
-                    // 품목 기준 자본예산/일반관리비 합계 계산 및 설정
-                    setBudgetSummary(response, project.getPrjMngNo(), project.getPrjSno());
-                    return response;
-                })
-                .toList();
+        List<Bprojm> projects = projectRepository.searchByCondition(condition);
+        List<ProjectDto.Response> responses = projects.stream()
+                .map(ProjectDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichProjectListBatch(projects, responses);
+        return responses;
     }
 
     /**
@@ -560,6 +557,83 @@ public class ProjectService {
      * @param prjMngNo 프로젝트관리번호
      * @param prjSno   프로젝트순번
      */
+    /**
+     * 프로젝트 목록 응답에 신청서 정보·코드명·예산 합계를 배치로 주입 (N+1 방지)
+     *
+     * <p>
+     * 개별 조회(N×8 쿼리) 대신 배치 조회(5 쿼리)로 처리합니다:
+     * CAPPLA 1회, CAPPLM 1회, CDECIM 1회, CORGNI 1회, CUSERI 1회.
+     * </p>
+     */
+    private void enrichProjectListBatch(List<Bprojm> projects, List<ProjectDto.Response> responses) {
+        if (projects.isEmpty()) return;
+
+        // --- 1. CAPPLA 배치 조회 (BPROJM에 연결된 모든 신청서) ---
+        List<String> prjMngNos = projects.stream().map(Bprojm::getPrjMngNo).collect(Collectors.toList());
+        List<Cappla> allCapplas = capplaRepository.findByOrcTbCdAndOrcPkVlInOrderByApfRelSnoDesc("BPROJM", prjMngNos);
+
+        // prjMngNo → 최신 Cappla (이미 DESC 정렬이므로 첫 번째가 최신)
+        Map<String, Cappla> latestCappla = new java.util.LinkedHashMap<>();
+        for (Cappla c : allCapplas) {
+            latestCappla.putIfAbsent(c.getOrcPkVl(), c);
+        }
+
+        // --- 2. CAPPLM 배치 조회 ---
+        List<String> apfMngNos = latestCappla.values().stream()
+                .map(Cappla::getApfMngNo).collect(Collectors.toList());
+        Map<String, Capplm> capplmMap = capplmRepository.findAllById(apfMngNos).stream()
+                .collect(Collectors.toMap(Capplm::getApfMngNo, m -> m));
+
+        // --- 3. CDECIM 배치 조회 ---
+        List<Cdecim> allDecisions = cdecimRepository.findByDcdMngNoInOrderByDcdSqnAsc(apfMngNos);
+        Map<String, List<Cdecim>> decisionMap = allDecisions.stream()
+                .collect(Collectors.groupingBy(Cdecim::getDcdMngNo));
+
+        // --- 4. 부서코드·사원번호 수집 ---
+        Set<String> orgCodes = new java.util.HashSet<>();
+        Set<String> userEnos = new java.util.HashSet<>();
+        for (ProjectDto.Response r : responses) {
+            if (r.getItDpm() != null && !r.getItDpm().isEmpty()) orgCodes.add(r.getItDpm());
+            if (r.getSvnDpm() != null && !r.getSvnDpm().isEmpty()) orgCodes.add(r.getSvnDpm());
+            if (r.getItDpmCgpr() != null && !r.getItDpmCgpr().isEmpty()) userEnos.add(r.getItDpmCgpr());
+            if (r.getItDpmTlr() != null && !r.getItDpmTlr().isEmpty()) userEnos.add(r.getItDpmTlr());
+            if (r.getSvnDpmCgpr() != null && !r.getSvnDpmCgpr().isEmpty()) userEnos.add(r.getSvnDpmCgpr());
+            if (r.getSvnDpmTlr() != null && !r.getSvnDpmTlr().isEmpty()) userEnos.add(r.getSvnDpmTlr());
+        }
+
+        // --- 5. 부서명·사용자명 배치 조회 ---
+        Map<String, String> orgNameMap = corgnIRepository.findAllById(orgCodes).stream()
+                .collect(Collectors.toMap(CorgnI::getPrlmOgzCCone, CorgnI::getBbrNm));
+        Map<String, String> userNameMap = cuserIRepository.findAllById(userEnos).stream()
+                .collect(Collectors.toMap(CuserI::getEno, CuserI::getUsrNm));
+
+        // --- 6. 응답 DTO에 일괄 주입 ---
+        for (int i = 0; i < projects.size(); i++) {
+            Bprojm project = projects.get(i);
+            ProjectDto.Response response = responses.get(i);
+
+            Cappla cappla = latestCappla.get(project.getPrjMngNo());
+            if (cappla != null) {
+                response.setApfMngNo(cappla.getApfMngNo());
+                Capplm capplm = capplmMap.get(cappla.getApfMngNo());
+                if (capplm != null) {
+                    response.setApfSts(capplm.getApfSts());
+                    List<Cdecim> decisions = decisionMap.getOrDefault(cappla.getApfMngNo(), List.of());
+                    response.setApplicationInfo(ApplicationInfoDto.fromEntities(capplm, decisions));
+                }
+            }
+
+            if (response.getItDpm() != null) response.setItDpmNm(orgNameMap.get(response.getItDpm()));
+            if (response.getSvnDpm() != null) response.setSvnDpmNm(orgNameMap.get(response.getSvnDpm()));
+            if (response.getItDpmCgpr() != null) response.setItDpmCgprNm(userNameMap.get(response.getItDpmCgpr()));
+            if (response.getItDpmTlr() != null) response.setItDpmTlrNm(userNameMap.get(response.getItDpmTlr()));
+            if (response.getSvnDpmCgpr() != null) response.setSvnDpmCgprNm(userNameMap.get(response.getSvnDpmCgpr()));
+            if (response.getSvnDpmTlr() != null) response.setSvnDpmTlrNm(userNameMap.get(response.getSvnDpmTlr()));
+
+            setBudgetSummary(response, project.getPrjMngNo(), project.getPrjSno());
+        }
+    }
+
     private void setApplicationInfo(ProjectDto.Response response, String prjMngNo, Integer prjSno) {
         // BPROJM 테이블 코드와 프로젝트 관리번호/순번으로 연결된 신청서 목록 조회 (최신순)
         List<com.kdb.it.common.approval.entity.Cappla> capplas = capplaRepository
@@ -677,9 +751,8 @@ public class ProjectService {
      */
     private void setBudgetSummaryFromItems(ProjectDto.Response response,
             List<com.kdb.it.domain.budget.project.entity.Bitemm> bitemms) {
-        // 공통코드에서 자본예산 대상 비목코드 조회 (cttTp = IOE_CPIT)
-        List<com.kdb.it.common.code.entity.Ccodem> assetCodes = ccodemRepository
-                .findByCttTpWithValidDate("IOE_CPIT", null);
+        // 공통코드에서 자본예산 대상 비목코드 조회 (cttTp = IOE_CPIT) — 캐시 적용
+        List<com.kdb.it.common.code.entity.Ccodem> assetCodes = codeService.findCodeEntitiesByCttTp("IOE_CPIT");
         java.util.Set<String> assetTypes = assetCodes.stream()
                 .map(com.kdb.it.common.code.entity.Ccodem::getCdId)
                 .collect(java.util.stream.Collectors.toSet());
@@ -695,9 +768,9 @@ public class ProjectService {
         java.util.Set<String> machTypes = assetSubTypes.getOrDefault("기계장치", java.util.Collections.emptySet());
         java.util.Set<String> intanTypes = assetSubTypes.getOrDefault("기타무형자산", java.util.Collections.emptySet());
 
-        // 공통코드에서 일반관리비 대상 비목코드(cdId) 조회 (cttTp = IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE)
+        // 공통코드에서 일반관리비 대상 비목코드(cdId) 조회 (cttTp = IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE) — 캐시 적용
         java.util.Set<String> costTypes = java.util.stream.Stream.of("IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE")
-                .flatMap(cttTp -> ccodemRepository.findByCttTpWithValidDate(cttTp, null).stream())
+                .flatMap(cttTp -> codeService.findCodeEntitiesByCttTp(cttTp).stream())
                 .map(com.kdb.it.common.code.entity.Ccodem::getCdId)
                 .collect(java.util.stream.Collectors.toSet());
 

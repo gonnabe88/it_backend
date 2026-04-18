@@ -5,6 +5,7 @@ import com.kdb.it.common.code.entity.Ccodem;
 import com.kdb.it.common.code.repository.CodeRepository;
 import com.kdb.it.exception.CustomGeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -135,6 +136,17 @@ public class CodeService {
      *
      * @return 시작일자/종료일자를 담은 Map
      */
+    /**
+     * 코드값구분(cttTp)으로 공통코드 엔티티 목록 조회 (캐시 적용)
+     *
+     * <p>비목코드 등 정적 참조 데이터는 서버 재시작 전까지 캐시합니다.</p>
+     */
+    @Cacheable(value = "codesByType", key = "#cttTp")
+    public List<Ccodem> findCodeEntitiesByCttTp(String cttTp) {
+        return codeRepository.findByCttTpWithValidDate(cttTp, null);
+    }
+
+    @Cacheable("budgetPeriod")
     public CodeDto.BudgetPeriodResponse getBudgetPeriod() {
         Ccodem startCode = codeRepository.findByCdIdWithValidDate("BG-RQS-STA", null)
                 .orElseThrow(() -> new IllegalArgumentException("예산 신청기간 시작일자 코드를 찾을 수 없습니다: BG-RQS-STA"));

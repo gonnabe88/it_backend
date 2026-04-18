@@ -103,7 +103,7 @@ public class CostController {
      */
     @Operation(summary = "전산관리비 삭제", description = "전산관리비를 삭제(Soft Delete)합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "삭제 성공", content = @Content),
+            @ApiResponse(responseCode = "204", description = "삭제 성공", content = @Content),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 전산관리비", content = @Content)
     })
     @DeleteMapping("/{itMngcNo}")
@@ -111,7 +111,7 @@ public class CostController {
             @Parameter(description = "전산관리비 관리번호", required = true, example = "COST_2026_0001")
             @PathVariable("itMngcNo") String itMngcNo) {
         costService.deleteCost(itMngcNo);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,7 +19,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.kdb.it.common.system.service.AuthService;
 import com.kdb.it.common.util.CustomPasswordEncoder;
 
 import java.util.List;
@@ -204,21 +201,4 @@ public class SecurityConfig {
                 return new CustomPasswordEncoder();
         }
 
-        /**
-         * 인증 관리자 빈 등록
-         *
-         * <p>
-         * {@link AuthenticationManager}는 Spring Security의 인증 처리 핵심 컴포넌트입니다.
-         * {@link AuthService}에서 사용자 인증(로그인) 시 활용됩니다.
-         * </p>
-         *
-         * @param authenticationConfiguration Spring Security 인증 설정 컨텍스트
-         * @return {@link AuthenticationManager} 인스턴스
-         * @throws Exception 인증 관리자 생성 실패 시
-         */
-        @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-                        throws Exception {
-                return authenticationConfiguration.getAuthenticationManager();
-        }
 }

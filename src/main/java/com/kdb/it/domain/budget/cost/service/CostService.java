@@ -2,7 +2,9 @@ package com.kdb.it.domain.budget.cost.service;
 
 import com.kdb.it.common.approval.dto.ApplicationInfoDto;
 import com.kdb.it.common.approval.entity.Cappla;
+import com.kdb.it.common.approval.entity.Capplm;
 import com.kdb.it.common.approval.entity.Cdecim;
+import com.kdb.it.common.iam.entity.CorgnI;
 import com.kdb.it.common.approval.repository.ApplicationMapRepository;
 import com.kdb.it.common.approval.repository.ApplicationRepository;
 import com.kdb.it.common.approval.repository.ApproverRepository;
@@ -16,6 +18,7 @@ import com.kdb.it.domain.budget.cost.entity.Bcostm;
 import com.kdb.it.domain.budget.cost.entity.Btermm;
 import com.kdb.it.domain.budget.cost.repository.BtermmRepository;
 import com.kdb.it.domain.budget.cost.repository.CostRepository;
+import com.kdb.it.common.system.security.CustomUserDetails;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,6 +29,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,16 +122,12 @@ public class CostService {
      * @return 전체 전산관리비 응답 DTO 목록
      */
     public List<CostDto.Response> getCostList() {
-        return costRepository.findAllByDelYn("N").stream()
-                .map(cost -> {
-                    CostDto.Response response = CostDto.Response.fromEntity(cost);
-                    enrichResponse(response, cost);
-                    if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
-                        attachTerminals(response);
-                    }
-                    return response;
-                })
-                .toList();
+        List<Bcostm> costs = costRepository.findAllByDelYn("N");
+        List<CostDto.Response> responses = costs.stream()
+                .map(CostDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichCostListBatch(costs, responses);
+        return responses;
     }
 
     /**
@@ -149,16 +150,12 @@ public class CostService {
      * @return 조건에 맞는 전산관리비 응답 DTO 목록
      */
     public List<CostDto.Response> searchCostList(CostDto.SearchCondition condition) {
-        return costRepository.searchByCondition(condition).stream()
-                .map(cost -> {
-                    CostDto.Response response = CostDto.Response.fromEntity(cost);
-                    enrichResponse(response, cost);
-                    if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
-                        attachTerminals(response);
-                    }
-                    return response;
-                })
-                .toList();
+        List<Bcostm> costs = costRepository.searchByCondition(condition);
+        List<CostDto.Response> responses = costs.stream()
+                .map(CostDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichCostListBatch(costs, responses);
+        return responses;
     }
 
     /**
@@ -260,6 +257,8 @@ public class CostService {
                 .findFirst()
                 .orElse(costs.get(0));
 
+        validateModifyPermission(target.getFstEnrUsid(), target.getBiceDpm());
+
         target.update(
                 request.getIoeC(), request.getCttNm(), request.getCttOpp(),
                 request.getItMngcBg(), request.getDfrCle(), request.getFstDfrDt(),
@@ -312,6 +311,8 @@ public class CostService {
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);
         }
+
+        validateModifyPermission(costs.get(0).getFstEnrUsid(), costs.get(0).getBiceDpm());
 
         for (Bcostm cost : costs) {
             cost.delete();
@@ -436,6 +437,80 @@ public class CostService {
         }
     }
 
+    /**
+     * 전산관리비 목록 응답에 신청서 정보·코드명·예산 구분을 배치로 주입 (N+1 방지)
+     *
+     * <p>CAPPLA 1회, CAPPLM 1회, CDECIM 1회, CORGNI 1회, CUSERI 1회 — 총 5 쿼리로 처리합니다.</p>
+     */
+    private void enrichCostListBatch(List<Bcostm> costs, List<CostDto.Response> responses) {
+        if (costs.isEmpty()) return;
+
+        // --- 1. CAPPLA 배치 조회 ---
+        List<String> itMngcNos = costs.stream().map(Bcostm::getItMngcNo).distinct().collect(Collectors.toList());
+        List<Cappla> allCapplas = capplaRepository.findByOrcTbCdAndOrcPkVlInOrderByApfRelSnoDesc("BCOSTM", itMngcNos);
+
+        // itMngcNo+sno 복합키 → 최신 Cappla
+        Map<String, Cappla> latestCappla = new java.util.LinkedHashMap<>();
+        for (Cappla c : allCapplas) {
+            String key = c.getOrcPkVl() + "_" + c.getOrcSnoVl();
+            latestCappla.putIfAbsent(key, c);
+        }
+
+        // --- 2. CAPPLM 배치 조회 ---
+        List<String> apfMngNos = latestCappla.values().stream()
+                .map(Cappla::getApfMngNo).collect(Collectors.toList());
+        Map<String, Capplm> capplmMap = capplmRepository.findAllById(apfMngNos).stream()
+                .collect(Collectors.toMap(Capplm::getApfMngNo, m -> m));
+
+        // --- 3. CDECIM 배치 조회 ---
+        List<Cdecim> allDecisions = cdecimRepository.findByDcdMngNoInOrderByDcdSqnAsc(apfMngNos);
+        Map<String, List<Cdecim>> decisionMap = allDecisions.stream()
+                .collect(Collectors.groupingBy(Cdecim::getDcdMngNo));
+
+        // --- 4. 부서코드·사원번호 수집 ---
+        Set<String> orgCodes = new java.util.HashSet<>();
+        Set<String> userEnos = new java.util.HashSet<>();
+        for (CostDto.Response r : responses) {
+            if (r.getBiceDpm() != null && !r.getBiceDpm().isEmpty()) orgCodes.add(r.getBiceDpm());
+            if (r.getBiceTem() != null && !r.getBiceTem().isEmpty()) orgCodes.add(r.getBiceTem());
+            if (r.getCgpr() != null && !r.getCgpr().isEmpty()) userEnos.add(r.getCgpr());
+        }
+
+        // --- 5. 배치 조회 ---
+        Map<String, String> orgNameMap = corgnIRepository.findAllById(orgCodes).stream()
+                .collect(Collectors.toMap(CorgnI::getPrlmOgzCCone, CorgnI::getBbrNm));
+        Map<String, String> userNameMap = cuserIRepository.findAllById(userEnos).stream()
+                .collect(Collectors.toMap(CuserI::getEno, CuserI::getUsrNm));
+
+        // --- 6. 응답 DTO에 일괄 주입 ---
+        for (int i = 0; i < costs.size(); i++) {
+            Bcostm cost = costs.get(i);
+            CostDto.Response response = responses.get(i);
+
+            String key = cost.getItMngcNo() + "_" + cost.getItMngcSno();
+            Cappla cappla = latestCappla.get(key);
+            if (cappla != null) {
+                response.setApfMngNo(cappla.getApfMngNo());
+                Capplm capplm = capplmMap.get(cappla.getApfMngNo());
+                if (capplm != null) {
+                    response.setApfSts(capplm.getApfSts());
+                    List<Cdecim> decisions = decisionMap.getOrDefault(cappla.getApfMngNo(), List.of());
+                    response.setApplicationInfo(ApplicationInfoDto.fromEntities(capplm, decisions));
+                }
+            }
+
+            if (response.getBiceDpm() != null) response.setBiceDpmNm(orgNameMap.get(response.getBiceDpm()));
+            if (response.getBiceTem() != null) response.setBiceTemNm(orgNameMap.get(response.getBiceTem()));
+            if (response.getCgpr() != null) response.setCgprNm(userNameMap.get(response.getCgpr()));
+
+            setBudgetCategory(response);
+
+            if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
+                attachTerminals(response);
+            }
+        }
+    }
+
     /** 응답 DTO에 신청서 정보, 코드명, 예산 구분을 일괄 설정 */
     private void enrichResponse(CostDto.Response response, Bcostm cost) {
         setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
@@ -494,5 +569,34 @@ public class CostService {
         Long seq = btermmRepository.getNextSequenceValue();
         String year = String.valueOf(LocalDate.now().getYear());
         return String.format("TER_%s_%04d", year, seq);
+    }
+
+    /**
+     * 수정/삭제 권한 검증 (ProjectService.validateModifyPermission과 동일 규칙)
+     *
+     * <ol>
+     *   <li>시스템관리자(ITPAD001): 전체 허용</li>
+     *   <li>기획통할담당자(ITPZZ002): 소속 부서 리소스 허용</li>
+     *   <li>일반사용자(ITPZZ001): 본인 작성 리소스만 허용</li>
+     * </ol>
+     */
+    private void validateModifyPermission(String creatorEno, String resourceBbrC) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof CustomUserDetails currentUser)) {
+            throw new AccessDeniedException("인증 정보를 확인할 수 없습니다.");
+        }
+        if (currentUser.isAdmin()) {
+            return;
+        }
+        if (currentUser.isDeptManager()) {
+            if (currentUser.getBbrC() != null && currentUser.getBbrC().equals(resourceBbrC)) {
+                return;
+            }
+            throw new AccessDeniedException("소속 부서의 리소스만 수정할 수 있습니다.");
+        }
+        if (currentUser.getEno().equals(creatorEno)) {
+            return;
+        }
+        throw new AccessDeniedException("본인이 작성한 리소스만 수정할 수 있습니다.");
     }
 }
