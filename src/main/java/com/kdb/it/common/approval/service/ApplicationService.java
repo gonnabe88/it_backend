@@ -10,6 +10,10 @@ import com.kdb.it.common.approval.entity.Cdecim;
 import com.kdb.it.common.approval.repository.ApplicationRepository;
 import com.kdb.it.common.approval.repository.ApplicationMapRepository;
 import com.kdb.it.common.approval.repository.ApproverRepository;
+import com.kdb.it.domain.budget.cost.dto.CostDto;
+import com.kdb.it.domain.budget.cost.repository.CostRepository;
+import com.kdb.it.domain.budget.project.dto.ProjectDto;
+import com.kdb.it.domain.budget.project.repository.ProjectRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +84,12 @@ public class ApplicationService {
 
     /** JSON 직렬화/역직렬화를 위한 Jackson ObjectMapper */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    /** 정보화사업(Bprojm) 리포지토리: 미상신 건수 집계용 */
+    private final ProjectRepository projectRepository;
+
+    /** 전산업무비(Bcostm) 리포지토리: 미상신 건수 집계용 */
+    private final CostRepository costRepository;
 
     /**
      * 신청서 상세 내용(JSON)의 결재선 정보 업데이트
@@ -540,5 +550,39 @@ public class ApplicationService {
                 })
                 .filter(response -> response != null) // null 제거 (존재하지 않는 항목 제외)
                 .toList();
+    }
+
+    /**
+     * 미상신(결재 신청 이력 없음) 건수 집계
+     *
+     * <p>
+     * 사이드바의 [결재 상신] 메뉴 옆 배지에서 사용됩니다.
+     * 전체 목록 대신 건수만 반환하여 데이터 전송량을 최소화합니다.
+     * </p>
+     *
+     * <p>
+     * 집계 로직: {@code apfSts='none'} 조건으로 {@code ProjectRepository} 및
+     * {@code CostRepository}의 {@code searchByCondition}을 호출하여 각각의 건수를 계산합니다.
+     * (CAPPLA 연결이 없는 BPROJM/BCOSTM 레코드 = 아직 결재 상신되지 않은 항목)
+     * </p>
+     *
+     * @return 미상신 건수 응답 DTO (정보화사업/전산업무비 개별 건수 + 총합)
+     */
+    public ApplicationDto.PendingCountResponse getPendingCount() {
+        // 미상신 정보화사업 건수: CAPPLA에 연결되지 않은 BPROJM
+        ProjectDto.SearchCondition projectCondition = new ProjectDto.SearchCondition();
+        projectCondition.setApfSts("none");
+        long projectCount = projectRepository.searchByCondition(projectCondition).size();
+
+        // 미상신 전산업무비 건수: CAPPLA에 연결되지 않은 BCOSTM
+        CostDto.SearchCondition costCondition = new CostDto.SearchCondition();
+        costCondition.setApfSts("none");
+        long costCount = costRepository.searchByCondition(costCondition).size();
+
+        return ApplicationDto.PendingCountResponse.builder()
+                .projectCount(projectCount)
+                .costCount(costCount)
+                .totalCount(projectCount + costCount)
+                .build();
     }
 }

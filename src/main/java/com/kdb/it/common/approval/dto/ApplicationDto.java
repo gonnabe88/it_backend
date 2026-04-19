@@ -343,6 +343,31 @@ public class ApplicationDto {
     }
 
     /**
+     * 미결재(미상신) 건수 응답 DTO
+     *
+     * <p>사이드바 결재 상신 배지 등에서 사용합니다.
+     * 정보화사업(BPROJM)과 전산업무비(BCOSTM) 중 결재 신청이 없는(CAPPLA 미연결) 건수를 집계합니다.</p>
+     *
+     * <p>전체 건수 집계에 최적화되어 있으며, 상세 목록 조회가 필요하지 않은 경우 사용합니다.</p>
+     */
+    @Getter
+    @Builder
+    @Schema(name = "ApplicationPendingCountResponse", description = "미결재(미상신) 건수 응답")
+    public static class PendingCountResponse {
+        /** 미상신 정보화사업 건수 */
+        @Schema(description = "미상신 정보화사업 건수")
+        private long projectCount;
+
+        /** 미상신 전산업무비 건수 */
+        @Schema(description = "미상신 전산업무비 건수")
+        private long costCount;
+
+        /** 전체 미상신 건수 (projectCount + costCount) */
+        @Schema(description = "전체 미상신 건수")
+        private long totalCount;
+    }
+
+    /**
      * 결재자 정보 응답 DTO
      *
      * <p>결재자({@link Cdecim}) 한 명의 결재 정보를 담습니다.</p>

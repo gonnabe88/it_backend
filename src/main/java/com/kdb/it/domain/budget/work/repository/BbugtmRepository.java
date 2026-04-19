@@ -77,4 +77,19 @@ public interface BbugtmRepository extends JpaRepository<Bbugtm, BbugtmId>, Bbugt
      */
     @Query("SELECT MAX(b.bgSno) FROM Bbugtm b WHERE b.bgMngNo = :bgMngNo")
     Integer findMaxBgSnoByBgMngNo(@Param("bgMngNo") String bgMngNo);
+
+    /**
+     * 특정 연도 + 원본테이블 + 원본PK 기준 편성 데이터 목록 조회
+     *
+     * <p>사업별 편성률 재적용 시 구버전 품목으로 인해 생성된 고아(orphan) BBUGTM 레코드를
+     * 탐지·정리하기 위해 사용합니다.</p>
+     *
+     * @param bgYy    예산년도
+     * @param orcTb   원본테이블 (BPROJM/BCOSTM/BITEMM)
+     * @param orcPkVl 원본PK값
+     * @param delYn   삭제여부 ('N')
+     * @return 해당 조건의 편성 데이터 목록
+     */
+    List<Bbugtm> findByBgYyAndOrcTbAndOrcPkVlAndDelYn(
+        String bgYy, String orcTb, String orcPkVl, String delYn);
 }

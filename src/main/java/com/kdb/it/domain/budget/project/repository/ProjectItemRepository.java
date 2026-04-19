@@ -73,6 +73,19 @@ public interface ProjectItemRepository extends JpaRepository<Bitemm, BitemmId> {
      */
     List<Bitemm> findByPrjMngNoAndDelYn(String prjMngNo, String delYn);
 
+    /**
+     * 프로젝트 관리번호의 최신 버전 품목 목록 조회
+     *
+     * <p>동일 프로젝트의 여러 버전(PRJ_SNO) 중 최신 버전({@code LST_YN='Y'}) 품목만 조회합니다.
+     * 예산 편성 작업 시 구버전 품목이 BBUGTM에 중복 합산되지 않도록 최신 버전만 필터링합니다.</p>
+     *
+     * @param prjMngNo 프로젝트 관리번호
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @param lstYn    최종 여부 ('Y'=최신 버전)
+     * @return 최신 버전 유효 품목 목록
+     */
+    List<Bitemm> findByPrjMngNoAndDelYnAndLstYn(String prjMngNo, String delYn, String lstYn);
+
     @org.springframework.data.jpa.repository.Query(value = "SELECT S_GCL.NEXTVAL FROM DUAL", nativeQuery = true)
     Long getNextSequenceValue();
 }

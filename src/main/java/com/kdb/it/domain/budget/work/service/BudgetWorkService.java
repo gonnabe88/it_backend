@@ -233,6 +233,16 @@ public class BudgetWorkService {
         int snoCounter = 0;
         int totalRecords = 0;
 
+        /*
+         * 해당 예산년도 BBUGTM 전체 Soft Delete (선 정리 → 후 재삽입 패턴):
+         * targetItems에는 현재 결재완료 상태인 사업·전산업무비만 포함되므로,
+         * 결재철회/삭제 등으로 대상에서 제외된 과거 BBUGTM 레코드가 남아서
+         * 비목별 편성 결과의 편성금액을 부풀리는 문제를 원천 차단합니다.
+         * 또한 BITEMM 구버전(LST_YN='N')이 과거 버그로 저장된 고아 레코드도 함께 제거됩니다.
+         */
+        List<Bbugtm> priorBudgets = bbugtmRepository.findByBgYyAndDelYn(bgYy, "N");
+        for (Bbugtm prior : priorBudgets) prior.delete();
+
         /* 자본예산 비목코드(IOE_CPIT) 목록 조회 — 자본/경상 구분용 */
         List<Ccodem> capitalCodes = codeRepository.findByCttTpWithValidDate("IOE_CPIT", null);
         java.util.Set<String> capitalPrefixes = new java.util.HashSet<>();
@@ -251,9 +261,10 @@ public class BudgetWorkService {
             Integer costDupRt = item.costDupRt() != null ? item.costDupRt() : 100;
 
             if ("BPROJM".equals(item.orcTb())) {
-                /* 정보화사업: BITEMM에서 해당 프로젝트의 품목 조회 */
-                List<Bitemm> items = projectItemRepository.findByPrjMngNoAndDelYn(
-                        item.orcPkVl(), "N");
+                /* 정보화사업: BITEMM에서 해당 프로젝트의 최신 버전 품목(LST_YN='Y')만 조회 */
+                List<Bitemm> items = projectItemRepository.findByPrjMngNoAndDelYnAndLstYn(
+                        item.orcPkVl(), "N", "Y");
+
                 for (Bitemm bitemm : items) {
                     boolean isCapital = isCapitalIoeCode(bitemm.getGclDtt(), capitalPrefixes);
                     int dupRt = isCapital ? assetDupRt : costDupRt;
@@ -262,60 +273,46 @@ public class BudgetWorkService {
                     BigDecimal amountKrw = bitemm.getGclAmt() != null ? bitemm.getGclAmt().multiply(xcrVal) : BigDecimal.ZERO;
                     BigDecimal dupBg = calculateDupBg(amountKrw, dupRt);
 
-                    Optional<Bbugtm> existing = bbugtmRepository
-                            .findByBgYyAndOrcTbAndOrcPkVlAndOrcSnoVlAndIoeCAndDelYn(
-                                    bgYy, "BITEMM", bitemm.getGclMngNo(),
-                                    bitemm.getGclSno(), bitemm.getGclDtt(), "N");
-
-                    if (existing.isPresent()) {
-                        existing.get().update(dupBg, dupRt);
-                    } else {
-                        snoCounter++;
-                        Bbugtm bbugtm = Bbugtm.builder()
-                                .bgMngNo(bgMngNo)
-                                .bgSno(snoCounter)
-                                .bgYy(bgYy)
-                                .orcTb("BITEMM")
-                                .orcPkVl(bitemm.getGclMngNo())
-                                .orcSnoVl(bitemm.getGclSno())
-                                .ioeC(bitemm.getGclDtt())
-                                .dupBg(dupBg)
-                                .dupRt(dupRt)
-                                .build();
-                        bbugtmRepository.save(bbugtm);
-                    }
+                    /* 선 Soft Delete 후 전체 재삽입 방식이므로 Upsert 불필요 (항상 INSERT) */
+                    snoCounter++;
+                    Bbugtm bbugtm = Bbugtm.builder()
+                            .bgMngNo(bgMngNo)
+                            .bgSno(snoCounter)
+                            .bgYy(bgYy)
+                            .orcTb("BITEMM")
+                            .orcPkVl(bitemm.getGclMngNo())
+                            .orcSnoVl(bitemm.getGclSno())
+                            .ioeC(bitemm.getGclDtt())
+                            .dupBg(dupBg)
+                            .dupRt(dupRt)
+                            .build();
+                    bbugtmRepository.save(bbugtm);
                     totalRecords++;
                 }
             } else if ("BCOSTM".equals(item.orcTb())) {
-                /* 전산업무비: 해당 전산업무비 단건 처리 */
-                List<Bcostm> costList = costRepository.findByItMngcNoAndDelYn(item.orcPkVl(), "N");
+                /* 전산업무비: 해당 전산업무비의 최신 버전(LST_YN='Y')만 처리 */
+                List<Bcostm> costList = costRepository.findByItMngcNoAndDelYnAndLstYn(
+                        item.orcPkVl(), "N", "Y");
+
                 for (Bcostm cost : costList) {
                     boolean isCapital = isCapitalIoeCode(cost.getIoeC(), capitalPrefixes);
                     int dupRt = isCapital ? assetDupRt : costDupRt;
                     BigDecimal dupBg = calculateDupBg(cost.getItMngcBg(), dupRt);
 
-                    Optional<Bbugtm> existing = bbugtmRepository
-                            .findByBgYyAndOrcTbAndOrcPkVlAndOrcSnoVlAndIoeCAndDelYn(
-                                    bgYy, "BCOSTM", cost.getItMngcNo(),
-                                    cost.getItMngcSno(), cost.getIoeC(), "N");
-
-                    if (existing.isPresent()) {
-                        existing.get().update(dupBg, dupRt);
-                    } else {
-                        snoCounter++;
-                        Bbugtm bbugtm = Bbugtm.builder()
-                                .bgMngNo(bgMngNo)
-                                .bgSno(snoCounter)
-                                .bgYy(bgYy)
-                                .orcTb("BCOSTM")
-                                .orcPkVl(cost.getItMngcNo())
-                                .orcSnoVl(cost.getItMngcSno())
-                                .ioeC(cost.getIoeC())
-                                .dupBg(dupBg)
-                                .dupRt(dupRt)
-                                .build();
-                        bbugtmRepository.save(bbugtm);
-                    }
+                    /* 선 Soft Delete 후 전체 재삽입 방식이므로 Upsert 불필요 (항상 INSERT) */
+                    snoCounter++;
+                    Bbugtm bbugtm = Bbugtm.builder()
+                            .bgMngNo(bgMngNo)
+                            .bgSno(snoCounter)
+                            .bgYy(bgYy)
+                            .orcTb("BCOSTM")
+                            .orcPkVl(cost.getItMngcNo())
+                            .orcSnoVl(cost.getItMngcSno())
+                            .ioeC(cost.getIoeC())
+                            .dupBg(dupBg)
+                            .dupRt(dupRt)
+                            .build();
+                    bbugtmRepository.save(bbugtm);
                     totalRecords++;
                 }
             }
