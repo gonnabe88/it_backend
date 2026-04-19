@@ -28,10 +28,12 @@ repositories {
 // Snyk 취약점 대응 — 전이 의존성 강제 버전 업그레이드
 configurations.all {
 	resolutionStrategy.eachDependency { details ->
-		// com.fasterxml.jackson.core: jjwt-jackson 2.12.7.1 취약점 대응 — 2.21.2 명시 강제
+		// com.fasterxml.jackson.core: 2.21.2는 BOM만 존재하고 JAR 미출시 → 실제 존재하는 2.18.2로 강제
+		// tools.jackson:jackson-bom:3.1.0이 2.21.2를 constraint 선언하나 Maven Central에 JAR 없음
+		// jjwt-jackson 전이 의존성 2.12.7.1도 함께 해소 (Snyk CWE-770/400/121/209)
 		if (details.requested.group == 'com.fasterxml.jackson.core') {
-			details.useVersion '2.21.2'
-			details.because 'Snyk CWE-770/400/121/209: jjwt-jackson 전이 의존성 jackson-core 2.12.7 취약점 대응'
+			details.useVersion '2.18.2'
+			details.because 'jackson 2.21.2 JAR 미존재 대응 + Snyk 취약점 대응'
 		}
 		// logback 1.5.22 → 1.5.32 (Low 1건)
 		if (details.requested.group == 'ch.qos.logback') {
