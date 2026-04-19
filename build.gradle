@@ -28,13 +28,10 @@ repositories {
 // Snyk 취약점 대응 — 전이 의존성 강제 버전 업그레이드
 configurations.all {
 	resolutionStrategy.eachDependency { details ->
-		// com.fasterxml.jackson.core: 2.21.2는 BOM만 존재하고 JAR 미출시 → 실제 존재하는 2.18.2로 강제
-		// tools.jackson:jackson-bom:3.1.0이 2.21.2를 constraint 선언하나 Maven Central에 JAR 없음
-		// jjwt-jackson 전이 의존성 2.12.7.1도 함께 해소 (Snyk CWE-770/400/121/209)
-		if (details.requested.group == 'com.fasterxml.jackson.core') {
-			details.useVersion '2.18.2'
-			details.because 'jackson 2.21.2 JAR 미존재 대응 + Snyk 취약점 대응'
-		}
+		// com.fasterxml.jackson.core: 강제 버전 지정 제거 — Gradle 자연 해소에 위임
+		// tools.jackson:jackson-bom:3.1.0이 선언한 버전(2.19+)이 JsonSerializeAs 등 신규 클래스를 포함
+		// 강제 다운그레이드 시 tools.jackson.databind:3.1.0 런타임 NoClassDefFoundError 발생
+		// jjwt-jackson 2.12.7.1은 swagger-core가 요구하는 상위 버전으로 자동 업그레이드됨 (Snyk 대응)
 		// logback 1.5.22 → 1.5.32 (Low 1건)
 		if (details.requested.group == 'ch.qos.logback') {
 			details.useVersion '1.5.32'
