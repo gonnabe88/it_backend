@@ -451,8 +451,15 @@ public class FileService {
         Cfilem cfilem = fileRepository.findByFlMngNoAndDelYn(flMngNo, "N")
                 .orElseThrow(() -> new CustomGeneralException("존재하지 않는 파일입니다. 파일관리번호: " + flMngNo));
 
-        // 실제 파일 경로 생성
-        Path filePath = Paths.get(cfilem.getFlKpnPth()).resolve(cfilem.getSvrFlNm());
+        // 실제 파일 경로 생성 및 Directory Traversal 방지 검증
+        Path base = Paths.get(basePath).normalize().toAbsolutePath();
+        Path filePath = Paths.get(cfilem.getFlKpnPth())
+                .resolve(cfilem.getSvrFlNm())
+                .normalize()
+                .toAbsolutePath();
+        if (!filePath.startsWith(base)) {
+            throw new CustomGeneralException("허용되지 않는 파일 경로입니다. 파일관리번호: " + flMngNo);
+        }
 
         // 파일 Resource 로드
         Resource resource;

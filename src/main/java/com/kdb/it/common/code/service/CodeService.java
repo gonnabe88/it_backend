@@ -141,7 +141,7 @@ public class CodeService {
      *
      * <p>비목코드 등 정적 참조 데이터는 서버 재시작 전까지 캐시합니다.</p>
      */
-    @Cacheable(value = "codesByType", key = "#cttTp")
+    @Cacheable(value = "codesByType", key = "#p0")
     public List<Ccodem> findCodeEntitiesByCttTp(String cttTp) {
         return codeRepository.findByCttTpWithValidDate(cttTp, null);
     }

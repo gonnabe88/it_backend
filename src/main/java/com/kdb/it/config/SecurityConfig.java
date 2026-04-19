@@ -2,6 +2,7 @@ package com.kdb.it.config;
 
 import com.kdb.it.common.system.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.config.Customizer;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,16 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
+                                // HTTP 보안 헤더 명시적 설정 (Snyk SNYK-JAVA-ORGSPRINGFRAMEWORK-* 대응)
+                                .headers(headers -> headers
+                                                // MIME 스니핑 방지: 브라우저가 Content-Type을 임의 변경 불가
+                                                .contentTypeOptions(Customizer.withDefaults())
+                                                // 클릭재킹 방지: iframe 삽입 금지
+                                                .frameOptions(frame -> frame.deny())
+                                                // HSTS: HTTPS 강제 (운영 환경 대비, max-age=1년)
+                                                .httpStrictTransportSecurity(hsts -> hsts
+                                                                .includeSubDomains(true)
+                                                                .maxAgeInSeconds(31536000)))
                                 // CORS 설정 적용 (corsConfigurationSource 빈 사용)
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 // CSRF 보호 비활성화 (JWT 사용 시 불필요; REST API는 CSRF 공격 대상이 아님)
