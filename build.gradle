@@ -28,12 +28,11 @@ repositories {
 // Snyk 취약점 대응 — 전이 의존성 강제 버전 업그레이드
 configurations.all {
 	resolutionStrategy.eachDependency { details ->
-		// com.fasterxml.jackson.core: Spring Boot BOM + tools.jackson BOM이 관리
-		// tools.jackson 3.x가 com.fasterxml.jackson 2.21+ 필요 → 임의 강제 시 클래스 충돌 발생
-		// Spring Boot 4.0.1 BOM이 안전 버전으로 이미 관리하므로 별도 강제 불필요
-		// (취약 버전 2.12.7은 querydsl 5.1.0 업그레이드로 전이 의존성 유입 차단됨)
-		// tools.jackson.core 3.0.x: Spring Boot 4.0.5 BOM 관리 버전 사용 (3.1.x는 breaking change)
-		// → High 3건은 Spring Boot 업그레이드 시 자동 해결 예정, 현재는 BOM 관리에 위임 (Accept)
+		// com.fasterxml.jackson.core: jjwt-jackson 2.12.7.1 취약점 대응 — 2.21.2 명시 강제
+		if (details.requested.group == 'com.fasterxml.jackson.core') {
+			details.useVersion '2.21.2'
+			details.because 'Snyk CWE-770/400/121/209: jjwt-jackson 전이 의존성 jackson-core 2.12.7 취약점 대응'
+		}
 		// logback 1.5.22 → 1.5.32 (Low 1건)
 		if (details.requested.group == 'ch.qos.logback') {
 			details.useVersion '1.5.32'
