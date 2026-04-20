@@ -157,6 +157,37 @@ public class CouncilService {
         // JPA Dirty Checking으로 자동 반영
     }
 
+    /**
+     * 정보화실무협의회 생략 처리 (APPROVED → SKIPPED)
+     *
+     * <p>IT관리자가 타당성검토표 검토 후 해당 사업이 협의회 생략 대상임을 확인한 경우 호출합니다.</p>
+     *
+     * <p>처리 내용:</p>
+     * <ol>
+     *   <li>협의회 상태: APPROVED → SKIPPED</li>
+     *   <li>사업 상태(PRJ_STS): '정실협 진행중' → '요건 상세화'</li>
+     * </ol>
+     *
+     * @param asctId 협의회ID
+     * @throws IllegalStateException 현재 상태가 APPROVED가 아닌 경우
+     */
+    @Transactional
+    public void skipCouncil(String asctId) {
+        Basctm council = findActiveCouncil(asctId);
+
+        // APPROVED 상태에서만 생략 가능
+        if (!"APPROVED".equals(council.getAsctSts())) {
+            throw new IllegalStateException(
+                "생략 처리는 결재완료(APPROVED) 상태에서만 가능합니다. 현재 상태: " + council.getAsctSts());
+        }
+
+        // 협의회 상태 전이: APPROVED → SKIPPED
+        council.changeStatus("SKIPPED");
+
+        // 사업 상태 전이: '정실협 진행중' → '요건 상세화'
+        councilRepository.updateProjectStatus(council.getPrjMngNo(), council.getPrjSno(), "요건 상세화");
+    }
+
     // =========================================================================
     // 내부 헬퍼
     // =========================================================================

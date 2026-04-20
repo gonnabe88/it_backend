@@ -4,6 +4,7 @@ import com.kdb.it.common.iam.entity.CuserI;
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.system.security.CustomUserDetails;
 import com.kdb.it.domain.council.dto.CouncilDto;
+import com.kdb.it.domain.council.entity.Basctm;
 import com.kdb.it.domain.council.entity.Bcmmtm;
 import com.kdb.it.domain.council.entity.Bschdm;
 import com.kdb.it.domain.council.repository.CommitteeRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -70,7 +72,7 @@ public class ScheduleService {
      * @return 일정 현황 (전체/응답/미응답 위원 수 + 위원별 상세)
      */
     public CouncilDto.ScheduleStatusResponse getScheduleStatus(String asctId) {
-        councilService.findActiveCouncil(asctId);
+        Basctm council = councilService.findActiveCouncil(asctId);
 
         // 전체 위원 목록
         List<Bcmmtm> members = committeeRepository.findByAsctIdAndDelYn(asctId, "N");
@@ -79,7 +81,7 @@ public class ScheduleService {
         List<Bschdm> allSchedules = scheduleRepository.findByAsctIdAndDelYn(asctId, "N");
 
         // 응답한 위원 사번 Set
-        java.util.Set<String> respondedEnos = allSchedules.stream()
+        Set<String> respondedEnos = allSchedules.stream()
                 .map(Bschdm::getEno)
                 .collect(Collectors.toSet());
 
@@ -105,6 +107,8 @@ public class ScheduleService {
                     return new CouncilDto.MemberScheduleStatus(
                             m.getEno(),
                             user != null ? user.getUsrNm() : null,
+                            user != null ? user.getBbrNm() : null,
+                            user != null ? user.getPtCNm() : null,
                             m.getVlrTp(),
                             responded,
                             slots
@@ -116,12 +120,57 @@ public class ScheduleService {
         long pendingCount = scheduleRepository.countPendingMembers(asctId);
         int respondedCount = (int) respondedEnos.size();
 
+        // 일정 확정 가능 여부 계산
+        // INFO_SYS: 필수 위원(예산팀장:12004, IT기획팀장:18001) 응답 완료 시 true
+        // 기타 타입: 전원 응답 완료 시 true
+        boolean allRequiredResponded = calcAllRequiredResponded(
+                council.getDbrTp(), members, userMap, respondedEnos);
+
         return new CouncilDto.ScheduleStatusResponse(
                 members.size(),
                 respondedCount,
                 pendingCount,
-                memberStatuses
+                memberStatuses,
+                allRequiredResponded
         );
+    }
+
+    /**
+     * 일정 확정 가능 여부 계산
+     *
+     * <p>INFO_SYS 타입: 예산팀장(TEM_C=12004), IT기획팀장(TEM_C=18001)이 모두 응답했는지 확인
+     * <br>기타 타입: 전원이 응답했는지 확인</p>
+     *
+     * @param dbrTp         심의유형
+     * @param members       전체 위원 목록
+     * @param userMap       위원 사번 → 사용자 정보 Map
+     * @param respondedEnos 응답 완료한 위원 사번 Set
+     * @return 일정 확정 가능 여부
+     */
+    private boolean calcAllRequiredResponded(
+            String dbrTp,
+            List<Bcmmtm> members,
+            Map<String, CuserI> userMap,
+            Set<String> respondedEnos) {
+
+        if (!"INFO_SYS".equals(dbrTp)) {
+            // INFO_SYS 외 타입: 전원 응답 기준
+            return !members.isEmpty() && respondedEnos.size() >= members.size();
+        }
+
+        // INFO_SYS: 필수 팀코드 팀장의 응답 여부만 확인
+        for (String requiredTemC : CommitteeService.INFO_SYS_REQUIRED_TEM_CODES) {
+            // 해당 팀코드(TEM_C)에 속한 위원 중 한 명이라도 응답했는지 확인
+            boolean hasResponse = members.stream()
+                    .filter(m -> {
+                        CuserI user = userMap.get(m.getEno());
+                        return user != null && requiredTemC.equals(user.getTemC());
+                    })
+                    .anyMatch(m -> respondedEnos.contains(m.getEno()));
+
+            if (!hasResponse) return false;
+        }
+        return true;
     }
 
     // =========================================================================

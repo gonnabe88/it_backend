@@ -7,6 +7,8 @@ import com.kdb.it.domain.council.entity.Bpovwm;
 import com.kdb.it.domain.council.repository.FeasibilityCheckRepository;
 import com.kdb.it.domain.council.repository.PerformanceRepository;
 import com.kdb.it.domain.council.repository.ProjectOverviewRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,10 @@ public class FeasibilityService {
 
     /** 협의회 기본 서비스 — 상태 전이 및 협의회 존재 확인용 */
     private final CouncilService councilService;
+
+    /** JPA EntityManager — 성과지표 하드 딜리트 및 persist용 */
+    @PersistenceContext
+    private EntityManager entityManager;
 
     // 점검항목코드 → 한글명 매핑 (CCODEM CKG_ITM 기준)
     private static final Map<String, String> CHECK_ITEM_NAMES = Map.of(
@@ -208,16 +214,22 @@ public class FeasibilityService {
     }
 
     /**
-     * 성과지표 전체 교체 (기존 Soft Delete + 신규 INSERT)
+     * 성과지표 전체 교체 (기존 하드 삭제 + 신규 INSERT)
      *
      * <p>동적 추가/삭제를 지원하기 위해 요청 목록으로 완전 교체합니다.</p>
+     *
+     * <p>소프트 딜리트(del_yn='Y') 방식을 사용하지 않는 이유:
+     * BPERFM은 복합 PK(asctId, dtpSno)를 가지며 DEL_YN이 NOT NULL입니다.
+     * soft-delete 후 동일 PK로 재삽입 시 JPA merge()가 del_yn=null로 덮어써
+     * NOT NULL 제약 위반이 발생합니다. 하드 딜리트로 PK 충돌을 방지합니다.</p>
      */
     private void replacePerformances(String asctId, List<CouncilDto.PerformanceRequest> requests) {
-        // 기존 성과지표 전체 Soft Delete
-        List<Bperfm> existing = performanceRepository.findByAsctIdAndDelYnOrderByDtpSnoAsc(asctId, "N");
-        existing.forEach(Bperfm::delete);
+        // 기존 성과지표 전체 하드 삭제 (JPQL — persistence context 및 DB 동시 반영)
+        entityManager.createQuery("DELETE FROM Bperfm b WHERE b.asctId = :asctId")
+                .setParameter("asctId", asctId)
+                .executeUpdate();
 
-        // 새 성과지표 INSERT
+        // 새 성과지표 INSERT (persist — @PrePersist 확실히 실행됨)
         for (CouncilDto.PerformanceRequest req : requests) {
             Bperfm perf = Bperfm.builder()
                     .asctId(asctId)
@@ -232,7 +244,7 @@ public class FeasibilityService {
                     .msmTpm(req.msmTpm())
                     .msmCle(req.msmCle())
                     .build();
-            performanceRepository.save(perf);
+            entityManager.persist(perf);
         }
     }
 

@@ -7,9 +7,11 @@ import com.kdb.it.common.approval.dto.ApplicationDto;
 import com.kdb.it.common.approval.entity.Capplm;
 import com.kdb.it.common.approval.entity.Cappla;
 import com.kdb.it.common.approval.entity.Cdecim;
+import com.kdb.it.common.approval.event.ApprovalCompletedEvent;
 import com.kdb.it.common.approval.repository.ApplicationRepository;
 import com.kdb.it.common.approval.repository.ApplicationMapRepository;
 import com.kdb.it.common.approval.repository.ApproverRepository;
+import org.springframework.context.ApplicationEventPublisher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +82,9 @@ public class ApplicationService {
 
     /** JSON 직렬화/역직렬화를 위한 Jackson ObjectMapper */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    /** 결재 완료/반려 시 도메인 이벤트 발행 (도메인 간 직접 의존 제거) */
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 신청서 상세 내용(JSON)의 결재선 정보 업데이트
@@ -378,14 +383,23 @@ public class ApplicationService {
         updateApprovalLineInDetail(capplm, approvers, approvedList);
 
         // 신청서 전체 상태 업데이트
+        String newApfSts = null;
         if ("반려".equals(status)) {
             // 반려인 경우 신청서 상태도 "반려"로 변경
             capplm.updateStatus("반려");
+            newApfSts = "반려";
         } else if ("승인".equals(status)) {
             // 마지막 결재자(lstDcdYn='Y')가 승인한 경우 "결재완료"로 변경
             if ("Y".equals(lastApproved.getLstDcdYn())) {
                 capplm.updateStatus("결재완료");
+                newApfSts = "결재완료";
             }
+        }
+
+        // 신청서 상태가 종결(결재완료/반려)된 경우, 도메인 이벤트 발행
+        // 구독 리스너(예: CouncilApprovalEventListener)가 도메인별 후처리를 담당합니다.
+        if (newApfSts != null) {
+            eventPublisher.publishEvent(new ApprovalCompletedEvent(apfMngNo, newApfSts));
         }
     }
 

@@ -56,6 +56,20 @@ public interface ApplicationMapRepository extends JpaRepository<Cappla, String> 
                         Integer orcSnoVl);
 
         /**
+         * 신청관리번호와 원본 테이블 코드로 연결 레코드 조회
+         *
+         * <p>
+         * 결재 완료/반려 시 해당 신청서가 어떤 도메인 원본 데이터에 연결되어 있는지 확인합니다.
+         * 주요 사용처: {@code ApprovalCompletedEvent} 처리 시 도메인별 콜백 분기
+         * </p>
+         *
+         * @param apfMngNo 신청관리번호
+         * @param orcTbCd  원본 테이블 코드 (예: "BASCTM")
+         * @return 조건에 해당하는 Cappla 목록
+         */
+        java.util.List<Cappla> findByApfMngNoAndOrcTbCd(String apfMngNo, String orcTbCd);
+
+        /**
          * 원본 데이터에 특정 상태의 신청서가 존재하는지 확인
          *
          * <p>

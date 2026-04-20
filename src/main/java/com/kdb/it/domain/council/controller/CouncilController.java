@@ -284,6 +284,29 @@ public class CouncilController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 정보화실무협의회 생략 처리 (APPROVED → SKIPPED)
+     *
+     * <p>IT관리자가 타당성검토표 검토 후 협의회 생략 대상으로 판단한 경우 호출합니다.
+     * 협의회 상태를 SKIPPED로 전이하고, 사업 상태를 '요건 상세화'로 변경합니다.</p>
+     *
+     * @param asctId 협의회ID
+     * @return HTTP 200
+     */
+    @Operation(summary = "협의회 생략 처리", description = "APPROVED 상태에서 협의회를 생략하고 사업을 요건 상세화 단계로 전환합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생략 처리 성공"),
+            @ApiResponse(responseCode = "400", description = "APPROVED 상태가 아닌 경우", content = @Content),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 협의회", content = @Content)
+    })
+    @PatchMapping("/{asctId}/skip")
+    public ResponseEntity<Void> skipCouncil(
+            @Parameter(description = "협의회ID", required = true, example = "ASCT-2026-0001")
+            @PathVariable("asctId") String asctId) {
+        councilService.skipCouncil(asctId);
+        return ResponseEntity.ok().build();
+    }
+
     // =========================================================================
     // M6: 평가위원 선정 (Step 2)
     // =========================================================================
