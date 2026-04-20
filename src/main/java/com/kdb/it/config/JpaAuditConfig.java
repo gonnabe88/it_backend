@@ -1,5 +1,8 @@
 package com.kdb.it.config;
 
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
@@ -23,8 +26,9 @@ import java.util.Optional;
  *   <li>{@code @LastModifiedDate} → {@code LST_CHG_DTM}: 마지막 수정일시 (자동)</li>
  * </ul>
  */
-@Configuration           // Spring 설정 클래스로 등록
-@EnableJpaAuditing       // JPA Auditing 기능 전역 활성화 (@CreatedDate, @CreatedBy 등 동작)
+@Configuration
+@EnableJpaAuditing
+@EnableCaching
 public class JpaAuditConfig {
 
     /**
@@ -43,6 +47,12 @@ public class JpaAuditConfig {
      * @return 현재 인증된 사용자의 사번을 담은 {@link Optional}
      *         (비로그인 시 {@link Optional#empty()})
      */
+    /** 인메모리 캐시 매니저 (공통코드 등 정적 데이터 캐싱용) */
+    @Bean
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("codesByType", "budgetPeriod");
+    }
+
     @Bean
     public AuditorAware<String> auditorProvider() {
         return () -> {

@@ -157,6 +157,10 @@ public class UserDto {
         @Schema(description = "직위명")
         private String ptCNm;
 
+        /** 전자우편주소 (ETR_MIL_ADDR_NM) */
+        @Schema(description = "전자우편주소")
+        private String etrMilAddrNm;
+
         /** 내선번호 (INLE_NO, 사내 전화 번호) */
         @Schema(description = "내선번호")
         private String inleNo;
@@ -193,6 +197,7 @@ public class UserDto {
                     .temNm(user.getTemNm()) // 팀명
                     .usrNm(user.getUsrNm()) // 사용자명
                     .ptCNm(user.getPtCNm()) // 직위명
+                    .etrMilAddrNm(user.getEtrMilAddrNm()) // 전자우편주소
                     .inleNo(user.getInleNo()) // 내선번호
                     .cpnTpn(user.getCpnTpn()) // 휴대폰번호
                     .dtsDtlCone(user.getDtsDtlCone()) // 상세직무내용

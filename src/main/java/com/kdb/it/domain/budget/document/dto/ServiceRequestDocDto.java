@@ -158,6 +158,10 @@ public class ServiceRequestDocDto {
         @Schema(description = "최초생성자")
         private String fstEnrUsid;
 
+        /** 최초생성자 이름 (TAAABB_CUSERI JOIN) */
+        @Schema(description = "최초생성자 이름")
+        private String fstEnrUsNm;
+
         /** 마지막수정시간 */
         @Schema(description = "마지막수정시간")
         private LocalDateTime lstChgDtm;

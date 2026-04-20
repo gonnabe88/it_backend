@@ -55,6 +55,19 @@ public interface CostRepository extends JpaRepository<Bcostm, BcostmId>, CostRep
     List<Bcostm> findByItMngcNoAndDelYn(String itMngcNo, String delYn);
 
     /**
+     * 관리번호별 전산관리비 최신 버전 목록 조회
+     *
+     * <p>동일 관리번호의 여러 버전 중 최신({@code LST_YN='Y'}) 레코드만 조회합니다.
+     * 예산 편성 작업 시 최신 버전 금액에만 편성률을 적용해야 하므로 사용됩니다.</p>
+     *
+     * @param itMngcNo 전산관리비 관리번호
+     * @param delYn    삭제 여부 ('N'=미삭제)
+     * @param lstYn    최종 여부 ('Y'=최신 버전)
+     * @return 최신 버전의 전산관리비 목록
+     */
+    List<Bcostm> findByItMngcNoAndDelYnAndLstYn(String itMngcNo, String delYn, String lstYn);
+
+    /**
      * Oracle 시퀀스(S_IT_MNGC) 다음 값 조회
      *
      * <p>새로운 전산관리비 생성 시 관리번호용 시퀀스 값을 채번합니다.

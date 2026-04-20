@@ -3,7 +3,9 @@ package com.kdb.it.common.code.service;
 import com.kdb.it.common.code.dto.CodeDto;
 import com.kdb.it.common.code.entity.Ccodem;
 import com.kdb.it.common.code.repository.CodeRepository;
+import com.kdb.it.exception.CustomGeneralException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,5 +124,58 @@ public class CodeService {
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 공통코드를 찾을 수 없거나 이미 삭제되었습니다: " + cdId));
 
         ccodem.delete(); // BaseEntity의 delete() 호출 -> delYn = 'Y'
+    }
+
+    /**
+     * 예산 신청 기간 조회
+     *
+     * <p>
+     * 공통코드 BG-RQS-STA(시작일자)와 BG-RQS-END(종료일자)를 조회하여
+     * 예산 신청 가능 기간을 반환합니다.
+     * </p>
+     *
+     * @return 시작일자/종료일자를 담은 Map
+     */
+    /**
+     * 코드값구분(cttTp)으로 공통코드 엔티티 목록 조회 (캐시 적용)
+     *
+     * <p>비목코드 등 정적 참조 데이터는 서버 재시작 전까지 캐시합니다.</p>
+     */
+    @Cacheable(value = "codesByType", key = "#p0")
+    public List<Ccodem> findCodeEntitiesByCttTp(String cttTp) {
+        return codeRepository.findByCttTpWithValidDate(cttTp, null);
+    }
+
+    @Cacheable("budgetPeriod")
+    public CodeDto.BudgetPeriodResponse getBudgetPeriod() {
+        Ccodem startCode = codeRepository.findByCdIdWithValidDate("BG-RQS-STA", null)
+                .orElseThrow(() -> new IllegalArgumentException("예산 신청기간 시작일자 코드를 찾을 수 없습니다: BG-RQS-STA"));
+        Ccodem endCode = codeRepository.findByCdIdWithValidDate("BG-RQS-END", null)
+                .orElseThrow(() -> new IllegalArgumentException("예산 신청기간 종료일자 코드를 찾을 수 없습니다: BG-RQS-END"));
+
+        return CodeDto.BudgetPeriodResponse.builder()
+                .startDate(startCode.getCdva())
+                .endDate(endCode.getCdva())
+                .build();
+    }
+
+    /**
+     * 예산 신청 기간 내인지 검증
+     *
+     * <p>
+     * 현재 일자가 공통코드(BG-RQS-STA ~ BG-RQS-END) 범위 내에 있지 않으면
+     * CustomGeneralException을 발생시킵니다.
+     * </p>
+     *
+     * @throws CustomGeneralException 기간 외인 경우 400 Bad Request
+     */
+    public void validateBudgetPeriod() {
+        CodeDto.BudgetPeriodResponse period = getBudgetPeriod();
+        String today = LocalDate.now().toString();
+
+        if (today.compareTo(period.getStartDate()) < 0 || today.compareTo(period.getEndDate()) > 0) {
+            throw new CustomGeneralException(
+                    "예산 신청 기간이 아닙니다. (" + period.getStartDate() + " ~ " + period.getEndDate() + ")");
+        }
     }
 }

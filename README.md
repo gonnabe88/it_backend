@@ -2,8 +2,7 @@
 
 ## 1. 프로젝트 개요
 
-KDB IT 관리 시스템의 백엔드 API 서버로, 정보화사업(IT 프로젝트) 및 전산관리비(IT 관리비) 관리,
-결재(신청서) 처리, 사용자 인증/인가 기능을 제공합니다.
+IT Portal의 백엔드 API 서버로, 정보화 예산, 사업, 인력을 관리하는 시스템입니다.
 
 ## 2. 기술 스택
 
@@ -47,14 +46,30 @@ Controller → Service → Repository → DB (Oracle)
 | **DTO 패턴** | 정적 중첩 클래스(Static Nested Class)로 관련 DTO 그룹화 |
 | **전역 예외 처리** | `@RestControllerAdvice` 기반 `GlobalExceptionHandler`로 표준 오류 응답 |
 | **CORS** | `application.properties`의 `cors.allowed-origins` 속성으로 환경별 제어 |
+| **RBAC** | 자격등급(CauthI) + 역할(CroleI) 기반 접근 제어, `@PreAuthorize` 메서드 레벨 보호 |
+| **관리자 이중 보호** | SecurityConfig URL 패턴 + `@PreAuthorize("hasRole('ADMIN')")` 컨트롤러 레벨 이중 적용 |
+| **협의회 단일 컨트롤러** | 정보화실무협의회의 23개 엔드포인트를 `CouncilController` 하나에서 관리 (서비스는 8개로 분리) |
 
 ### 3.3 BaseEntity 상속 구조
 
 ```
 BaseEntity (추상 클래스)
- ├── Project     (정보화사업)
+ ├── Bprojm      (정보화사업)
  ├── Bcostm      (전산관리비)
  ├── Bitemm      (품목)
+ ├── Btermm      (단말기)
+ ├── Bplanm      (정보기술부문 계획)
+ ├── Bproja      (계획-사업 연결)
+ ├── Bbugtm      (예산 작업/편성률)
+ ├── Basctm      (협의회 심의과제)
+ ├── Bchklc      (타당성 검토항목)
+ ├── Bcmmtm      (평가위원)
+ ├── Bevalm      (평가의견)
+ ├── Bperfm      (성과지표)
+ ├── Bpovwm      (사업개요)
+ ├── Bpqnam      (사전질의응답)
+ ├── Brsltm      (결과서)
+ ├── Bschdm      (일정)
  ├── Capplm      (신청서 마스터)
  ├── Cappla      (신청서-원본 관계)
  ├── Cdecim      (결재 정보)
@@ -65,8 +80,7 @@ BaseEntity (추상 클래스)
  ├── Brdocm      (요구사항 정의서)
  ├── Cfilem      (첨부파일)
  ├── CauthI      (자격등급)
- ├── CroleI      (역할 매핑)
- └── CroleIId    (역할 복합키)
+ └── CroleI      (역할 매핑)
 
 독립 엔티티 (BaseEntity 미상속):
  ├── LoginHistory  (로그인 이력, ID 자동 증가)
@@ -87,12 +101,17 @@ com.kdb.it
 │   ├── system/              # 인증·로그인 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
 │   ├── iam/                 # 사용자·조직·권한 (UserController, OrganizationController, UserRepository)
 │   ├── approval/            # 신청서·결재 (ApplicationController, ApplicationService, ApplicationMapRepository)
+│   ├── admin/               # 시스템관리 (AdminController, AdminService — ROLE_ADMIN 전용)
 │   ├── code/                # 공통 코드 (CodeController, CodeService, CodeRepository)
 │   └── util/                # 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
 ├── domain/                  # 비즈니스 도메인 집합
-│   ├── budget/              # 예산 관리 (project, cost, document)
-│   |   ├── project/             # 정보화사업 (ProjectController, ProjectService, Bprojm, ProjectItemRepository)
-│   |   └── cost/                # 전산업무비 (CostController, CostService, CostRepository, BudgetDocController)
+│   ├── budget/              # 예산 관리
+│   │   ├── project/         # 정보화사업 (ProjectController, ProjectService, Bprojm)
+│   │   ├── cost/            # 전산업무비 (CostController, CostService, Bcostm, Btermm)
+│   │   ├── document/        # 문서 (GuideDocController, ServiceRequestDocController)
+│   │   ├── plan/            # 정보기술부문 계획 (PlanController, PlanService, Bplanm, Bproja)
+│   │   └── work/            # 예산 작업 (BudgetWorkController, BudgetWorkService, Bbugtm)
+│   ├── council/             # 정보화실무협의회 (CouncilController, 8개 서비스, 9개 Repository)
 │   ├── cdp/                 # 경력개발 (빈 디렉토리)
 │   ├── audit/               # 감사/이력 (빈 디렉토리)
 │   └── entity/              # BaseEntity
@@ -112,12 +131,16 @@ common → budget (X)   common → infra  (X)
 | 도메인 | Controller | Service | Repository | Entity |
 |--------|-----------|---------|------------|--------|
 | 정보화사업 | `ProjectController` | `ProjectService` | `ProjectRepository`, `ProjectItemRepository` | `Bprojm`, `Bitemm` |
-| 전산업무비 | `CostController` | `CostService` | `CostRepository` + Custom | `Bcostm` |
-| 예산문서 | `BudgetDocController` | `BudgetDocService` | `BudgetDocRepository` | `Bgdocm` |
-| 프로젝트문서 | `ProjectDocController` | `ProjectDocService` | `ProjectDocRepository` | `Brdocm` |
+| 전산업무비 | `CostController` | `CostService` | `CostRepository` + Custom | `Bcostm`, `Btermm` |
+| 가이드문서 | `GuideDocController` | `GuideDocService` | `GuideDocRepository` | `Bgdocm` |
+| 요구사항정의서 | `ServiceRequestDocController` | `ServiceRequestDocService` | `ServiceRequestDocRepository` | `Brdocm` |
+| 정보기술부문계획 | `PlanController` | `PlanService` | `BplanmRepository`, `BprojaRepository` | `Bplanm`, `Bproja` |
+| 예산작업 | `BudgetWorkController` | `BudgetWorkService` | `BbugtmRepository` + Custom | `Bbugtm` |
+| 정보화실무협의회 | `CouncilController` | `CouncilService` 외 7개 | `CouncilRepository` 외 8개 | `Basctm` 외 13개 |
 | 신청서(결재) | `ApplicationController` | `ApplicationService` | `ApplicationRepository`, `ApplicationMapRepository`, `ApproverRepository` | `Capplm`, `Cappla`, `Cdecim` |
 | 인증 | `AuthController` | `AuthService` | `UserRepository`, `RefreshTokenRepository`, `LoginHistoryRepository` | `CuserI`, `RefreshToken`, `LoginHistory` |
 | 공통코드 | `CodeController` | `CodeService` | `CodeRepository` + Custom | `Ccodem` |
+| 시스템관리 | `AdminController` | `AdminService` | (기존 Repository 활용) | (기존 Entity 활용) |
 | 사용자 | `UserController` | `UserService` | `UserRepository` | `CuserI` |
 | 조직 | `OrganizationController` | `OrganizationService` | `OrganizationRepository` | `CorgnI` |
 | 첨부파일 | `FileController` | `FileService` | `FileRepository` | `Cfilem` |
@@ -155,6 +178,10 @@ common → budget (X)   common → infra  (X)
 | GET/POST | `/api/applications/**` | 신청서(결재) 관리 | 필요 |
 | GET/POST | `/api/documents/**` | 요구사항 정의서 CRUD | 필요 |
 | GET/POST | `/api/guide-documents/**` | 가이드 문서 CRUD | 필요 |
+| GET/POST | `/api/plans/**` | 정보기술부문 계획 CRUD | 필요 |
+| GET/POST | `/api/budget/work/**` | 예산 편성률 적용 (비목조회/적용/결과) | 필요 |
+| GET/POST/PUT/PATCH | `/api/council/**` | 정보화실무협의회 (23개 엔드포인트) | 필요 |
+| GET/POST/PUT/DELETE | `/api/admin/**` | 시스템 관리 (ROLE_ADMIN 전용) | 필요 (관리자) |
 | GET/POST | `/api/files/**` | 첨부파일 업로드/다운로드/미리보기 | 필요 |
 | POST | `/api/gemini/generate` | Gemini AI 프록시 | 필요 |
 | GET | `/api/ccodem/**` | 공통코드 조회 | 필요 |
@@ -193,6 +220,11 @@ common → budget (X)   common → infra  (X)
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-10 | 전체 프로젝트 문서/주석 리프레시 (README/CLAUDE/TASK.md 최신화, AdminController JavaDoc 보강) |
+| 2026-04-05 | 정보화실무협의회(council) 도메인 구현: CouncilController(23 엔드포인트), 8개 서비스, 14개 엔티티, 9개 Repository |
+| 2026-04-04 | 시스템관리(admin) 모듈 구현: AdminController/AdminService, @PreAuthorize ROLE_ADMIN 이중 보호 |
+| 2026-04-04 | 예산작업(budget/work) 구현: BudgetWorkController(3 API), Bbugtm 엔티티, 편성률 Upsert |
+| 2026-04-02 | 정보기술부문 계획(budget/plan) 구현: PlanController, Bplanm/Bproja 엔티티, JSON 스냅샷 저장 |
 | 2026-03-30 | JPA 3.2 `@Table`, `@Column` 주석 표기 적용하여 문서화 자동화 및 스키마 직관성 강화 |
 | 2026-03-26~27 | **도메인 기반 레이어드 아키텍처 리팩토링**: flat 패키지 → common/budget/infra 3개 도메인 분리, 33개 클래스 리네이밍(CodeController, FileRepository 등), 테스트 파일 도메인 패키지 이동, Match Rate 100% |
 | 2026-03-25 | 전체 프로젝트 문서화 리프레시: 소스 코드 주석 전수 점검(81개 파일), README.md 최신화 |

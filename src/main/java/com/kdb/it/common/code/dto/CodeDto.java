@@ -241,4 +241,20 @@ public class CodeDto {
                     .build();
         }
     }
+
+    /**
+     * 예산 신청 기간 응답 DTO
+     */
+    @Getter
+    @Builder
+    @Schema(name = "CodeDto.BudgetPeriodResponse", description = "예산 신청 기간 조회 응답")
+    public static class BudgetPeriodResponse {
+        /** 신청 기간 시작일자 (yyyy-MM-dd) */
+        @Schema(description = "예산 신청기간 시작일자", example = "2026-04-15")
+        private String startDate;
+
+        /** 신청 기간 종료일자 (yyyy-MM-dd) */
+        @Schema(description = "예산 신청기간 종료일자", example = "2026-12-31")
+        private String endDate;
+    }
 }

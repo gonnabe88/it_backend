@@ -7,6 +7,8 @@ import com.kdb.it.domain.budget.plan.entity.Bplanm;
 import com.kdb.it.domain.budget.plan.entity.Bproja;
 import com.kdb.it.domain.budget.plan.repository.BplanmRepository;
 import com.kdb.it.domain.budget.plan.repository.BprojaRepository;
+import com.kdb.it.domain.budget.cost.dto.CostDto;
+import com.kdb.it.domain.budget.cost.service.CostService;
 import com.kdb.it.domain.budget.project.dto.ProjectDto;
 import com.kdb.it.domain.budget.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class PlanService {
     private final BplanmRepository bplanmRepository;
     private final BprojaRepository bprojaRepository;
     private final ProjectService projectService;
+    private final CostService costService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -101,36 +104,60 @@ public class PlanService {
      */
     @Transactional
     public String createPlan(PlanDto.CreateRequest request) {
-        // 1. 대상 프로젝트 목록 조회
-        if (request.getPrjMngNos() == null || request.getPrjMngNos().isEmpty()) {
+        // 대상사업 유효성 검사 (프로젝트 또는 전산업무비 중 1개 이상 선택 필수)
+        List<String> prjMngNos = request.getPrjMngNos() != null ? request.getPrjMngNos() : List.of();
+        List<String> itMngcNos = request.getItMngcNos() != null ? request.getItMngcNos() : List.of();
+
+        if (prjMngNos.isEmpty() && itMngcNos.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "대상사업을 1개 이상 선택해야 합니다.");
         }
 
-        ProjectDto.BulkGetRequest bulkRequest = new ProjectDto.BulkGetRequest();
-        bulkRequest.setPrjMngNos(request.getPrjMngNos());
-        List<ProjectDto.Response> projects = projectService.getProjectsByIds(bulkRequest);
+        // 1. 대상 정보화사업 목록 조회
+        List<ProjectDto.Response> projects = List.of();
+        if (!prjMngNos.isEmpty()) {
+            ProjectDto.BulkGetRequest bulkRequest = new ProjectDto.BulkGetRequest();
+            bulkRequest.setPrjMngNos(prjMngNos);
+            projects = projectService.getProjectsByIds(bulkRequest);
+        }
 
-        // 2. 예산 합계 계산
+        // 2. 대상 전산업무비 목록 조회
+        List<CostDto.Response> costs = List.of();
+        if (!itMngcNos.isEmpty()) {
+            CostDto.BulkGetRequest costBulkRequest = new CostDto.BulkGetRequest();
+            costBulkRequest.setItMngcNos(itMngcNos);
+            costs = costService.getCostsByIds(costBulkRequest);
+        }
+
+        // 3. 예산 합계 계산 (정보화사업 + 전산업무비)
         BigDecimal ttlBg = projects.stream()
                 .map(p -> p.getPrjBg() != null ? p.getPrjBg() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        ttlBg = costs.stream()
+                .map(c -> c.getItMngcBg() != null ? c.getItMngcBg() : BigDecimal.ZERO)
+                .reduce(ttlBg, BigDecimal::add);
 
         BigDecimal cptBg = projects.stream()
                 .map(p -> p.getAssetBg() != null ? p.getAssetBg() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        cptBg = costs.stream()
+                .map(c -> c.getAssetBg() != null ? c.getAssetBg() : BigDecimal.ZERO)
+                .reduce(cptBg, BigDecimal::add);
 
         BigDecimal mngc = projects.stream()
                 .map(p -> p.getCostBg() != null ? p.getCostBg() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        mngc = costs.stream()
+                .map(c -> c.getCostBg() != null ? c.getCostBg() : BigDecimal.ZERO)
+                .reduce(mngc, BigDecimal::add);
 
-        // 3. JSON 스냅샷 생성
-        String snapshotJson = buildSnapshot(request, projects, ttlBg, cptBg, mngc);
+        // 4. JSON 스냅샷 생성
+        String snapshotJson = buildSnapshot(request, projects, costs, ttlBg, cptBg, mngc);
 
-        // 4. 계획관리번호 채번
+        // 5. 계획관리번호 채번
         Long seq = bplanmRepository.getNextSequenceValue();
         String plnMngNo = String.format("PLN-%s-%04d", request.getPlnYy(), seq);
 
-        // 5. TAAABB_BPLANM 저장
+        // 6. TAAABB_BPLANM 저장
         Bplanm plan = Bplanm.builder()
                 .plnMngNo(plnMngNo)
                 .plnTp(request.getPlnTp())
@@ -142,10 +169,17 @@ public class PlanService {
                 .build();
         bplanmRepository.save(plan);
 
-        // 6. TAAABB_BPROJA 저장 (프로젝트-계획 관계)
-        for (String prjMngNo : request.getPrjMngNos()) {
+        // 7. TAAABB_BPROJA 저장 (프로젝트/전산업무비-계획 관계)
+        for (String prjMngNo : prjMngNos) {
             Bproja relation = Bproja.builder()
                     .prjMngNo(prjMngNo)
+                    .bzMngNo(plnMngNo)
+                    .build();
+            bprojaRepository.save(relation);
+        }
+        for (String itMngcNo : itMngcNos) {
+            Bproja relation = Bproja.builder()
+                    .prjMngNo(itMngcNo)
                     .bzMngNo(plnMngNo)
                     .build();
             bprojaRepository.save(relation);
@@ -196,7 +230,8 @@ public class PlanService {
      * </p>
      *
      * @param request  계획 생성 요청
-     * @param projects 대상 프로젝트 목록
+     * @param projects 대상 정보화사업 목록
+     * @param costs    대상 전산업무비 목록
      * @param ttlBg    총예산 합계
      * @param cptBg    자본예산 합계
      * @param mngc     일반관리비 합계
@@ -204,8 +239,9 @@ public class PlanService {
      */
     private String buildSnapshot(PlanDto.CreateRequest request,
                                   List<ProjectDto.Response> projects,
+                                  List<CostDto.Response> costs,
                                   BigDecimal ttlBg, BigDecimal cptBg, BigDecimal mngc) {
-        // 프로젝트 스냅샷 목록 변환
+        // 정보화사업 스냅샷 변환
         List<PlanDto.ProjectSnapshot> projectSnapshots = projects.stream()
                 .map(p -> PlanDto.ProjectSnapshot.builder()
                         .prjMngNo(p.getPrjMngNo())
@@ -219,6 +255,24 @@ public class PlanService {
                         .costBg(p.getCostBg())
                         .build())
                 .collect(Collectors.toList());
+
+        // 전산업무비 스냅샷 변환 (정보화사업과 동일한 형식으로 매핑)
+        List<PlanDto.ProjectSnapshot> costSnapshots = costs.stream()
+                .map(c -> PlanDto.ProjectSnapshot.builder()
+                        .prjMngNo(c.getItMngcNo())
+                        .prjNm(c.getCttNm())
+                        .prjTp(c.getItMngcTp())
+                        .svnHdq("미분류")
+                        .svnDpm(c.getBiceDpm())
+                        .svnDpmNm(c.getBiceDpmNm() != null ? c.getBiceDpmNm() : "")
+                        .prjBg(c.getItMngcBg())
+                        .assetBg(c.getAssetBg())
+                        .costBg(c.getCostBg())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 통합 스냅샷 목록
+        projectSnapshots.addAll(costSnapshots);
 
         // 부문(SVN_HDQ)별 그룹핑
         Map<String, List<PlanDto.ProjectSnapshot>> byDeptMap = projectSnapshots.stream()

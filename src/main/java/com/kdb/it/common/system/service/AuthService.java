@@ -9,14 +9,18 @@ import com.kdb.it.common.iam.repository.RoleRepository;
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.system.repository.LoginHistoryRepository;
 import com.kdb.it.common.system.repository.RefreshTokenRepository;
+import com.kdb.it.common.system.security.CustomUserDetails;
 import com.kdb.it.common.system.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +59,9 @@ public class AuthService {
 
     /** JWT Access/Refresh Token 생성 및 검증 유틸리티 */
     private final JwtUtil jwtUtil;
+
+    @Value("${jwt.refresh-token-validity}")
+    private long refreshTokenValidityMs;
 
     /**
      * 회원가입 (사용자 등록)
@@ -128,67 +135,46 @@ public class AuthService {
      */
     @Transactional
     public AuthDto.LoginResponse login(String eno, String password, String ipAddress, String userAgent) {
-        try {
-            // 사용자 조회 (없으면 예외)
-            CuserI user = userRepository.findByEno(eno)
-                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-            // 비밀번호 검증 (SHA-256 + Base64 방식)
-            if (!passwordEncoder.matches(password, user.getUsrEcyPwd())) {
-                // 비밀번호 불일치 시 실패 이력 기록 후 예외
-                recordLoginFailure(eno, ipAddress, userAgent, "비밀번호 불일치");
-                throw new RuntimeException("비밀번호가 일치하지 않습니다.");
-            }
-
-            // 사용자의 모든 활성 자격등급 조회 (다중 자격등급 지원)
-            List<String> athIds = roleRepository
-                    .findAllByIdEnoAndUseYnAndDelYn(eno, "Y", "N")
-                    .stream()
-                    .map(CroleI::getAthId)
-                    .collect(Collectors.toList());
-
-            // 미등록 사용자 기본값: 일반사용자(ITPZZ001)
-            if (athIds.isEmpty()) {
-                athIds = List.of("ITPZZ001");
-            }
-
-            // Access Token 생성 (자격등급 목록 및 부서코드 클레임 포함)
-            String accessToken = jwtUtil.generateAccessToken(eno, athIds, user.getBbrC());
-
-            // Refresh Token 생성 (장기 유효, 기본 7일)
-            String refreshTokenValue = jwtUtil.generateRefreshToken(eno);
-
-            // 기존 Refresh Token 삭제 후 새 토큰 저장 (1인 1토큰 정책)
-            refreshTokenRepository.deleteByEno(eno);
-            Crtokm refreshToken = Crtokm.builder()
-                    .tok(refreshTokenValue)                         // JWT Refresh Token 문자열
-                    .eno(eno)                                       // 토큰 소유자 사번
-                    .endDtm(LocalDateTime.now().plusDays(7))        // 종료일시: 7일 후
-                    // 최초생성시간(fstEnrDtm)은 BaseEntity @CreatedDate 자동 기록
-                    .build();
-            refreshTokenRepository.save(refreshToken);
-
-            // 로그인 성공 이력 기록
-            recordLoginSuccess(eno, ipAddress, userAgent);
-
-            // 응답 DTO 반환
-            return AuthDto.LoginResponse.builder()
-                    .accessToken(accessToken)           // 발급된 Access Token
-                    .refreshToken(refreshTokenValue)    // 발급된 Refresh Token
-                    .eno(eno)                           // 로그인한 사번
-                    .empNm(user.getUsrNm())             // 사용자명
-                    .athIds(athIds)                     // 자격등급 ID 목록
-                    .bbrC(user.getBbrC())               // 소속 부서코드
-                    .temC(user.getTemC())               // 소속 팀코드
-                    .build();
-
-        } catch (RuntimeException e) {
-            // 사용자를 찾을 수 없는 경우 실패 이력 기록 (비밀번호 불일치는 위에서 이미 기록됨)
-            if (e.getMessage().contains("사용자를 찾을 수 없습니다")) {
-                recordLoginFailure(eno, ipAddress, userAgent, "존재하지 않는 사번");
-            }
-            throw e; // 예외 재전파
+        // 사용자 조회 — 없으면 실패 이력 기록 후 예외 (메시지 문자열 매칭 없이 타입으로 분기)
+        Optional<CuserI> userOpt = userRepository.findByEno(eno);
+        if (userOpt.isEmpty()) {
+            recordLoginFailure(eno, ipAddress, userAgent, "존재하지 않는 사번");
+            throw new RuntimeException("사용자를 찾을 수 없습니다.");
         }
+        CuserI user = userOpt.get();
+
+        // 비밀번호 검증 (SHA-256 + Base64 방식)
+        if (!passwordEncoder.matches(password, user.getUsrEcyPwd())) {
+            recordLoginFailure(eno, ipAddress, userAgent, "비밀번호 불일치");
+            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // 사용자의 모든 활성 자격등급 조회 (다중 자격등급 지원)
+        List<String> athIds = loadAthIds(eno);
+
+        String accessToken = jwtUtil.generateAccessToken(eno, athIds, user.getBbrC());
+        String refreshTokenValue = jwtUtil.generateRefreshToken(eno);
+
+        // 기존 Refresh Token 삭제 후 새 토큰 저장 (1인 1토큰 정책)
+        refreshTokenRepository.deleteByEno(eno);
+        Crtokm refreshToken = Crtokm.builder()
+                .tok(refreshTokenValue)
+                .eno(eno)
+                .endDtm(LocalDateTime.now().plus(Duration.ofMillis(refreshTokenValidityMs)))
+                .build();
+        refreshTokenRepository.save(refreshToken);
+
+        recordLoginSuccess(eno, ipAddress, userAgent);
+
+        return AuthDto.LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshTokenValue)
+                .eno(eno)
+                .empNm(user.getUsrNm())
+                .athIds(athIds)
+                .bbrC(user.getBbrC())
+                .temC(user.getTemC())
+                .build();
     }
 
     /**
@@ -231,15 +217,7 @@ public class AuthService {
         CuserI user = userRepository.findByEno(eno)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        List<String> athIds = roleRepository
-                .findAllByIdEnoAndUseYnAndDelYn(eno, "Y", "N")
-                .stream()
-                .map(CroleI::getAthId)
-                .collect(Collectors.toList());
-
-        if (athIds.isEmpty()) {
-            athIds = List.of("ITPZZ001");
-        }
+        List<String> athIds = loadAthIds(eno);
 
         // 새로운 Access Token 생성 (최신 자격등급 및 부서코드 반영)
         String newAccessToken = jwtUtil.generateAccessToken(eno, athIds, user.getBbrC());
@@ -278,6 +256,15 @@ public class AuthService {
      * @param ipAddress 접속 IP 주소
      * @param userAgent 접속 User-Agent
      */
+    private List<String> loadAthIds(String eno) {
+        List<String> athIds = roleRepository
+                .findAllByIdEnoAndUseYnAndDelYn(eno, "Y", "N")
+                .stream()
+                .map(CroleI::getAthId)
+                .collect(Collectors.toList());
+        return athIds.isEmpty() ? List.of(CustomUserDetails.ATH_USER) : athIds;
+    }
+
     private void recordLoginSuccess(String eno, String ipAddress, String userAgent) {
         Clognh loginHistory = Clognh.createLoginSuccess(eno, ipAddress, userAgent);
         loginHistoryRepository.save(loginHistory);

@@ -665,9 +665,31 @@ public class ProjectDto {
         @Schema(description = "자본예산")
         private BigDecimal assetBg;
 
+        /** 개발비: 자본예산 중 코드설명(cdDes)이 '개발비'인 품목의 gclAmt 합계 (IOE-351-*) */
+        @Schema(description = "개발비")
+        private BigDecimal devBg;
+
+        /** 기계장치: 자본예산 중 코드설명(cdDes)이 '기계장치'인 품목의 gclAmt 합계 (IOE-304-*) */
+        @Schema(description = "기계장치")
+        private BigDecimal machBg;
+
+        /** 기타무형자산: 자본예산 중 코드설명(cdDes)이 '기타무형자산'인 품목의 gclAmt 합계 (IOE-359-*) */
+        @Schema(description = "기타무형자산")
+        private BigDecimal intanBg;
+
         /** 일반관리비: Bitemm의 gclDtt(비목코드)가 공통코드 코드값구분 IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE에 해당하는 항목의 gclAmt 합계 */
         @Schema(description = "일반관리비")
         private BigDecimal costBg;
+
+        /** 예산 합계 일괄 설정 (Lombok 어노테이션 프로세싱 문제 방지용 명시적 메서드) */
+        public void setBudgetAmounts(BigDecimal assetBg, BigDecimal devBg, BigDecimal machBg,
+                BigDecimal intanBg, BigDecimal costBg) {
+            this.assetBg = assetBg;
+            this.devBg = devBg;
+            this.machBg = machBg;
+            this.intanBg = intanBg;
+            this.costBg = costBg;
+        }
 
         /** 신청서 상세 정보 (신청서명, 신청자, 결재자 목록 등) */
         @Schema(description = "신청서 상세 정보")

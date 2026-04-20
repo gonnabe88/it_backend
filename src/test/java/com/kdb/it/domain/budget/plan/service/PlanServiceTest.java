@@ -1,0 +1,234 @@
+package com.kdb.it.domain.budget.plan.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.kdb.it.domain.budget.plan.dto.PlanDto;
+import com.kdb.it.domain.budget.plan.entity.Bplanm;
+import com.kdb.it.domain.budget.plan.entity.Bproja;
+import com.kdb.it.domain.budget.plan.repository.BplanmRepository;
+import com.kdb.it.domain.budget.plan.repository.BprojaRepository;
+import com.kdb.it.domain.budget.project.dto.ProjectDto;
+import com.kdb.it.domain.budget.project.service.ProjectService;
+
+/**
+ * PlanService 단위 테스트
+ *
+ * <p>
+ * BplanmRepository, BprojaRepository, ProjectService를 Mock 처리하여
+ * Oracle DB 없이 정보기술부문 계획 생성·조회·삭제 로직을 검증합니다.
+ * </p>
+ */
+@ExtendWith(MockitoExtension.class)
+class PlanServiceTest {
+
+    @Mock
+    private BplanmRepository bplanmRepository;
+    @Mock
+    private BprojaRepository bprojaRepository;
+    @Mock
+    private ProjectService projectService;
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @InjectMocks
+    private PlanService planService;
+
+    // =========================================================================
+    // getPlans
+    // =========================================================================
+
+    @Test
+    @DisplayName("getPlans - 삭제되지 않은 계획 목록을 반환한다")
+    void getPlans_목록반환() {
+        // given
+        Bplanm plan = Bplanm.builder()
+                .plnMngNo("PLN-2026-0001")
+                .plnYy("2026")
+                .plnTp("신규")
+                .build();
+        given(bplanmRepository.findAllByDelYnOrderByFstEnrDtmDesc("N")).willReturn(List.of(plan));
+
+        // when
+        List<PlanDto.ListResponse> result = planService.getPlans();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPlnMngNo()).isEqualTo("PLN-2026-0001");
+    }
+
+    @Test
+    @DisplayName("getPlans - 계획이 없으면 빈 목록을 반환한다")
+    void getPlans_빈목록반환() {
+        // given
+        given(bplanmRepository.findAllByDelYnOrderByFstEnrDtmDesc("N")).willReturn(List.of());
+
+        // when
+        List<PlanDto.ListResponse> result = planService.getPlans();
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    // =========================================================================
+    // getPlan
+    // =========================================================================
+
+    @Test
+    @DisplayName("getPlan - 존재하는 계획관리번호 조회 시 DetailResponse 반환")
+    void getPlan_존재하는번호_반환() {
+        // given
+        String plnMngNo = "PLN-2026-0001";
+        Bplanm plan = Bplanm.builder()
+                .plnMngNo(plnMngNo)
+                .plnYy("2026")
+                .plnTp("신규")
+                .ttlBg(BigDecimal.valueOf(100000000))
+                .build();
+
+        given(bplanmRepository.findByPlnMngNoAndDelYn(plnMngNo, "N")).willReturn(Optional.of(plan));
+        given(bprojaRepository.findAllByBzMngNoAndDelYn(plnMngNo, "N")).willReturn(List.of());
+
+        // when
+        PlanDto.DetailResponse result = planService.getPlan(plnMngNo);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getPlnMngNo()).isEqualTo(plnMngNo);
+    }
+
+    @Test
+    @DisplayName("getPlan - 미존재 계획관리번호 조회 시 ResponseStatusException(404) 발생")
+    void getPlan_미존재번호_404예외발생() {
+        // given
+        given(bplanmRepository.findByPlnMngNoAndDelYn("INVALID", "N")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> planService.getPlan("INVALID"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("존재하지 않는 계획입니다");
+    }
+
+    // =========================================================================
+    // createPlan
+    // =========================================================================
+
+    @Test
+    @DisplayName("createPlan - prjMngNos가 비어있으면 ResponseStatusException(400) 발생")
+    void createPlan_빈프로젝트목록_400예외발생() {
+        // given: 프로젝트 목록이 빈 요청
+        PlanDto.CreateRequest request = PlanDto.CreateRequest.builder()
+                .plnYy("2026")
+                .plnTp("신규")
+                .prjMngNos(List.of()) // 빈 목록
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> planService.createPlan(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("대상사업을 1개 이상 선택해야 합니다");
+    }
+
+    @Test
+    @DisplayName("createPlan - prjMngNos가 null이면 ResponseStatusException(400) 발생")
+    void createPlan_null프로젝트목록_400예외발생() {
+        // given
+        PlanDto.CreateRequest request = PlanDto.CreateRequest.builder()
+                .plnYy("2026")
+                .plnTp("신규")
+                .prjMngNos(null)
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> planService.createPlan(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("대상사업을 1개 이상 선택해야 합니다");
+    }
+
+    @Test
+    @DisplayName("createPlan - 정상 요청 시 PLN-{year}-{seq} 형식의 계획관리번호 반환")
+    void createPlan_정상요청_계획관리번호반환() throws Exception {
+        // given
+        PlanDto.CreateRequest request = PlanDto.CreateRequest.builder()
+                .plnYy("2026")
+                .plnTp("신규")
+                .prjMngNos(List.of("PRJ-2026-0001"))
+                .build();
+
+        ProjectDto.Response mockProject = ProjectDto.Response.builder()
+                .prjMngNo("PRJ-2026-0001")
+                .prjBg(BigDecimal.valueOf(50000000))
+                .assetBg(BigDecimal.valueOf(30000000))
+                .costBg(BigDecimal.valueOf(20000000))
+                .build();
+
+        given(projectService.getProjectsByIds(any())).willReturn(List.of(mockProject));
+        given(bplanmRepository.getNextSequenceValue()).willReturn(1L);
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+        // when
+        String result = planService.createPlan(request);
+
+        // then
+        assertThat(result).isEqualTo("PLN-2026-0001");
+        verify(bplanmRepository, times(1)).save(any(Bplanm.class));
+        // 프로젝트-계획 관계도 저장되어야 함
+        verify(bprojaRepository, times(1)).save(any(Bproja.class));
+    }
+
+    // =========================================================================
+    // deletePlan
+    // =========================================================================
+
+    @Test
+    @DisplayName("deletePlan - 미존재 계획관리번호 삭제 시 ResponseStatusException(404) 발생")
+    void deletePlan_미존재번호_404예외발생() {
+        // given
+        given(bplanmRepository.findByPlnMngNoAndDelYn("INVALID", "N")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> planService.deletePlan("INVALID"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("존재하지 않는 계획입니다");
+    }
+
+    @Test
+    @DisplayName("deletePlan - 정상 삭제 시 plan.delete() 호출 및 관계 레코드도 삭제")
+    void deletePlan_정상삭제_SoftDelete() {
+        // given
+        String plnMngNo = "PLN-2026-0001";
+        Bplanm plan = Bplanm.builder().plnMngNo(plnMngNo).build();
+        Bproja relation = Bproja.builder()
+                .prjMngNo("PRJ-2026-0001")
+                .bzMngNo(plnMngNo)
+                .build();
+
+        given(bplanmRepository.findByPlnMngNoAndDelYn(plnMngNo, "N")).willReturn(Optional.of(plan));
+        given(bprojaRepository.findAllByBzMngNoAndDelYn(plnMngNo, "N")).willReturn(List.of(relation));
+
+        // when
+        planService.deletePlan(plnMngNo);
+
+        // then: 계획 Soft Delete 확인
+        assertThat(plan.getDelYn()).isEqualTo("Y");
+        // then: 관계 레코드 Soft Delete 확인
+        assertThat(relation.getDelYn()).isEqualTo("Y");
+    }
+}

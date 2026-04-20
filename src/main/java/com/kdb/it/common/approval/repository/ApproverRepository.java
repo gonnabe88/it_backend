@@ -44,4 +44,14 @@ public interface ApproverRepository extends JpaRepository<Cdecim, CdecimId> {
      * @return 해당 결재 정보 (없으면 {@link Optional#empty()})
      */
     Optional<Cdecim> findByDcdMngNoAndDcdSqn(String dcdMngNo, Integer dcdSqn);
+
+    /**
+     * 여러 결재관리번호에 대한 결재선 목록 일괄 조회 (결재순서 오름차순)
+     *
+     * <p>N+1 문제 방지용 배치 조회 메서드입니다.</p>
+     *
+     * @param dcdMngNos 결재관리번호 목록
+     * @return 전체 결재선 목록
+     */
+    List<Cdecim> findByDcdMngNoInOrderByDcdSqnAsc(List<String> dcdMngNos);
 }

@@ -82,6 +82,10 @@ public class Clognh extends BaseEntity {
     @Column(name = "FLUR_RSN", length = 200, comment = "실패사유")
     private String flurRsn;
 
+    public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
+    public static final String LOGIN_FAILURE = "LOGIN_FAILURE";
+    public static final String LOGOUT        = "LOGOUT";
+
     /**
      * 로그인 성공 이력 생성 정적 팩토리 메서드
      *
@@ -93,7 +97,7 @@ public class Clognh extends BaseEntity {
     public static Clognh createLoginSuccess(String eno, String ipAddr, String ustAgt) {
         return Clognh.builder()
                 .eno(eno)
-                .lgnTp("LOGIN_SUCCESS")
+                .lgnTp(LOGIN_SUCCESS)
                 .ipAddr(ipAddr)
                 .ustAgt(ustAgt)
                 .lgnDtm(LocalDateTime.now())
@@ -112,7 +116,7 @@ public class Clognh extends BaseEntity {
     public static Clognh createLoginFailure(String eno, String ipAddr, String ustAgt, String flurRsn) {
         return Clognh.builder()
                 .eno(eno)
-                .lgnTp("LOGIN_FAILURE")
+                .lgnTp(LOGIN_FAILURE)
                 .ipAddr(ipAddr)
                 .ustAgt(ustAgt)
                 .lgnDtm(LocalDateTime.now())
@@ -131,7 +135,7 @@ public class Clognh extends BaseEntity {
     public static Clognh createLogout(String eno, String ipAddr, String ustAgt) {
         return Clognh.builder()
                 .eno(eno)
-                .lgnTp("LOGOUT")
+                .lgnTp(LOGOUT)
                 .ipAddr(ipAddr)
                 .ustAgt(ustAgt)
                 .lgnDtm(LocalDateTime.now())

@@ -10,6 +10,10 @@ import com.kdb.it.common.approval.entity.Cdecim;
 import com.kdb.it.common.approval.repository.ApplicationRepository;
 import com.kdb.it.common.approval.repository.ApplicationMapRepository;
 import com.kdb.it.common.approval.repository.ApproverRepository;
+import com.kdb.it.domain.budget.cost.dto.CostDto;
+import com.kdb.it.domain.budget.cost.repository.CostRepository;
+import com.kdb.it.domain.budget.project.dto.ProjectDto;
+import com.kdb.it.domain.budget.project.repository.ProjectRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +84,12 @@ public class ApplicationService {
 
     /** JSON 직렬화/역직렬화를 위한 Jackson ObjectMapper */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    /** 정보화사업(Bprojm) 리포지토리: 미상신 건수 집계용 */
+    private final ProjectRepository projectRepository;
+
+    /** 전산업무비(Bcostm) 리포지토리: 미상신 건수 집계용 */
+    private final CostRepository costRepository;
 
     /**
      * 신청서 상세 내용(JSON)의 결재선 정보 업데이트
@@ -173,10 +183,11 @@ public class ApplicationService {
                     if (targetOccurrences.containsKey(id)
                             && targetOccurrences.get(id).contains(currentJsonOccurrence)) {
                         if (approverNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-                            // date 필드에 현재 날짜를 "yyyy.MM.dd" 형식으로 기록
+                            // date 필드에 현재 날짜·시각을 ISO 형식("yyyy-MM-dd'T'HH:mm:ss")으로 기록
+                            // 프론트엔드 splitDateTime()이 'T' 구분자로 날짜/시간을 분리합니다.
                             ((com.fasterxml.jackson.databind.node.ObjectNode) approverNode)
-                                    .put("date", LocalDate.now()
-                                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd")));
+                                    .put("date", java.time.LocalDateTime.now()
+                                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
                             updated = true;
                         }
                     }
@@ -263,6 +274,8 @@ public class ApplicationService {
 
         // 2. 결재선 생성: 요청받은 결재자 사번 목록을 순번(dcdSqn)대로 저장
         List<String> approverEnos = request.getApproverEnos();
+        List<Cdecim> savedApprovers = new java.util.ArrayList<>();
+
         for (int i = 0; i < approverEnos.size(); i++) {
             Cdecim cdecim = Cdecim.builder()
                     .dcdMngNo(apfMngNo) // 결재관리번호 (FK)
@@ -271,6 +284,19 @@ public class ApplicationService {
                     .lstDcdYn(i == approverEnos.size() - 1 ? "Y" : "N") // 마지막 결재자 여부
                     .build();
             approverRepository.save(cdecim);
+            savedApprovers.add(cdecim);
+        }
+
+        // 3. 기안자 == 1차 결재자(팀장) 자동 승인 처리
+        //    기안자와 첫 번째 결재자가 동일한 경우, 신청 행위 자체를 묵시적 1차 승인으로 간주합니다.
+        //    - Cdecim 레코드를 즉시 승인 상태로 전환하여 이후 2차 결재자(부서장)가 바로 결재 가능하게 합니다.
+        //    - updateApprovalLineInDetail()을 호출하여 JSON 결재선의 팀장 date 필드도 함께 기록합니다.
+        //      (이 처리가 없으면 JSON date가 빈 문자열로 남아 PDF 상 팀장 결재 시각이 누락됩니다.)
+        if (!approverEnos.isEmpty() && approverEnos.get(0).equals(request.getRqsEno())) {
+            Cdecim firstApprover = savedApprovers.get(0);
+            firstApprover.approve("기안자 자동 승인", "승인");
+            approverRepository.save(firstApprover);
+            updateApprovalLineInDetail(capplm, savedApprovers, java.util.List.of(firstApprover));
         }
 
         return apfMngNo; // 생성된 신청관리번호 반환
@@ -524,5 +550,39 @@ public class ApplicationService {
                 })
                 .filter(response -> response != null) // null 제거 (존재하지 않는 항목 제외)
                 .toList();
+    }
+
+    /**
+     * 미상신(결재 신청 이력 없음) 건수 집계
+     *
+     * <p>
+     * 사이드바의 [결재 상신] 메뉴 옆 배지에서 사용됩니다.
+     * 전체 목록 대신 건수만 반환하여 데이터 전송량을 최소화합니다.
+     * </p>
+     *
+     * <p>
+     * 집계 로직: {@code apfSts='none'} 조건으로 {@code ProjectRepository} 및
+     * {@code CostRepository}의 {@code searchByCondition}을 호출하여 각각의 건수를 계산합니다.
+     * (CAPPLA 연결이 없는 BPROJM/BCOSTM 레코드 = 아직 결재 상신되지 않은 항목)
+     * </p>
+     *
+     * @return 미상신 건수 응답 DTO (정보화사업/전산업무비 개별 건수 + 총합)
+     */
+    public ApplicationDto.PendingCountResponse getPendingCount() {
+        // 미상신 정보화사업 건수: CAPPLA에 연결되지 않은 BPROJM
+        ProjectDto.SearchCondition projectCondition = new ProjectDto.SearchCondition();
+        projectCondition.setApfSts("none");
+        long projectCount = projectRepository.searchByCondition(projectCondition).size();
+
+        // 미상신 전산업무비 건수: CAPPLA에 연결되지 않은 BCOSTM
+        CostDto.SearchCondition costCondition = new CostDto.SearchCondition();
+        costCondition.setApfSts("none");
+        long costCount = costRepository.searchByCondition(costCondition).size();
+
+        return ApplicationDto.PendingCountResponse.builder()
+                .projectCount(projectCount)
+                .costCount(costCount)
+                .totalCount(projectCount + costCount)
+                .build();
     }
 }
