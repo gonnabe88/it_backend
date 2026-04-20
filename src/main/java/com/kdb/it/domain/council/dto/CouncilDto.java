@@ -412,6 +412,10 @@ public class CouncilDto {
         String eno,
         /** 성명 */
         String usrNm,
+        /** 부서명 (화면 표출용) */
+        String bbrNm,
+        /** 직책명 (화면 표출용) */
+        String ptCNm,
         /** 위원유형 */
         String vlrTp,
         /** 응답 완료 여부 */
@@ -431,7 +435,13 @@ public class CouncilDto {
         /** 미응답 위원 수 */
         long pendingCount,
         /** 위원별 응답 현황 */
-        List<MemberScheduleStatus> memberStatuses
+        List<MemberScheduleStatus> memberStatuses,
+        /**
+         * 일정 확정 가능 여부 (필수 응답자 기준)
+         * INFO_SYS: 예산팀장(12004) + IT기획팀장(18001) 응답 완료 시 true
+         * 기타 타입: 전원 응답 완료 시 true
+         */
+        boolean allRequiredResponded
     ) {}
 
     // =========================================================================

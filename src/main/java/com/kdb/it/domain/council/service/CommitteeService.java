@@ -46,11 +46,16 @@ public class CommitteeService {
     private final CouncilService councilService;
 
     // 심의유형별 당연위원 팀코드 매핑 (TEM_C 기준, Design §2.4)
+    // TODO: INFO_SYS 나머지 당연위원(PMO:18010, 디지털기획:18501, 정보보호기획:18301) 추가 예정
+    //       현재는 테스트 단계로 예산(12004) + IT기획(18001) 2팀만 포함
     private static final Map<String, List<String>> MANDATORY_TEM_CODES = Map.of(
-        "INFO_SYS", List.of("12004", "18010", "18501", "18301"),
+        "INFO_SYS", List.of("12004", "18001", "18010", "18501", "18301"),
         "INFO_SEC", List.of("12004", "18001", "18010", "18501"),
         "ETC",      List.of("12004", "18010", "18501")
     );
+
+    /** INFO_SYS 일정 확정 필수 응답 팀코드 (예산:12004, IT기획:18001) */
+    static final List<String> INFO_SYS_REQUIRED_TEM_CODES = List.of("12004", "18001");
 
     // =========================================================================
     // 조회
