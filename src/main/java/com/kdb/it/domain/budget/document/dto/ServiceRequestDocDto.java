@@ -222,7 +222,6 @@ public class ServiceRequestDocDto {
      * </p>
      */
     @Getter
-    @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
