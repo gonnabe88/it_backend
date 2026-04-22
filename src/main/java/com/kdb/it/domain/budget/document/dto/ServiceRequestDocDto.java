@@ -72,7 +72,7 @@ public class ServiceRequestDocDto {
          * </p>
          *
          * @param docMngNo 채번된 문서관리번호 (예: DOC-2026-0001)
-         * @param docVrs   문서버전 (최초 생성 시 일반적으로 1.00)
+         * @param docVrs   문서버전 (최초 생성 시 일반적으로 0.01)
          * @return 변환된 Brdocm 엔티티
          */
         public Brdocm toEntity(String docMngNo, BigDecimal docVrs) {
