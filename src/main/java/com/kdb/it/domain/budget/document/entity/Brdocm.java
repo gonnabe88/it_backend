@@ -4,6 +4,7 @@ import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -12,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -31,16 +33,22 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "TAAABB_BRDOCM", comment = "요구사항 정의서")
+@IdClass(BrdocmId.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SuperBuilder
 public class Brdocm extends BaseEntity {
 
-    /** 문서관리번호: 기본키 (예: DOC-2026-0001) */
+    /** 문서관리번호: 복합 기본키의 첫 번째 컬럼 (예: DOC-2026-0001) */
     @Id
     @Column(name = "DOC_MNG_NO", nullable = false, length = 32, comment = "문서관리번호")
     private String docMngNo;
+
+    /** 문서버전: 복합 기본키의 두 번째 컬럼 (Oracle NUMBER(4,2), 예: 1.00, 1.01, 2.00) */
+    @Id
+    @Column(name = "DOC_VRS", nullable = false, precision = 4, scale = 2, comment = "문서버전")
+    private BigDecimal docVrs;
 
     /** 요구사항명: 요구사항의 제목 (최대 200자) */
     @Column(name = "REQ_NM", length = 200, comment = "요구사항명")
@@ -82,5 +90,36 @@ public class Brdocm extends BaseEntity {
         this.reqDtt = reqDtt;
         this.bzDtt = bzDtt;
         this.fsgTlm = fsgTlm;
+    }
+
+    /**
+     * 새 버전 엔티티 생성 메서드
+     *
+     * <p>
+     * 현재 엔티티의 업무 필드({@code reqNm}, {@code reqCone}, {@code reqDtt},
+     * {@code bzDtt}, {@code fsgTlm})를 복제하여 지정된 버전({@code nextVrs})의
+     * 새 {@link Brdocm} 인스턴스를 반환합니다.
+     * </p>
+     *
+     * <p>
+     * {@link com.kdb.it.domain.entity.BaseEntity#prePersist()} 가 {@code delYn},
+     * {@code guid}, {@code guidPrgSno} 및 JPA Auditing 필드({@code fstEnrDtm},
+     * {@code fstEnrUsid} 등)를 INSERT 시점에 자동 설정하므로, 이 메서드에서는
+     * 해당 필드들을 별도로 지정하지 않습니다.
+     * </p>
+     *
+     * @param nextVrs 새로 생성할 문서버전 (예: 1.01, 2.00)
+     * @return 새 버전의 {@link Brdocm} 인스턴스 (영속화 전 상태)
+     */
+    public Brdocm newVersion(BigDecimal nextVrs) {
+        return Brdocm.builder()
+            .docMngNo(this.docMngNo)
+            .docVrs(nextVrs)
+            .reqNm(this.reqNm)
+            .reqCone(this.reqCone)
+            .reqDtt(this.reqDtt)
+            .bzDtt(this.bzDtt)
+            .fsgTlm(this.fsgTlm)
+            .build();
     }
 }
