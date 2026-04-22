@@ -87,7 +87,7 @@ public class Cfilem extends BaseEntity {
      * @param orcDtt  변경할 원본구분
      */
     public void updateMeta(String orcPkVl, String orcDtt) {
-        this.orcPkVl = orcPkVl;
-        this.orcDtt = orcDtt;
+        if (orcPkVl != null) this.orcPkVl = orcPkVl;
+        if (orcDtt != null) this.orcDtt = orcDtt;
     }
 }

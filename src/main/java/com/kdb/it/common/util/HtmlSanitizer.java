@@ -111,7 +111,7 @@ public final class HtmlSanitizer {
 
                 // ── Excalidraw / 미디어 래퍼 ──
                 .addTags("figure")
-                .addAttributes("figure", "data-type", "data-scene", "class", "style")
+                .addAttributes("figure", "data-type", "data-scene", "data-attachment-id", "class", "style")
 
                 // ── 이미지 ──
                 // style 허용 (ResizableImage width), data-align 허용 (정렬)
