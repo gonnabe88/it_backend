@@ -129,7 +129,8 @@ public class ServiceRequestDocController {
     @Operation(summary = "요구사항 정의서 새 버전 생성", description = "기존 최신 버전을 복제하여 버전 번호를 0.01 증가시킨 새 버전을 생성합니다.")
     public ResponseEntity<String> createNewVersion(@PathVariable("docMngNo") String docMngNo) {
         BigDecimal newVrs = serviceRequestDocService.createNewVersion(docMngNo);
-        return ResponseEntity.ok("새 버전이 생성되었습니다: v" + newVrs.toPlainString());
+        return ResponseEntity.created(URI.create("/api/documents/" + docMngNo + "/versions"))
+                .body(newVrs.toPlainString());
     }
 
     /**
