@@ -66,7 +66,8 @@ public class ServiceRequestDocController {
     @GetMapping("/{docMngNo}")
     @Operation(summary = "요구사항 정의서 단건 조회", description = "문서관리번호로 요구사항 정의서를 조회합니다.")
     public ResponseEntity<ServiceRequestDocDto.Response> getDocument(@PathVariable("docMngNo") String docMngNo) {
-        return ResponseEntity.ok(serviceRequestDocService.getDocument(docMngNo));
+        // 버전 미지정 시 최신 버전 조회 (Task 7에서 버전 파라미터 추가 예정)
+        return ResponseEntity.ok(serviceRequestDocService.getDocument(docMngNo, null));
     }
 
     /**
@@ -115,7 +116,8 @@ public class ServiceRequestDocController {
     @DeleteMapping("/{docMngNo}")
     @Operation(summary = "요구사항 정의서 삭제", description = "요구사항 정의서를 논리 삭제합니다 (DEL_YN='Y').")
     public ResponseEntity<Void> deleteDocument(@PathVariable("docMngNo") String docMngNo) {
-        serviceRequestDocService.deleteDocument(docMngNo);
+        // 버전 미지정 시 전체 버전 일괄 삭제 (Task 7에서 버전 파라미터 추가 예정)
+        serviceRequestDocService.deleteDocument(docMngNo, null);
         return ResponseEntity.noContent().build();
     }
 }
