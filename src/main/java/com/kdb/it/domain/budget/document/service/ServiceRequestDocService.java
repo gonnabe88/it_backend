@@ -5,6 +5,7 @@ import com.kdb.it.domain.budget.document.dto.ServiceRequestDocDto;
 import com.kdb.it.domain.budget.document.repository.ServiceRequestDocRepository;
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.util.HtmlSanitizer;
+import com.kdb.it.exception.CustomGeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +84,7 @@ public class ServiceRequestDocService {
      * @param docMngNo 문서관리번호 (예: DOC-2026-0001)
      * @param version  문서버전 ({@code null}이면 최신 버전 조회)
      * @return 요구사항 정의서 응답 DTO
-     * @throws IllegalArgumentException 해당 문서 또는 버전이 없는 경우
+     * @throws CustomGeneralException 해당 문서 또는 버전이 없는 경우
      */
     public ServiceRequestDocDto.Response getDocument(String docMngNo, BigDecimal version) {
         Brdocm document;
@@ -91,13 +92,13 @@ public class ServiceRequestDocService {
             // 최신 버전 조회
             document = serviceRequestDocRepository
                     .findTopByDocMngNoAndDelYnOrderByDocVrsDesc(docMngNo, "N")
-                    .orElseThrow(() -> new IllegalArgumentException(
+                    .orElseThrow(() -> new CustomGeneralException(
                             "존재하지 않는 문서관리번호입니다: " + docMngNo));
         } else {
             // 특정 버전 조회
             document = serviceRequestDocRepository
                     .findByDocMngNoAndDocVrsAndDelYn(docMngNo, version, "N")
-                    .orElseThrow(() -> new IllegalArgumentException(
+                    .orElseThrow(() -> new CustomGeneralException(
                             "해당 버전의 문서를 찾을 수 없습니다: " + docMngNo + " (v" + version + ")"));
         }
         return ServiceRequestDocDto.Response.fromEntity(document);
@@ -136,7 +137,7 @@ public class ServiceRequestDocService {
      *
      * @param request 요구사항 정의서 생성 요청 DTO
      * @return 생성된 문서관리번호
-     * @throws IllegalArgumentException 제공된 문서관리번호가 이미 존재하는 경우
+     * @throws CustomGeneralException 제공된 문서관리번호가 이미 존재하는 경우
      */
     @Transactional
     public String createDocument(ServiceRequestDocDto.CreateRequest request) {
@@ -151,7 +152,7 @@ public class ServiceRequestDocService {
         } else {
             // 제공된 문서관리번호 중복 확인
             if (serviceRequestDocRepository.existsByDocMngNoAndDelYn(docMngNo, "N")) {
-                throw new IllegalArgumentException("이미 존재하는 문서관리번호입니다: " + docMngNo);
+                throw new CustomGeneralException("이미 존재하는 문서관리번호입니다: " + docMngNo);
             }
         }
 
@@ -175,14 +176,14 @@ public class ServiceRequestDocService {
      * @param docMngNo 수정할 문서관리번호
      * @param request  수정 요청 DTO
      * @return 수정된 문서관리번호
-     * @throws IllegalArgumentException 해당 문서관리번호가 없는 경우
+     * @throws CustomGeneralException 해당 문서관리번호가 없는 경우
      */
     @Transactional
     public String updateDocument(String docMngNo, ServiceRequestDocDto.UpdateRequest request) {
         // 최신 버전 조회
         Brdocm document = serviceRequestDocRepository
                 .findTopByDocMngNoAndDelYnOrderByDocVrsDesc(docMngNo, "N")
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new CustomGeneralException(
                         "존재하지 않는 문서관리번호입니다: " + docMngNo));
 
         // 요구사항내용 XSS 새니타이징
@@ -210,14 +211,14 @@ public class ServiceRequestDocService {
      *
      * @param docMngNo 문서관리번호
      * @return 새로 생성된 버전 번호 (예: 0.02)
-     * @throws IllegalArgumentException 해당 문서관리번호가 없는 경우
+     * @throws CustomGeneralException 해당 문서관리번호가 없는 경우
      */
     @Transactional
     public BigDecimal createNewVersion(String docMngNo) {
         // 최신 버전 조회
         Brdocm latest = serviceRequestDocRepository
                 .findTopByDocMngNoAndDelYnOrderByDocVrsDesc(docMngNo, "N")
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new CustomGeneralException(
                         "존재하지 않는 문서관리번호입니다: " + docMngNo));
 
         // 새 버전 번호 계산 (최신 + 0.01)
@@ -240,7 +241,7 @@ public class ServiceRequestDocService {
      *
      * @param docMngNo 삭제할 문서관리번호
      * @param version  삭제할 문서버전 ({@code null}이면 전체 버전 일괄 삭제)
-     * @throws IllegalArgumentException 해당 문서 또는 버전이 없는 경우
+     * @throws CustomGeneralException 해당 문서 또는 버전이 없는 경우
      */
     @Transactional
     public void deleteDocument(String docMngNo, BigDecimal version) {
@@ -249,7 +250,7 @@ public class ServiceRequestDocService {
             List<Brdocm> all = serviceRequestDocRepository
                     .findAllByDocMngNoAndDelYn(docMngNo, "N");
             if (all.isEmpty()) {
-                throw new IllegalArgumentException("존재하지 않는 문서관리번호입니다: " + docMngNo);
+                throw new CustomGeneralException("존재하지 않는 문서관리번호입니다: " + docMngNo);
             }
             // BaseEntity.delete() 호출 → DEL_YN='Y' (JPA Dirty Checking)
             all.forEach(Brdocm::delete);
@@ -257,7 +258,7 @@ public class ServiceRequestDocService {
             // 특정 버전만 소프트 삭제
             Brdocm document = serviceRequestDocRepository
                     .findByDocMngNoAndDocVrsAndDelYn(docMngNo, version, "N")
-                    .orElseThrow(() -> new IllegalArgumentException(
+                    .orElseThrow(() -> new CustomGeneralException(
                             "해당 버전의 문서를 찾을 수 없습니다: " + docMngNo + " (v" + version + ")"));
             document.delete();
         }
