@@ -1,5 +1,7 @@
 package com.kdb.it.domain.budget.document.service;
 
+import com.kdb.it.common.iam.entity.CuserI;
+import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.domain.budget.document.dto.ReviewCommentDto;
 import com.kdb.it.domain.budget.document.entity.Brivgm;
 import com.kdb.it.domain.budget.document.repository.BrivgmRepository;
@@ -26,6 +28,7 @@ import static org.mockito.BDDMockito.*;
 class ReviewCommentServiceTest {
 
     @Mock BrivgmRepository brivgmRepository;
+    @Mock UserRepository userRepository;
     @InjectMocks ReviewCommentService reviewCommentService;
 
     @Test
@@ -58,6 +61,62 @@ class ReviewCommentServiceTest {
 
         // 검증
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void 코멘트_조회시_작성자_사번으로_사용자명을_조회한다() {
+        // 준비: FST_ENR_USID 가 설정된 코멘트 (JPA Auditing 대신 리플렉션으로 주입)
+        var comment = Brivgm.create("DOC-2026-0010", new BigDecimal("1.01"),
+                "G", "작성자 이름 확인용 코멘트", null, null);
+        try {
+            var field = comment.getClass().getSuperclass().getDeclaredField("fstEnrUsid");
+            field.setAccessible(true);
+            field.set(comment, "E12345");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        given(brivgmRepository.findByDocMngNoAndDocVrsAndDelYnOrderByFstEnrDtmAsc(
+                "DOC-2026-0010", new BigDecimal("1.01"), "N"))
+                .willReturn(List.of(comment));
+
+        var user = CuserI.builder().eno("E12345").usrNm("홍길동").build();
+        given(userRepository.findById("E12345")).willReturn(Optional.of(user));
+
+        // 실행
+        List<ReviewCommentDto.Response> result =
+                reviewCommentService.getComments("DOC-2026-0010", new BigDecimal("1.01"));
+
+        // 검증: 사번이 아닌 사용자명이 반환되어야 함
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getAuthorName()).isEqualTo("홍길동");
+    }
+
+    @Test
+    void 사용자_미존재시_사번을_그대로_반환한다() {
+        // 준비
+        var comment = Brivgm.create("DOC-2026-0010", new BigDecimal("1.01"),
+                "G", "코멘트", null, null);
+        try {
+            var field = comment.getClass().getSuperclass().getDeclaredField("fstEnrUsid");
+            field.setAccessible(true);
+            field.set(comment, "UNKNOWN_ENO");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        given(brivgmRepository.findByDocMngNoAndDocVrsAndDelYnOrderByFstEnrDtmAsc(
+                "DOC-2026-0010", new BigDecimal("1.01"), "N"))
+                .willReturn(List.of(comment));
+        given(userRepository.findById("UNKNOWN_ENO")).willReturn(Optional.empty());
+
+        // 실행
+        List<ReviewCommentDto.Response> result =
+                reviewCommentService.getComments("DOC-2026-0010", new BigDecimal("1.01"));
+
+        // 검증: 미존재 사용자는 사번(eno) 자체를 fallback으로 반환
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getAuthorName()).isEqualTo("UNKNOWN_ENO");
     }
 
     @Test

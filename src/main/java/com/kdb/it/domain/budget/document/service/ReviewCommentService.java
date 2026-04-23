@@ -1,5 +1,6 @@
 package com.kdb.it.domain.budget.document.service;
 
+import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.domain.budget.document.dto.ReviewCommentDto;
 import com.kdb.it.domain.budget.document.repository.BrivgmRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 public class ReviewCommentService {
 
     private final BrivgmRepository brivgmRepository;
+
+    /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사번→사용자명 조회용 */
+    private final UserRepository userRepository;
 
     /**
      * 특정 문서+버전의 미삭제 검토의견 목록을 조회합니다.
@@ -79,14 +83,18 @@ public class ReviewCommentService {
      * 사번으로 사용자 이름을 조회합니다.
      *
      * <p>
-     * TODO: 기존 ServiceRequestDocService의 userRepository 패턴과 동일하게 교체
+     * {@link UserRepository#findById(Object)} 로 {@code CuserI} 를 찾고, 존재하면
+     * {@code usrNm} 을 반환합니다. 사용자를 찾을 수 없는 경우 사번(eno)을 그대로 반환하여
+     * UI에서 식별 가능한 값이 노출되도록 합니다.
      * </p>
      *
      * @param eno 사번
-     * @return 사용자 이름 (현재는 사번 자체를 반환)
+     * @return 사용자 이름 (미존재 시 사번, null 입력 시 빈 문자열)
      */
     private String resolveAuthorName(String eno) {
         if (eno == null) return "";
-        return eno;
+        return userRepository.findById(eno)
+                .map(user -> user.getUsrNm())
+                .orElse(eno);
     }
 }
