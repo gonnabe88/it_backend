@@ -1,6 +1,9 @@
 package com.kdb.it.domain.budget.document.dto;
 
 import com.kdb.it.domain.budget.document.entity.Brivgm;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -33,10 +36,14 @@ public class ReviewCommentDto {
     @NoArgsConstructor
     public static class CreateRequest {
         /** 문서버전 (예: 1.00, 1.01) */
+        @NotNull
         private BigDecimal docVrs;
         /** 의견유형: I=인라인, G=전반 */
+        @NotBlank
+        @Pattern(regexp = "^[IG]$", message = "의견유형은 I(인라인) 또는 G(전반)이어야 합니다")
         private String ivgTp;
         /** 의견내용 (CLOB) */
+        @NotBlank
         private String ivgCone;
         /** 인라인 전용 - Tiptap Mark ID */
         private String markId;
