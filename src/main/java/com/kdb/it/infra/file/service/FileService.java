@@ -4,6 +4,8 @@ import com.kdb.it.infra.file.entity.Cfilem;
 import com.kdb.it.infra.file.dto.FileDto;
 import com.kdb.it.infra.file.repository.FileRepository;
 import com.kdb.it.exception.CustomGeneralException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -68,6 +70,19 @@ public class FileService {
 
     /** 공통 첨부파일 데이터 접근 리포지토리 */
     private final FileRepository fileRepository;
+
+    /**
+     * JPA EntityManager — 수동 부여 ID 엔티티의 INSERT를 {@code persist()}로 확정적으로 수행하기 위해 사용.
+     *
+     * <p>
+     * Spring Data JPA의 {@code save()}는 수동 부여 ID({@code @Id}만 있고 {@code @GeneratedValue} 없음)
+     * 엔티티에 대해 {@code EntityManager.merge()} 세만틱으로 동작합니다. merge()는 상황에 따라
+     * 즉시 INSERT가 되지 않거나 dirty flag가 누락되어, 커밋 후에도 DB에 행이 없는 현상이 발생할 수 있습니다.
+     * 본 클래스에서는 업로드 경로만 {@code persist()}를 명시적으로 호출하여 이러한 불확정성을 제거합니다.
+     * </p>
+     */
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * 서버 인스턴스 ID
@@ -254,6 +269,31 @@ public class FileService {
      */
     @Transactional
     public String uploadFile(MultipartFile file, FileDto.UploadRequest request) {
+        return uploadFileInternal(file, request).getFlMngNo();
+    }
+
+    /**
+     * 파일 단건 업로드 내부 구현
+     *
+     * <p>
+     * 물리 파일을 디스크에 저장한 뒤 메타데이터 엔티티를 영속화하고,
+     * 영속화된 {@link Cfilem} 엔티티를 그대로 반환합니다.
+     * </p>
+     *
+     * <p>
+     * [재쿼리 회피 이유]<br>
+     * 수동 부여된 ID({@code flMngNo})로 {@code save()}를 호출할 때
+     * Spring Data JPA는 내부적으로 {@code merge()} 세만틱으로 동작해
+     * INSERT가 트랜잭션 커밋 전까지 지연될 수 있습니다.
+     * 이 상태에서 동일 트랜잭션 내 {@code findByFlMngNoAndDelYn(...)} 같은
+     * derived 쿼리가 바로 실행되면 flush가 보장되지 않아
+     * "존재하지 않는 파일입니다. 파일관리번호: FL_xxxxxxxx" 오류가 발생합니다.
+     * 본 메서드는 저장된 엔티티를 그대로 반환하여
+     * 호출 측이 재쿼리 없이 DTO 변환을 수행할 수 있게 합니다.
+     * </p>
+     */
+    @Transactional
+    protected Cfilem uploadFileInternal(MultipartFile file, FileDto.UploadRequest request) {
         // 빈 파일 검증
         if (file == null || file.isEmpty()) {
             throw new CustomGeneralException("업로드할 파일이 비어있습니다.");
@@ -297,8 +337,12 @@ public class FileService {
                 .orcDtt(request.getOrcDtt())
                 .build();
 
-        fileRepository.save(cfilem);
-        return flMngNo;
+        // 수동 부여 ID 엔티티는 persist()로 명시적 INSERT → save() 위임 시 merge() 세만틱으로
+        // 실제 INSERT가 누락되거나 지연되어 "존재하지 않는 파일" 오류가 발생하는 현상을 근본 차단
+        entityManager.persist(cfilem);
+        // 같은 트랜잭션 내 후속 조회 쿼리가 새 행을 볼 수 있도록 즉시 flush
+        entityManager.flush();
+        return cfilem;
     }
 
     /**
@@ -308,7 +352,13 @@ public class FileService {
      * 업로드 완료 즉시 {@link FileDto.Response}를 반환합니다.
      * {@code previewUrl}, {@code downloadUrl}이 포함되어 있어
      * Tiptap 에디터에서 {@code response.previewUrl}을 {@code <img src>}에
-     * 바로 주입할 수 있습니다. 별도 조회 없이 한 번의 API 호출로 처리됩니다.
+     * 바로 주입할 수 있습니다.
+     * </p>
+     *
+     * <p>
+     * 저장 직후 재조회 시 수동 부여 ID + merge() flush 지연으로
+     * "존재하지 않는 파일" 오류가 발생할 수 있어
+     * 저장된 엔티티를 그대로 DTO로 변환하여 반환합니다.
      * </p>
      *
      * @param file    업로드할 파일
@@ -317,8 +367,8 @@ public class FileService {
      */
     @Transactional
     public FileDto.Response uploadFileAndGet(MultipartFile file, FileDto.UploadRequest request) {
-        String flMngNo = uploadFile(file, request);
-        return getFile(flMngNo);
+        Cfilem saved = uploadFileInternal(file, request);
+        return toResponse(saved);
     }
 
     /**
@@ -340,9 +390,10 @@ public class FileService {
 
         for (MultipartFile file : files) {
             try {
-                String flMngNo = uploadFile(file, request);
-                // 업로드 성공한 파일의 상세 정보 조회
-                successList.add(getFile(flMngNo));
+                // 업로드 직후 동일 트랜잭션 내 재조회는 merge() flush 지연으로 실패할 수 있음 →
+                // 영속화된 엔티티를 그대로 DTO로 변환
+                Cfilem saved = uploadFileInternal(file, request);
+                successList.add(toResponse(saved));
             } catch (Exception e) {
                 failList.add(file.getOriginalFilename() + " (" + e.getMessage() + ")");
             }
