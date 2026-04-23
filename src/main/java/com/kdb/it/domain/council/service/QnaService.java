@@ -97,6 +97,37 @@ public class QnaService {
     }
 
     /**
+     * 사전 질의 수정 (질의 등록자)
+     *
+     * <p>질의 내용(QTN_CONE)을 업데이트합니다.
+     * 본인이 등록한 질의만 수정할 수 있습니다.</p>
+     *
+     * @param asctId      협의회ID
+     * @param qtnId       질의응답ID
+     * @param request     질의 수정 요청
+     * @param userDetails 로그인한 사용자
+     */
+    @Transactional
+    public void updateQna(String asctId, String qtnId, CouncilDto.QnaUpdateRequest request, CustomUserDetails userDetails) {
+        Bpqnam qna = qnaRepository.findById(qtnId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질의응답입니다: " + qtnId));
+
+        if (!qna.getAsctId().equals(asctId)) {
+            throw new IllegalArgumentException("협의회ID가 일치하지 않습니다.");
+        }
+
+        /* 본인 또는 관리자(ITPAD001)만 수정 가능 */
+        boolean isOwner = qna.getQtnEno().equals(userDetails.getEno());
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ITPAD001"));
+        if (!isOwner && !isAdmin) {
+            throw new IllegalArgumentException("본인이 등록한 질의만 수정할 수 있습니다.");
+        }
+
+        qna.updateQuestion(request.qtnCone());
+    }
+
+    /**
      * 사전 질의 답변 (추진부서 담당자)
      *
      * <p>REP_ENO, REP_CONE을 업데이트하고 REP_YN='Y'로 변경합니다.</p>

@@ -136,6 +136,23 @@ public class ScheduleService {
     }
 
     /**
+     * 내 일정 응답 조회 (평가위원 본인)
+     *
+     * <p>로그인한 평가위원이 이미 제출한 일정 슬롯 목록을 반환합니다.
+     * 제출 이력이 없으면 빈 목록을 반환합니다.</p>
+     *
+     * @param asctId 협의회ID
+     * @param eno    로그인한 사번
+     * @return 본인이 제출한 슬롯 목록 (dsdDt, dsdTm, psbYn)
+     */
+    public List<CouncilDto.ScheduleSlotResponse> getMySchedule(String asctId, String eno) {
+        councilService.findActiveCouncil(asctId);
+        return scheduleRepository.findByAsctIdAndEnoAndDelYn(asctId, eno, "N").stream()
+                .map(s -> new CouncilDto.ScheduleSlotResponse(s.getDsdDt(), s.getDsdTm(), s.getPsbYn()))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 일정 확정 가능 여부 계산
      *
      * <p>INFO_SYS 타입: 예산팀장(TEM_C=12004), IT기획팀장(TEM_C=18001)이 모두 응답했는지 확인

@@ -70,4 +70,13 @@ public class Bpqnam extends BaseEntity {
         this.repCone = repCone;
         this.repYn = "Y";
     }
+
+    /**
+     * 질의 내용 수정 (질의 등록자가 호출)
+     *
+     * @param qtnCone 수정할 질의내용
+     */
+    public void updateQuestion(String qtnCone) {
+        this.qtnCone = qtnCone;
+    }
 }

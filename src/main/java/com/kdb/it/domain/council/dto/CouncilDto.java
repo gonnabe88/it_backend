@@ -566,6 +566,16 @@ public class CouncilDto {
     ) {}
 
     /**
+     * 사전질의 수정 요청 DTO
+     *
+     * <p>질의 등록자가 자신의 질의 내용을 수정합니다.</p>
+     */
+    public record QnaUpdateRequest(
+        /** 수정할 질의내용 (최대 4000자) */
+        String qtnCone
+    ) {}
+
+    /**
      * 사전질의응답 항목 응답
      */
     public record QnaResponse(

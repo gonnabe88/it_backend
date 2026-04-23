@@ -158,6 +158,27 @@ public class CouncilService {
     }
 
     /**
+     * 협의회 개최 시작 처리 (SCHEDULED → IN_PROGRESS)
+     *
+     * <p>IT관리자가 오프라인 협의회 개최를 확인하고 진행 상태로 전이합니다.
+     * SCHEDULED 상태에서만 호출 가능합니다.</p>
+     *
+     * @param asctId 협의회ID
+     * @throws IllegalStateException 현재 상태가 SCHEDULED가 아닌 경우
+     */
+    @Transactional
+    public void startCouncil(String asctId) {
+        Basctm council = findActiveCouncil(asctId);
+
+        if (!"SCHEDULED".equals(council.getAsctSts())) {
+            throw new IllegalStateException(
+                "협의회 개최 시작은 SCHEDULED 상태에서만 가능합니다. 현재 상태: " + council.getAsctSts());
+        }
+
+        council.changeStatus("IN_PROGRESS");
+    }
+
+    /**
      * 정보화실무협의회 생략 처리 (APPROVED → SKIPPED)
      *
      * <p>IT관리자가 타당성검토표 검토 후 해당 사업이 협의회 생략 대상임을 확인한 경우 호출합니다.</p>

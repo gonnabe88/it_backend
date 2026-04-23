@@ -285,6 +285,29 @@ public class CouncilController {
     }
 
     /**
+     * 협의회 개최 시작 (SCHEDULED → IN_PROGRESS)
+     *
+     * <p>IT관리자가 오프라인 협의회 개최를 확인하고 진행 상태로 전이합니다.
+     * SCHEDULED 상태에서만 호출 가능합니다.</p>
+     *
+     * @param asctId 협의회ID
+     * @return HTTP 200
+     */
+    @Operation(summary = "협의회 개최 시작", description = "SCHEDULED 상태의 협의회를 IN_PROGRESS로 전이합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "개최 시작 성공"),
+            @ApiResponse(responseCode = "400", description = "SCHEDULED 상태가 아닌 경우", content = @Content),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 협의회", content = @Content)
+    })
+    @PatchMapping("/{asctId}/start")
+    public ResponseEntity<Void> startCouncil(
+            @Parameter(description = "협의회ID", required = true, example = "ASCT-2026-0001")
+            @PathVariable("asctId") String asctId) {
+        councilService.startCouncil(asctId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * 정보화실무협의회 생략 처리 (APPROVED → SKIPPED)
      *
      * <p>IT관리자가 타당성검토표 검토 후 협의회 생략 대상으로 판단한 경우 호출합니다.
@@ -421,6 +444,19 @@ public class CouncilController {
             @Parameter(description = "협의회ID", required = true, example = "ASCT-2026-0001")
             @PathVariable("asctId") String asctId) {
         return ResponseEntity.ok(scheduleService.getScheduleStatus(asctId));
+    }
+
+    /**
+     * 내 일정 조회 (평가위원 본인)
+     *
+     * <p>로그인한 평가위원이 제출한 일정 슬롯 목록을 반환합니다.</p>
+     */
+    @Operation(summary = "내 일정 조회", description = "로그인한 평가위원 본인이 제출한 일정을 조회합니다.")
+    @GetMapping("/{asctId}/schedule/my")
+    public ResponseEntity<List<CouncilDto.ScheduleSlotResponse>> getMySchedule(
+            @PathVariable("asctId") String asctId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(scheduleService.getMySchedule(asctId, userDetails.getEno()));
     }
 
     /**
@@ -703,6 +739,19 @@ public class CouncilController {
             @RequestBody CouncilDto.QnaReplyRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         qnaService.replyQna(asctId, qtnId, request, userDetails);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "사전질의 수정", description = "질의 등록자(또는 IT관리자)가 질의 내용을 수정합니다.")
+    @PatchMapping("/{asctId}/qna/{qtnId}")
+    public ResponseEntity<Void> updateQna(
+            @Parameter(description = "협의회ID", required = true, example = "ASCT-2026-0001")
+            @PathVariable("asctId") String asctId,
+            @Parameter(description = "질의응답ID", required = true, example = "QTN-ASCT-2026-0001-01")
+            @PathVariable("qtnId") String qtnId,
+            @RequestBody CouncilDto.QnaUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        qnaService.updateQna(asctId, qtnId, request, userDetails);
         return ResponseEntity.ok().build();
     }
 }

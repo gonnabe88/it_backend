@@ -46,12 +46,19 @@ public class CommitteeService {
     private final CouncilService councilService;
 
     // 심의유형별 당연위원 팀코드 매핑 (TEM_C 기준, Design §2.4)
-    // TODO: INFO_SYS 나머지 당연위원(PMO:18010, 디지털기획:18501, 정보보호기획:18301) 추가 예정
-    //       현재는 테스트 단계로 예산(12004) + IT기획(18001) 2팀만 포함
     private static final Map<String, List<String>> MANDATORY_TEM_CODES = Map.of(
-        "INFO_SYS", List.of("12004", "18001", "18010", "18501", "18301"),
+        "INFO_SYS", List.of("12004", "18010", "18501", "18301"),
         "INFO_SEC", List.of("12004", "18001", "18010", "18501"),
         "ETC",      List.of("12004", "18010", "18501")
+    );
+
+    // 심의유형별 간사 팀코드 매핑 (TEM_C 기준)
+    // INFO_SYS / ETC: IT기획(18001) → 간사
+    // INFO_SEC: 정보보호기획(18301) → 간사
+    private static final Map<String, List<String>> SECRETARY_TEM_CODES = Map.of(
+        "INFO_SYS", List.of("18001"),
+        "INFO_SEC", List.of("18301"),
+        "ETC",      List.of("18001")
     );
 
     /** INFO_SYS 일정 확정 필수 응답 팀코드 (예산:12004, IT기획:18001) */
@@ -74,10 +81,11 @@ public class CommitteeService {
         // 협의회 존재 확인 및 심의유형 조회
         String dbrTp = councilService.findActiveCouncil(asctId).getDbrTp();
 
-        List<String> temCodes = MANDATORY_TEM_CODES.getOrDefault(dbrTp, List.of());
         List<CouncilDto.CommitteeMemberResponse> result = new ArrayList<>();
 
-        for (String temC : temCodes) {
+        // 당연위원(MAND) 자동 배정
+        List<String> mandTemCodes = MANDATORY_TEM_CODES.getOrDefault(dbrTp, List.of());
+        for (String temC : mandTemCodes) {
             List<CuserI> users = userRepository.findByTemC(temC);
             if (users.isEmpty()) continue;
 
@@ -88,6 +96,21 @@ public class CommitteeService {
                     .orElse(users.get(0));
 
             result.add(toMemberResponse(candidate, "MAND"));
+        }
+
+        // 간사(SECR) 자동 배정
+        List<String> secrTemCodes = SECRETARY_TEM_CODES.getOrDefault(dbrTp, List.of());
+        for (String temC : secrTemCodes) {
+            List<CuserI> users = userRepository.findByTemC(temC);
+            if (users.isEmpty()) continue;
+
+            // 팀장 우선, 없으면 첫 번째 사용자를 간사 후보로 선택
+            CuserI candidate = users.stream()
+                    .filter(u -> "팀장".equals(u.getPtCNm()))
+                    .findFirst()
+                    .orElse(users.get(0));
+
+            result.add(toMemberResponse(candidate, "SECR"));
         }
 
         return result;
