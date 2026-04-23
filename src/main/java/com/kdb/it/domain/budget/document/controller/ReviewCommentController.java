@@ -55,8 +55,8 @@ public class ReviewCommentController {
     @Operation(summary = "검토의견 목록 조회", description = "특정 문서+버전의 미삭제 검토의견 목록을 조회합니다.")
     @GetMapping
     public List<ReviewCommentDto.Response> getComments(
-            @PathVariable String docMngNo,
-            @RequestParam BigDecimal docVrs) {
+            @PathVariable("docMngNo") String docMngNo,
+            @RequestParam("docVrs") BigDecimal docVrs) {
         return reviewCommentService.getComments(docMngNo, docVrs);
     }
 
@@ -71,7 +71,7 @@ public class ReviewCommentController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReviewCommentDto.Response addComment(
-            @PathVariable String docMngNo,
+            @PathVariable("docMngNo") String docMngNo,
             @Valid @RequestBody ReviewCommentDto.CreateRequest request) {
         return reviewCommentService.addComment(docMngNo, request);
     }
@@ -90,8 +90,8 @@ public class ReviewCommentController {
     @PatchMapping("/{ivgSno}/resolve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resolveComment(
-            @PathVariable String docMngNo,
-            @PathVariable String ivgSno) {
+            @PathVariable("docMngNo") String docMngNo,
+            @PathVariable("ivgSno") String ivgSno) {
         reviewCommentService.resolveComment(docMngNo, ivgSno);
     }
 }
