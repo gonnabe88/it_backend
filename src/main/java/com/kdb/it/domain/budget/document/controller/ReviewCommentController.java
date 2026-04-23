@@ -83,7 +83,7 @@ public class ReviewCommentController {
      * 지정한 의견일련번호의 RSLV_YN 값을 'Y'로 변경합니다.
      * </p>
      *
-     * @param docMngNo 문서관리번호 (URL 일관성을 위해 포함, 현재 사용하지 않음)
+     * @param docMngNo 문서관리번호 (코멘트 소속 검증에 사용)
      * @param ivgSno   의견일련번호 (UUID v4 32자)
      */
     @Operation(summary = "검토의견 해결 처리", description = "검토의견을 해결 상태로 변경합니다 (RSLV_YN='Y').")
@@ -92,6 +92,6 @@ public class ReviewCommentController {
     public void resolveComment(
             @PathVariable String docMngNo,
             @PathVariable String ivgSno) {
-        reviewCommentService.resolveComment(ivgSno);
+        reviewCommentService.resolveComment(docMngNo, ivgSno);
     }
 }

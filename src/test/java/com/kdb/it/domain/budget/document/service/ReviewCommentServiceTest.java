@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.web.server.ResponseStatusException;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -60,13 +62,13 @@ class ReviewCommentServiceTest {
 
     @Test
     void 존재하지_않는_코멘트_해결처리시_예외가_발생한다() {
-        // 준비: 빈 Optional 반환
-        given(brivgmRepository.findByIvgSnoAndDelYn("UNKNOWN", "N"))
+        // 준비: 빈 Optional 반환 (docMngNo 검증 포함)
+        given(brivgmRepository.findByIvgSnoAndDocMngNoAndDelYn("UNKNOWN", "DOC-2026-0010", "N"))
                 .willReturn(Optional.empty());
 
-        // 실행 & 검증
-        assertThatThrownBy(() -> reviewCommentService.resolveComment("UNKNOWN"))
-                .isInstanceOf(IllegalArgumentException.class);
+        // 실행 & 검증: 404 응답을 위해 ResponseStatusException 이 발생해야 한다
+        assertThatThrownBy(() -> reviewCommentService.resolveComment("DOC-2026-0010", "UNKNOWN"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
@@ -74,11 +76,11 @@ class ReviewCommentServiceTest {
         // 준비
         var comment = Brivgm.create("DOC-2026-0010", new BigDecimal("1.01"),
                 "G", "코멘트", null, null);
-        given(brivgmRepository.findByIvgSnoAndDelYn(anyString(), eq("N")))
+        given(brivgmRepository.findByIvgSnoAndDocMngNoAndDelYn(anyString(), anyString(), eq("N")))
                 .willReturn(Optional.of(comment));
 
         // 실행
-        reviewCommentService.resolveComment("some-ivg-sno");
+        reviewCommentService.resolveComment("DOC-2026-0010", "some-ivg-sno");
 
         // 검증
         assertThat(comment.getRslvYn()).isEqualTo("Y");

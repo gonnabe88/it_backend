@@ -40,4 +40,19 @@ public interface BrivgmRepository extends JpaRepository<Brivgm, String> {
      * @return 조건에 해당하는 검토의견 (없으면 {@link Optional#empty()})
      */
     Optional<Brivgm> findByIvgSnoAndDelYn(String ivgSno, String delYn);
+
+    /**
+     * 코멘트 단건 조회 (문서관리번호 + 의견일련번호 + 미삭제 조건)
+     *
+     * <p>
+     * URL 상의 {@code docMngNo}와 실제 코멘트의 소속 문서가 일치하는지 함께 검증합니다.
+     * 이를 통해 다른 문서의 {@code ivgSno}를 이용한 교차 접근을 차단합니다.
+     * </p>
+     *
+     * @param ivgSno   의견일련번호 (UUID v4 기반 32자)
+     * @param docMngNo 문서관리번호 (예: DOC-2026-0001)
+     * @param delYn    삭제여부 ('N'=미삭제, 'Y'=삭제)
+     * @return 조건에 해당하는 검토의견 (없으면 {@link Optional#empty()})
+     */
+    Optional<Brivgm> findByIvgSnoAndDocMngNoAndDelYn(String ivgSno, String docMngNo, String delYn);
 }
