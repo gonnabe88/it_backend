@@ -74,4 +74,24 @@ public class UserService {
         // 엔티티를 DTO로 변환 (부점명은 연관관계에서 조회)
         return UserDto.DetailResponse.fromEntity(user, user.getBbrNm());
     }
+
+    /**
+     * 이름으로 사용자 검색 (자동완성용)
+     *
+     * @param keyword 검색할 사용자명 (부분 일치)
+     * @param orgCode 부서코드 (null이면 전체 부서 대상)
+     * @return 검색 결과 사용자 목록 DTO
+     */
+    public List<UserDto.ListResponse> searchUsersByName(String keyword, String orgCode) {
+        List<CuserI> users = userRepository.searchByName(keyword);
+        // orgCode가 지정된 경우 해당 부서만 필터링
+        if (orgCode != null && !orgCode.isBlank()) {
+            users = users.stream()
+                    .filter(u -> orgCode.equals(u.getBbrC()))
+                    .toList();
+        }
+        return users.stream()
+                .map(user -> UserDto.ListResponse.fromEntity(user, user.getBbrNm()))
+                .toList();
+    }
 }

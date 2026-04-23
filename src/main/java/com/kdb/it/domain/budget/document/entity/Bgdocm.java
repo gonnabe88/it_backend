@@ -28,7 +28,7 @@ import lombok.experimental.SuperBuilder;
  * </p>
  */
 @Entity
-@Table(name = "TAAABB_BGDOCM")
+@Table(name = "TAAABB_BGDOCM", comment = "가이드 문서")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -37,16 +37,16 @@ public class Bgdocm extends BaseEntity {
 
     /** 문서관리번호: 기본키 (예: GDOC-2026-0001) */
     @Id
-    @Column(name = "DOC_MNG_NO", nullable = false, length = 32)
+    @Column(name = "DOC_MNG_NO", nullable = false, length = 32, comment = "문서관리번호")
     private String docMngNo;
 
     /** 문서명: 가이드 문서의 제목 (최대 200자) */
-    @Column(name = "DOC_NM", length = 200)
+    @Column(name = "DOC_NM", length = 200, comment = "문서명")
     private String docNm;
 
     /** 문서내용: 가이드 문서 상세 내용 (BLOB, HTML 포함 가능) */
     @Lob
-    @Column(name = "DOC_CONE")
+    @Column(name = "DOC_CONE", comment = "문서내용")
     private byte[] docCone;
 
     /**

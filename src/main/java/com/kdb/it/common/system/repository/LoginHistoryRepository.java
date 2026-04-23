@@ -1,7 +1,10 @@
 package com.kdb.it.common.system.repository;
 
 import com.kdb.it.common.system.entity.Clognh;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,4 +78,33 @@ public interface LoginHistoryRepository extends JpaRepository<Clognh, Long> {
      * @return 해당 사용자의 최근 10개 로그인 이력 (로그인일시 내림차순)
      */
     List<Clognh> findTop10ByEnoOrderByLgnDtmDesc(String eno);
+
+    /**
+     * 전체 로그인 이력 페이지네이션 조회 (최신순)
+     *
+     * <p>관리자 화면에서 전체 로그인 이력을 페이지 단위로 조회합니다.</p>
+     *
+     * @param pageable 페이지 정보 (page, size, sort)
+     * @return 페이지네이션된 로그인 이력
+     */
+    Page<Clognh> findAllByOrderByLgnDtmDesc(Pageable pageable);
+
+    /**
+     * 최근 30일 일별 로그인 건수 집계 (대시보드용)
+     *
+     * <p>TAAABB_CLOGNH에서 LGN_TP='LOGIN_SUCCESS' 조건으로 최근 30일간의
+     * 날짜별 로그인 성공 건수를 집계합니다. Oracle TRUNC 함수로 날짜 단위 그룹화.</p>
+     *
+     * @return [날짜 문자열(YYYY-MM-DD), 건수] 쌍의 배열 목록
+     */
+    @Query(value = """
+            SELECT TO_CHAR(TRUNC(LGN_DTM), 'YYYY-MM-DD') AS LGN_DATE,
+                   COUNT(*) AS CNT
+            FROM TAAABB_CLOGNH
+            WHERE LGN_TP = 'LOGIN_SUCCESS'
+              AND LGN_DTM >= TRUNC(SYSDATE) - 30
+            GROUP BY TRUNC(LGN_DTM)
+            ORDER BY TRUNC(LGN_DTM)
+            """, nativeQuery = true)
+    List<Object[]> findDailyLoginStats();
 }

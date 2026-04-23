@@ -1,10 +1,36 @@
 package com.kdb.it.domain.budget.cost.service;
 
+import com.kdb.it.common.approval.dto.ApplicationInfoDto;
+import com.kdb.it.common.approval.entity.Cappla;
+import com.kdb.it.common.approval.entity.Capplm;
+import com.kdb.it.common.approval.entity.Cdecim;
+import com.kdb.it.common.iam.entity.CorgnI;
+import com.kdb.it.common.approval.repository.ApplicationMapRepository;
+import com.kdb.it.common.approval.repository.ApplicationRepository;
+import com.kdb.it.common.approval.repository.ApproverRepository;
+import com.kdb.it.common.code.entity.Ccodem;
+import com.kdb.it.common.code.repository.CodeRepository;
+import com.kdb.it.common.iam.repository.OrganizationRepository;
+import com.kdb.it.common.iam.entity.CuserI;
+import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.domain.budget.cost.dto.CostDto;
 import com.kdb.it.domain.budget.cost.entity.Bcostm;
+import com.kdb.it.domain.budget.cost.entity.Btermm;
+import com.kdb.it.domain.budget.cost.repository.BtermmRepository;
 import com.kdb.it.domain.budget.cost.repository.CostRepository;
+import com.kdb.it.common.system.security.CustomUserDetails;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,28 +64,25 @@ import org.springframework.transaction.annotation.Transactional;
  * 쓰기 메서드는 {@code @Transactional}로 오버라이드합니다.
  * </p>
  */
-@Service // Spring 서비스 빈으로 등록
-@RequiredArgsConstructor // final 필드 생성자 자동 주입 (Lombok)
-@Transactional(readOnly = true) // 기본 읽기 전용 트랜잭션
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CostService {
 
-    /** 전산관리비 데이터 접근 리포지토리 (TAAABB_BCOSTM) */
     private final CostRepository costRepository;
+    private final BtermmRepository btermmRepository;
+    private final ApplicationMapRepository capplaRepository;
+    private final ApplicationRepository capplmRepository;
+    private final OrganizationRepository corgnIRepository;
+    private final UserRepository cuserIRepository;
+    private final ApproverRepository cdecimRepository;
+    private final CodeRepository ccodemRepository;
 
-    /** 신청서-원본 데이터 연결 리포지토리 (TAAABB_CAPPLA): 결재 상태 확인용 */
-    private final com.kdb.it.common.approval.repository.ApplicationMapRepository capplaRepository;
+    /** 공통코드 서비스: 예산 신청 기간 검증용 */
+    private final com.kdb.it.common.code.service.CodeService codeService;
 
-    /** 신청서 마스터 리포지토리 (TAAABB_CAPPLM): 결재 상태 조회용 */
-    private final com.kdb.it.common.approval.repository.ApplicationRepository capplmRepository;
-
-    /** 조직(부점) 정보 리포지토리 (TAAABB_CORGNI): 부서코드→부서명 조회용 */
-    private final com.kdb.it.common.iam.repository.OrganizationRepository corgnIRepository;
-
-    /** 사용자 정보 리포지토리 (TAAABB_CUSERI): 사원번호→사용자명 조회용 */
-    private final com.kdb.it.common.iam.repository.UserRepository cuserIRepository;
-
-    /** 결재 정보 리포지토리 (TAAABB_CDECIM): 결재선 목록 조회용 */
-    private final com.kdb.it.common.approval.repository.ApproverRepository cdecimRepository;
+    /** 일반관리비 대상 코드값구분 */
+    private static final Set<String> COST_CTT_TPS = Set.of("IOE_IDR", "IOE_SEVS", "IOE_XPN", "IOE_LEAFE");
 
     /**
      * 특정 전산관리비 단건 조회
@@ -78,16 +101,13 @@ public class CostService {
      * @throws IllegalArgumentException 해당 관리번호의 항목이 없는 경우
      */
     public CostDto.Response getCost(String itMngcNo) {
-        // IT_MNGC_NO로 삭제되지 않은 항목 목록 조회
         List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(itMngcNo, "N");
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);
         }
-        // 편의상 첫 번째 항목 반환 (IT_MNGC_NO가 유니크하다고 가정)
         CostDto.Response response = CostDto.Response.fromEntity(costs.get(0));
-        setApplicationInfo(response, response.getItMngcNo(), response.getItMngcSno());
-        // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
-        setCodeNames(response);
+        enrichResponse(response, costs.get(0));
+        attachTerminals(response);
         return response;
     }
 
@@ -102,15 +122,12 @@ public class CostService {
      * @return 전체 전산관리비 응답 DTO 목록
      */
     public List<CostDto.Response> getCostList() {
-        return costRepository.findAllByDelYn("N").stream()
-                .map(cost -> {
-                    CostDto.Response response = CostDto.Response.fromEntity(cost);
-                    setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
-                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
-                    setCodeNames(response);
-                    return response;
-                })
-                .toList();
+        List<Bcostm> costs = costRepository.findAllByDelYn("N");
+        List<CostDto.Response> responses = costs.stream()
+                .map(CostDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichCostListBatch(costs, responses);
+        return responses;
     }
 
     /**
@@ -129,19 +146,16 @@ public class CostService {
      * <li>null/미입력: 결재상태 필터 없음</li>
      * </ul>
      *
-     * @param condition 검색 조건 DTO (apfSts, cttTp, pulDpm, infPrtYn)
+     * @param condition 검색 조건 DTO (apfSts, biceDpm, biceTem, infPrtYn)
      * @return 조건에 맞는 전산관리비 응답 DTO 목록
      */
     public List<CostDto.Response> searchCostList(CostDto.SearchCondition condition) {
-        return costRepository.searchByCondition(condition).stream()
-                .map(cost -> {
-                    CostDto.Response response = CostDto.Response.fromEntity(cost);
-                    setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
-                    // 부서코드→부서명, 사원번호→사용자명 조회 및 설정
-                    setCodeNames(response);
-                    return response;
-                })
-                .toList();
+        List<Bcostm> costs = costRepository.searchByCondition(condition);
+        List<CostDto.Response> responses = costs.stream()
+                .map(CostDto.Response::fromEntity)
+                .collect(Collectors.toList());
+        enrichCostListBatch(costs, responses);
+        return responses;
     }
 
     /**
@@ -172,28 +186,42 @@ public class CostService {
      */
     @Transactional
     public String createCost(CostDto.CreateRequest request) {
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         String itMngcNo = request.getItMngcNo();
 
-        // IT_MNGC_NO가 없으면 Oracle 시퀀스로 자동 생성
         if (itMngcNo == null || itMngcNo.isEmpty()) {
-            Long seq = costRepository.getNextSequenceValue(); // Oracle 시퀀스 채번
-            String year = String.valueOf(java.time.LocalDate.now().getYear()); // 현재 연도
-            // 형식: COST_{yyyy}_{seq:04d}
+            Long seq = costRepository.getNextSequenceValue();
+            String year = String.valueOf(LocalDate.now().getYear());
             itMngcNo = String.format("COST_%s_%04d", year, seq);
-            request.setItMngcNo(itMngcNo); // 요청 객체에 생성된 번호 설정
+            request.setItMngcNo(itMngcNo);
         }
 
-        // IT_MNGC_SNO 채번: 기존 데이터의 MAX + 1 (없으면 1)
         Integer nextSno = costRepository.getNextSnoValue(itMngcNo);
         if (nextSno == null) {
-            nextSno = 1; // 첫 번째 이력
+            nextSno = 1;
         }
 
-        // 엔티티 생성 및 저장 (LST_YN='Y': 최신 이력)
         Bcostm bcostm = request.toEntity(nextSno);
         costRepository.save(bcostm);
 
-        return bcostm.getItMngcNo(); // 저장된 관리번호 반환
+        if (request.getTerminals() != null && !request.getTerminals().isEmpty()) {
+            for (CostDto.TerminalDto tDto : request.getTerminals()) {
+                if (tDto.getTmnMngNo() == null || tDto.getTmnMngNo().isEmpty()) {
+                    tDto.setTmnMngNo(generateTmnMngNo());
+                }
+                if (tDto.getTmnSno() == null || tDto.getTmnSno().isEmpty()) {
+                    tDto.setTmnSno("1");
+                }
+
+                Btermm btermm = tDto.toEntity();
+                btermm.setBcostmInfo(bcostm.getItMngcNo(), bcostm.getItMngcSno());
+                btermmRepository.save(btermm);
+            }
+        }
+
+        return bcostm.getItMngcNo();
     }
 
     /**
@@ -216,36 +244,48 @@ public class CostService {
      */
     @Transactional
     public String updateCost(String itMngcNo, CostDto.UpdateRequest request) {
-        // IT_MNGC_NO로 삭제되지 않은 항목 목록 조회
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(itMngcNo, "N");
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);
         }
 
-        // LST_YN='Y'인 최신 이력 항목 찾기 (없으면 첫 번째 항목 사용)
         Bcostm target = costs.stream()
-                .filter(c -> "Y".equals(c.getLstYn())) // 최신 이력 필터
+                .filter(c -> "Y".equals(c.getLstYn()))
                 .findFirst()
-                .orElse(costs.get(0)); // 최신 이력이 없으면 첫 번째 항목
+                .orElse(costs.get(0));
 
-        // 엔티티 필드 업데이트 (JPA Dirty Checking으로 자동 반영)
+        validateModifyPermission(target.getFstEnrUsid(), target.getBiceDpm());
+
         target.update(
-                request.getIoeNm(), // 비목명
-                request.getCttNm(), // 계약명
-                request.getCttTp(), // 계약구분
-                request.getCttOpp(), // 계약상대처
-                request.getItMngcBg(), // 전산관리비예산
-                request.getDfrCle(), // 지급주기
-                request.getFstDfrDt(), // 지급예정월 (최초지급일자)
-                request.getCur(), // 통화
-                request.getXcr(), // 환율
-                request.getXcrBseDt(), // 환율기준일자
-                request.getInfPrtYn(), // 정보보호여부
-                request.getIndRsn(), // 증감사유
-                request.getPulCgpr(), // 추진담당자
-                request.getPulDpm()); // 추진부서
+                request.getIoeC(), request.getCttNm(), request.getCttOpp(),
+                request.getItMngcBg(), request.getDfrCle(), request.getFstDfrDt(),
+                request.getCur(), request.getXcr(), request.getXcrBseDt(),
+                request.getInfPrtYn(), request.getIndRsn(), request.getCgpr(),
+                request.getBiceDpm(), request.getBiceTem(), request.getAbusC(),
+                request.getItMngcTp(), request.getPulDtt(), request.getBgYy());
 
-        return target.getItMngcNo(); // 수정된 관리번호 반환
+        /* 연관된 단말기 목록 업데이트: 기존 Soft Delete 후 재등록 */
+        List<Btermm> existingTerminals = btermmRepository.findByItMngcNoAndItMngcSno(target.getItMngcNo(), target.getItMngcSno());
+        for (Btermm et : existingTerminals) {
+            et.delete();
+        }
+
+        if (request.getTerminals() != null && !request.getTerminals().isEmpty()) {
+            for (CostDto.TerminalDto tDto : request.getTerminals()) {
+                /* 새 PK를 발급하여 Soft Delete된 기존 레코드와 충돌 방지 */
+                tDto.setTmnMngNo(generateTmnMngNo());
+                tDto.setTmnSno("1");
+
+                Btermm btermm = tDto.toEntity();
+                btermm.setBcostmInfo(target.getItMngcNo(), target.getItMngcSno());
+                btermmRepository.save(btermm);
+            }
+        }
+
+        return target.getItMngcNo();
     }
 
     /**
@@ -264,15 +304,22 @@ public class CostService {
      */
     @Transactional
     public void deleteCost(String itMngcNo) {
-        // 삭제되지 않은 항목 목록 조회
+        // 예산 신청 기간 검증 (기간 외 → 400 Bad Request)
+        codeService.validateBudgetPeriod();
+
         List<Bcostm> costs = costRepository.findByItMngcNoAndDelYn(itMngcNo, "N");
         if (costs.isEmpty()) {
             throw new IllegalArgumentException("Cost not found with id: " + itMngcNo);
         }
 
-        // 모든 이력에 대해 Soft Delete 처리 (DEL_YN='Y')
+        validateModifyPermission(costs.get(0).getFstEnrUsid(), costs.get(0).getBiceDpm());
+
         for (Bcostm cost : costs) {
-            cost.delete(); // BaseEntity.delete() 호출 → DEL_YN='Y'
+            cost.delete();
+            List<Btermm> terminals = btermmRepository.findByItMngcNoAndItMngcSno(cost.getItMngcNo(), cost.getItMngcSno());
+            for (Btermm t : terminals) {
+                t.delete();
+            }
         }
     }
 
@@ -290,12 +337,12 @@ public class CostService {
         return request.getItMngcNos().stream()
                 .map(itMngcNo -> {
                     try {
-                        return getCost(itMngcNo); // 개별 조회
+                        return getCost(itMngcNo);
                     } catch (IllegalArgumentException e) {
-                        return null; // 존재하지 않는 항목은 null로 처리
+                        return null;
                     }
                 })
-                .filter(response -> response != null) // null 제거 (존재하지 않는 항목 제외)
+                .filter(response -> response != null)
                 .toList();
     }
 
@@ -322,57 +369,234 @@ public class CostService {
      * @param itMngcSno 전산관리비일련번호
      */
     private void setApplicationInfo(CostDto.Response response, String itMngcNo, Integer itMngcSno) {
-        // BCOSTM 테이블 코드와 관리번호/순번으로 연결된 신청서 목록 조회 (최신순)
-        List<com.kdb.it.common.approval.entity.Cappla> capplas = capplaRepository
+        List<Cappla> capplas = capplaRepository
                 .findByOrcTbCdAndOrcPkVlAndOrcSnoVlOrderByApfRelSnoDesc("BCOSTM", itMngcNo, itMngcSno);
 
         if (!capplas.isEmpty()) {
-            com.kdb.it.common.approval.entity.Cappla cappla = capplas.get(0); // 가장 최신 신청서
-            response.setApfMngNo(cappla.getApfMngNo()); // 신청관리번호 설정
+            Cappla cappla = capplas.get(0);
+            response.setApfMngNo(cappla.getApfMngNo());
 
-            // 신청서 마스터에서 결재상태 및 상세 정보 조회
             capplmRepository.findById(cappla.getApfMngNo())
                     .ifPresent(capplm -> {
-                        response.setApfSts(capplm.getApfSts()); // 결재상태 설정 (하위 호환)
-
-                        // 결재자 목록 조회 (결재순서 오름차순)
-                        List<com.kdb.it.common.approval.entity.Cdecim> decisions = cdecimRepository
+                        response.setApfSts(capplm.getApfSts());
+                        List<Cdecim> decisions = cdecimRepository
                                 .findByDcdMngNoOrderByDcdSqnAsc(cappla.getApfMngNo());
-
-                        // ApplicationInfoDto 생성 및 설정
-                        response.setApplicationInfo(
-                                com.kdb.it.common.approval.dto.ApplicationInfoDto.fromEntities(capplm, decisions));
+                        response.setApplicationInfo(ApplicationInfoDto.fromEntities(capplm, decisions));
                     });
         }
     }
 
     /**
-     * 전산관리비 응답 DTO에 부서명/사용자명 설정 (내부 헬퍼 메서드)
+     * 전산관리비 응답 DTO에 자본예산/일반관리비 설정 (내부 헬퍼 메서드)
      *
      * <p>
-     * 추진부서 코드(pulDpm)로 TAAABB_CORGNI에서 부서명(BBR_NM)을 조회하고,
-     * 추진담당자 사번(pulCgpr)로 TAAABB_CUSERI에서 사용자명(USR_NM)을 조회하여
-     * 응답 DTO에 설정합니다.
+     * 비목코드(ioeC)를 공통코드에서 조회하여 코드값구분(cttTp) 기준으로 분류합니다.
      * </p>
+     * <ul>
+     * <li>자본예산: cttTp가 IOE_CPIT인 경우 → assetBg = itMngcBg, costBg = 0</li>
+     * <li>일반관리비: cttTp가 IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE인 경우 → assetBg = 0, costBg = itMngcBg</li>
+     * </ul>
      *
-     * <p>
-     * 코드 값이 null 또는 빈 문자열이면 조회를 건너뛰고,
-     * 조회 결과가 없으면 해당 이름 필드는 null로 유지됩니다.
-     * </p>
-     *
-     * @param response 코드명을 설정할 응답 DTO
+     * @param response 예산 구분을 설정할 응답 DTO
      */
-    private void setCodeNames(CostDto.Response response) {
-        // 추진부서 코드 → 추진부서명 (TAAABB_CORGNI)
-        if (response.getPulDpm() != null && !response.getPulDpm().isEmpty()) {
-            corgnIRepository.findById(response.getPulDpm())
-                    .ifPresent(org -> response.setPulDpmNm(org.getBbrNm()));
+    private void setBudgetCategory(CostDto.Response response) {
+        BigDecimal totalBg = response.getItMngcBg() != null ? response.getItMngcBg() : BigDecimal.ZERO;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        // 세부 자본예산 필드 초기화
+        response.setAssetBg(zero);
+        response.setDevBg(zero);
+        response.setMachBg(zero);
+        response.setIntanBg(zero);
+        response.setCostBg(zero);
+
+        if (response.getIoeC() == null || response.getIoeC().isEmpty()) {
+            return;
         }
 
-        // 추진담당자 사번 → 추진담당자명 (TAAABB_CUSERI)
-        if (response.getPulCgpr() != null && !response.getPulCgpr().isEmpty()) {
-            cuserIRepository.findById(response.getPulCgpr())
-                    .ifPresent(user -> response.setPulCgprNm(user.getUsrNm()));
+        Optional<Ccodem> codeOpt = ccodemRepository.findByCdIdWithValidDate(response.getIoeC(), null);
+
+        if (codeOpt.isPresent()) {
+            Ccodem code = codeOpt.get();
+            String cttTp = code.getCttTp();
+            if ("IOE_CPIT".equals(cttTp)) {
+                response.setAssetBg(totalBg);
+                // 코드설명(cdDes) 기준으로 세부 분류
+                String cdDes = code.getCdDes() != null ? code.getCdDes() : "";
+                switch (cdDes) {
+                    case "개발비" -> response.setDevBg(totalBg);
+                    case "기계장치" -> response.setMachBg(totalBg);
+                    case "기타무형자산" -> response.setIntanBg(totalBg);
+                }
+                return;
+            }
+            if (COST_CTT_TPS.contains(cttTp)) {
+                response.setCostBg(totalBg);
+                return;
+            }
         }
+    }
+
+    /**
+     * 전산관리비 목록 응답에 신청서 정보·코드명·예산 구분을 배치로 주입 (N+1 방지)
+     *
+     * <p>CAPPLA 1회, CAPPLM 1회, CDECIM 1회, CORGNI 1회, CUSERI 1회 — 총 5 쿼리로 처리합니다.</p>
+     */
+    private void enrichCostListBatch(List<Bcostm> costs, List<CostDto.Response> responses) {
+        if (costs.isEmpty()) return;
+
+        // --- 1. CAPPLA 배치 조회 ---
+        List<String> itMngcNos = costs.stream().map(Bcostm::getItMngcNo).distinct().collect(Collectors.toList());
+        List<Cappla> allCapplas = capplaRepository.findByOrcTbCdAndOrcPkVlInOrderByApfRelSnoDesc("BCOSTM", itMngcNos);
+
+        // itMngcNo+sno 복합키 → 최신 Cappla
+        Map<String, Cappla> latestCappla = new java.util.LinkedHashMap<>();
+        for (Cappla c : allCapplas) {
+            String key = c.getOrcPkVl() + "_" + c.getOrcSnoVl();
+            latestCappla.putIfAbsent(key, c);
+        }
+
+        // --- 2. CAPPLM 배치 조회 ---
+        List<String> apfMngNos = latestCappla.values().stream()
+                .map(Cappla::getApfMngNo).collect(Collectors.toList());
+        Map<String, Capplm> capplmMap = capplmRepository.findAllById(apfMngNos).stream()
+                .collect(Collectors.toMap(Capplm::getApfMngNo, m -> m));
+
+        // --- 3. CDECIM 배치 조회 ---
+        List<Cdecim> allDecisions = cdecimRepository.findByDcdMngNoInOrderByDcdSqnAsc(apfMngNos);
+        Map<String, List<Cdecim>> decisionMap = allDecisions.stream()
+                .collect(Collectors.groupingBy(Cdecim::getDcdMngNo));
+
+        // --- 4. 부서코드·사원번호 수집 ---
+        Set<String> orgCodes = new java.util.HashSet<>();
+        Set<String> userEnos = new java.util.HashSet<>();
+        for (CostDto.Response r : responses) {
+            if (r.getBiceDpm() != null && !r.getBiceDpm().isEmpty()) orgCodes.add(r.getBiceDpm());
+            if (r.getBiceTem() != null && !r.getBiceTem().isEmpty()) orgCodes.add(r.getBiceTem());
+            if (r.getCgpr() != null && !r.getCgpr().isEmpty()) userEnos.add(r.getCgpr());
+        }
+
+        // --- 5. 배치 조회 ---
+        Map<String, String> orgNameMap = corgnIRepository.findAllById(orgCodes).stream()
+                .collect(Collectors.toMap(CorgnI::getPrlmOgzCCone, CorgnI::getBbrNm));
+        Map<String, String> userNameMap = cuserIRepository.findAllById(userEnos).stream()
+                .collect(Collectors.toMap(CuserI::getEno, CuserI::getUsrNm));
+
+        // --- 6. 응답 DTO에 일괄 주입 ---
+        for (int i = 0; i < costs.size(); i++) {
+            Bcostm cost = costs.get(i);
+            CostDto.Response response = responses.get(i);
+
+            String key = cost.getItMngcNo() + "_" + cost.getItMngcSno();
+            Cappla cappla = latestCappla.get(key);
+            if (cappla != null) {
+                response.setApfMngNo(cappla.getApfMngNo());
+                Capplm capplm = capplmMap.get(cappla.getApfMngNo());
+                if (capplm != null) {
+                    response.setApfSts(capplm.getApfSts());
+                    List<Cdecim> decisions = decisionMap.getOrDefault(cappla.getApfMngNo(), List.of());
+                    response.setApplicationInfo(ApplicationInfoDto.fromEntities(capplm, decisions));
+                }
+            }
+
+            if (response.getBiceDpm() != null) response.setBiceDpmNm(orgNameMap.get(response.getBiceDpm()));
+            if (response.getBiceTem() != null) response.setBiceTemNm(orgNameMap.get(response.getBiceTem()));
+            if (response.getCgpr() != null) response.setCgprNm(userNameMap.get(response.getCgpr()));
+
+            setBudgetCategory(response);
+
+            if ("IT_MNGC_TP_002".equals(cost.getItMngcTp())) {
+                attachTerminals(response);
+            }
+        }
+    }
+
+    /** 응답 DTO에 신청서 정보, 코드명, 예산 구분을 일괄 설정 */
+    private void enrichResponse(CostDto.Response response, Bcostm cost) {
+        setApplicationInfo(response, cost.getItMngcNo(), cost.getItMngcSno());
+        setCodeNames(response);
+        setBudgetCategory(response);
+    }
+
+    /**
+     * 응답 DTO에 연관된 단말기 목록을 조회·변환하여 설정
+     */
+    private void attachTerminals(CostDto.Response response) {
+        List<Btermm> terminals = btermmRepository
+                .findByItMngcNoAndItMngcSnoAndDelYn(response.getItMngcNo(), response.getItMngcSno(), "N");
+        List<CostDto.TerminalDto> dtos = terminals.stream().map(CostDto.TerminalDto::fromEntity).toList();
+        setTerminalCodeNames(dtos);
+        response.setTerminals(dtos);
+    }
+
+    /** 부서코드→부서명, 사원번호→사용자명 조회 및 설정 */
+    private void setCodeNames(CostDto.Response response) {
+        if (response.getBiceDpm() != null && !response.getBiceDpm().isEmpty()) {
+            corgnIRepository.findById(response.getBiceDpm())
+                    .ifPresent(org -> response.setBiceDpmNm(org.getBbrNm()));
+        }
+        if (response.getBiceTem() != null && !response.getBiceTem().isEmpty()) {
+            corgnIRepository.findById(response.getBiceTem())
+                    .ifPresent(org -> response.setBiceTemNm(org.getBbrNm()));
+        }
+        if (response.getCgpr() != null && !response.getCgpr().isEmpty()) {
+            cuserIRepository.findById(response.getCgpr())
+                    .ifPresent(user -> response.setCgprNm(user.getUsrNm()));
+        }
+    }
+
+    /** 단말기 DTO 목록에 담당자명(cgprNm) 일괄 설정 (배치 조회로 N+1 방지) */
+    private void setTerminalCodeNames(List<CostDto.TerminalDto> terminalDtos) {
+        Set<String> enos = terminalDtos.stream()
+                .map(CostDto.TerminalDto::getCgpr)
+                .filter(cgpr -> cgpr != null && !cgpr.isEmpty())
+                .collect(Collectors.toSet());
+        if (enos.isEmpty()) return;
+
+        Map<String, String> nameMap = cuserIRepository.findByEnoIn(enos).stream()
+                .collect(Collectors.toMap(
+                        CuserI::getEno,
+                        CuserI::getUsrNm));
+        terminalDtos.forEach(tDto -> {
+            if (tDto.getCgpr() != null) {
+                tDto.setCgprNm(nameMap.get(tDto.getCgpr()));
+            }
+        });
+    }
+
+    /** 단말기관리번호 자동 생성 (형식: TER_{yyyy}_{seq:04d}) */
+    private String generateTmnMngNo() {
+        Long seq = btermmRepository.getNextSequenceValue();
+        String year = String.valueOf(LocalDate.now().getYear());
+        return String.format("TER_%s_%04d", year, seq);
+    }
+
+    /**
+     * 수정/삭제 권한 검증 (ProjectService.validateModifyPermission과 동일 규칙)
+     *
+     * <ol>
+     *   <li>시스템관리자(ITPAD001): 전체 허용</li>
+     *   <li>기획통할담당자(ITPZZ002): 소속 부서 리소스 허용</li>
+     *   <li>일반사용자(ITPZZ001): 본인 작성 리소스만 허용</li>
+     * </ol>
+     */
+    private void validateModifyPermission(String creatorEno, String resourceBbrC) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof CustomUserDetails currentUser)) {
+            throw new AccessDeniedException("인증 정보를 확인할 수 없습니다.");
+        }
+        if (currentUser.isAdmin()) {
+            return;
+        }
+        if (currentUser.isDeptManager()) {
+            if (currentUser.getBbrC() != null && currentUser.getBbrC().equals(resourceBbrC)) {
+                return;
+            }
+            throw new AccessDeniedException("소속 부서의 리소스만 수정할 수 있습니다.");
+        }
+        if (currentUser.getEno().equals(creatorEno)) {
+            return;
+        }
+        throw new AccessDeniedException("본인이 작성한 리소스만 수정할 수 있습니다.");
     }
 }

@@ -1,0 +1,316 @@
+package com.kdb.it.domain.budget.work.repository;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import com.kdb.it.common.approval.entity.QCappla;
+import com.kdb.it.common.approval.entity.QCapplm;
+import com.kdb.it.domain.budget.cost.entity.Bcostm;
+import com.kdb.it.domain.budget.cost.entity.QBcostm;
+import com.kdb.it.domain.budget.project.entity.Bitemm;
+import com.kdb.it.domain.budget.project.entity.QBitemm;
+import com.kdb.it.domain.budget.project.entity.QBprojm;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 예산(BBUGTM) 커스텀 리포지토리 QueryDSL 구현체
+ *
+ * <p>
+ * 결재완료 필터 + 비목 접두어 매칭 쿼리를 타입 안전하게 처리합니다.
+ * 기존 {@code CostRepositoryImpl}, {@code ProjectRepositoryImpl}의
+ * CAPPLA+CAPPLM 서브쿼리 패턴을 재사용합니다.
+ * </p>
+ *
+ * // Design Ref: §4.6 — QueryDSL 구현 (결재완료 필터 + 비목 매칭)
+ */
+@RequiredArgsConstructor
+public class BbugtmRepositoryImpl implements BbugtmRepositoryCustom {
+
+    /** QueryDSL 쿼리 팩토리 */
+    private final JPAQueryFactory queryFactory;
+
+    /**
+     * 결재완료 전산업무비(BCOSTM) 중 비목코드가 접두어와 매칭되는 목록 조회
+     *
+     * <p>
+     * [생성 SQL 예시]
+     * </p>
+     * <pre>{@code
+     * SELECT * FROM TAAABB_BCOSTM c
+     * WHERE c.DEL_YN = 'N' AND c.LST_YN = 'Y'
+     *   AND c.IOE_C LIKE '237%'
+     *   AND EXISTS (
+     *     SELECT 1 FROM TAAABB_CAPPLA ca
+     *     JOIN TAAABB_CAPPLM cm ON ca.APF_MNG_NO = cm.APF_MNG_NO
+     *     WHERE ca.ORC_TB_CD = 'BCOSTM'
+     *       AND ca.ORC_PK_VL = c.IT_MNGC_NO
+     *       AND ca.ORC_SNO_VL = c.IT_MNGC_SNO
+     *       AND cm.APF_STS = '결재완료'
+     *       AND ca.APF_REL_SNO = (
+     *         SELECT MAX(ca2.APF_REL_SNO) FROM TAAABB_CAPPLA ca2
+     *         WHERE ca2.ORC_TB_CD = 'BCOSTM'
+     *           AND ca2.ORC_PK_VL = c.IT_MNGC_NO
+     *           AND ca2.ORC_SNO_VL = c.IT_MNGC_SNO
+     *       )
+     *   )
+     * }</pre>
+     */
+    @Override
+    public List<Bcostm> findApprovedCostsByPrefix(String prefix, String bgYy) {
+        QBcostm bcostm = QBcostm.bcostm;
+        QCappla cappla = new QCappla("cappla");
+        QCappla cappla2 = new QCappla("cappla2");
+        QCapplm capplm = QCapplm.capplm;
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 기본 조건: 삭제되지 않은 최종 레코드만
+        builder.and(bcostm.delYn.eq("N"));
+        builder.and(bcostm.lstYn.eq("Y"));
+
+        // 비목코드 접두어 매칭
+        builder.and(bcostm.ioeC.startsWith(prefix));
+
+        // 예산연도 필터
+        builder.and(bcostm.bgYy.eq(bgYy));
+
+        // 결재완료 서브쿼리 (CostRepositoryImpl 패턴 동일)
+        builder.and(
+                JPAExpressions.selectOne()
+                        .from(cappla, capplm)
+                        .where(
+                                cappla.apfMngNo.eq(capplm.apfMngNo),
+                                cappla.orcTbCd.eq("BCOSTM"),
+                                cappla.orcPkVl.eq(bcostm.itMngcNo),
+                                cappla.orcSnoVl.eq(bcostm.itMngcSno),
+                                capplm.apfSts.eq("결재완료"),
+                                cappla.apfRelSno.eq(
+                                        JPAExpressions.select(cappla2.apfRelSno.max())
+                                                .from(cappla2)
+                                                .where(
+                                                        cappla2.orcTbCd.eq("BCOSTM"),
+                                                        cappla2.orcPkVl.eq(bcostm.itMngcNo),
+                                                        cappla2.orcSnoVl.eq(bcostm.itMngcSno))))
+                        .exists());
+
+        return queryFactory
+                .selectFrom(bcostm)
+                .where(builder)
+                .fetch();
+    }
+
+    /**
+     * 결재완료 품목(BITEMM) 중 품목구분이 접두어와 매칭되는 목록 조회
+     *
+     * <p>
+     * BITEMM은 BPROJM의 하위 테이블이므로, BPROJM 기준으로 결재완료를 확인한 뒤
+     * 해당 BPROJM에 속하는 BITEMM 중 GCL_DTT가 접두어와 매칭되는 것을 반환합니다.
+     * </p>
+     *
+     * <p>
+     * [생성 SQL 예시]
+     * </p>
+     * <pre>{@code
+     * SELECT i.* FROM TAAABB_BITEMM i
+     * WHERE i.DEL_YN = 'N' AND i.LST_YN = 'Y'
+     *   AND i.GCL_DTT LIKE '237%'
+     *   AND EXISTS (
+     *     SELECT 1 FROM TAAABB_BPROJM p
+     *     WHERE p.PRJ_MNG_NO = i.PRJ_MNG_NO AND p.PRJ_SNO = i.PRJ_SNO
+     *       AND p.DEL_YN = 'N' AND p.LST_YN = 'Y'
+     *       AND EXISTS (
+     *         SELECT 1 FROM TAAABB_CAPPLA ca
+     *         JOIN TAAABB_CAPPLM cm ON ca.APF_MNG_NO = cm.APF_MNG_NO
+     *         WHERE ca.ORC_TB_CD = 'BPROJM'
+     *           AND ca.ORC_PK_VL = p.PRJ_MNG_NO
+     *           AND ca.ORC_SNO_VL = p.PRJ_SNO
+     *           AND cm.APF_STS = '결재완료'
+     *           AND ca.APF_REL_SNO = (
+     *             SELECT MAX(ca2.APF_REL_SNO) FROM TAAABB_CAPPLA ca2
+     *             WHERE ca2.ORC_TB_CD = 'BPROJM'
+     *               AND ca2.ORC_PK_VL = p.PRJ_MNG_NO
+     *               AND ca2.ORC_SNO_VL = p.PRJ_SNO
+     *           )
+     *       )
+     *   )
+     * }</pre>
+     */
+    @Override
+    public List<Bitemm> findApprovedItemsByPrefix(String prefix, String bgYy) {
+        QBitemm bitemm = QBitemm.bitemm;
+        QBprojm bprojm = QBprojm.bprojm;
+        QCappla cappla = new QCappla("cappla");
+        QCappla cappla2 = new QCappla("cappla2");
+        QCapplm capplm = QCapplm.capplm;
+
+        // BPROJM 결재완료 서브쿼리
+        BooleanBuilder projApprovalBuilder = new BooleanBuilder();
+        projApprovalBuilder.and(
+                JPAExpressions.selectOne()
+                        .from(cappla, capplm)
+                        .where(
+                                cappla.apfMngNo.eq(capplm.apfMngNo),
+                                cappla.orcTbCd.eq("BPROJM"),
+                                cappla.orcPkVl.eq(bprojm.prjMngNo),
+                                cappla.orcSnoVl.eq(bprojm.prjSno),
+                                capplm.apfSts.eq("결재완료"),
+                                cappla.apfRelSno.eq(
+                                        JPAExpressions.select(cappla2.apfRelSno.max())
+                                                .from(cappla2)
+                                                .where(
+                                                        cappla2.orcTbCd.eq("BPROJM"),
+                                                        cappla2.orcPkVl.eq(bprojm.prjMngNo),
+                                                        cappla2.orcSnoVl.eq(bprojm.prjSno))))
+                        .exists());
+
+        // BITEMM 조건: 삭제되지 않은 최종 레코드 + 품목구분 접두어 매칭
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(bitemm.delYn.eq("N"));
+        builder.and(bitemm.lstYn.eq("Y"));
+        builder.and(bitemm.gclDtt.startsWith(prefix));
+
+        // BITEMM의 상위 BPROJM이 결재완료 상태 + 예산연도 일치 확인
+        builder.and(
+                JPAExpressions.selectOne()
+                        .from(bprojm)
+                        .where(
+                                bprojm.prjMngNo.eq(bitemm.prjMngNo),
+                                bprojm.prjSno.eq(bitemm.prjSno),
+                                bprojm.delYn.eq("N"),
+                                bprojm.lstYn.eq("Y"),
+                                bprojm.bgYy.eq(bgYy),
+                                projApprovalBuilder)
+                        .exists());
+
+        return queryFactory
+                .selectFrom(bitemm)
+                .where(builder)
+                .fetch();
+    }
+
+    /**
+     * 비목 접두어별 결재완료 요청금액 합계 조회
+     *
+     * <p>
+     * BCOSTM의 IT_MNGC_BG 합계와 BITEMM의 GCL_AMT 합계를 더합니다.
+     * </p>
+     */
+    @Override
+    public BigDecimal sumApprovedAmountByPrefix(String prefix, String bgYy) {
+        // 결재완료 BCOSTM 금액 합계
+        BigDecimal costSum = sumApprovedCostAmountByPrefix(prefix, bgYy);
+        // 결재완료 BITEMM 금액 합계
+        BigDecimal itemSum = sumApprovedItemAmountByPrefix(prefix, bgYy);
+
+        BigDecimal total = BigDecimal.ZERO;
+        if (costSum != null) {
+            total = total.add(costSum);
+        }
+        if (itemSum != null) {
+            total = total.add(itemSum);
+        }
+        return total;
+    }
+
+    /**
+     * 결재완료 BCOSTM의 비목 접두어별 금액 합계
+     */
+    private BigDecimal sumApprovedCostAmountByPrefix(String prefix, String bgYy) {
+        QBcostm bcostm = QBcostm.bcostm;
+        QCappla cappla = new QCappla("cappla");
+        QCappla cappla2 = new QCappla("cappla2");
+        QCapplm capplm = QCapplm.capplm;
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(bcostm.delYn.eq("N"));
+        builder.and(bcostm.lstYn.eq("Y"));
+        builder.and(bcostm.ioeC.startsWith(prefix));
+        builder.and(bcostm.bgYy.eq(bgYy));
+
+        // 결재완료 서브쿼리
+        builder.and(
+                JPAExpressions.selectOne()
+                        .from(cappla, capplm)
+                        .where(
+                                cappla.apfMngNo.eq(capplm.apfMngNo),
+                                cappla.orcTbCd.eq("BCOSTM"),
+                                cappla.orcPkVl.eq(bcostm.itMngcNo),
+                                cappla.orcSnoVl.eq(bcostm.itMngcSno),
+                                capplm.apfSts.eq("결재완료"),
+                                cappla.apfRelSno.eq(
+                                        JPAExpressions.select(cappla2.apfRelSno.max())
+                                                .from(cappla2)
+                                                .where(
+                                                        cappla2.orcTbCd.eq("BCOSTM"),
+                                                        cappla2.orcPkVl.eq(bcostm.itMngcNo),
+                                                        cappla2.orcSnoVl.eq(bcostm.itMngcSno))))
+                        .exists());
+
+        return queryFactory
+                .select(bcostm.itMngcBg.sum())
+                .from(bcostm)
+                .where(builder)
+                .fetchOne();
+    }
+
+    /**
+     * 결재완료 BITEMM의 비목 접두어별 금액 합계 (환율 적용)
+     *
+     * <p>
+     * SUM(GCL_AMT * COALESCE(XCR, 1)) — 외화 품목은 환율을 곱하여 원화로 변환합니다.
+     * </p>
+     */
+    private BigDecimal sumApprovedItemAmountByPrefix(String prefix, String bgYy) {
+        QBitemm bitemm = QBitemm.bitemm;
+        QBprojm bprojm = QBprojm.bprojm;
+        QCappla cappla = new QCappla("cappla");
+        QCappla cappla2 = new QCappla("cappla2");
+        QCapplm capplm = QCapplm.capplm;
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(bitemm.delYn.eq("N"));
+        builder.and(bitemm.lstYn.eq("Y"));
+        builder.and(bitemm.gclDtt.startsWith(prefix));
+
+        // BITEMM의 상위 BPROJM 결재완료 + 예산연도 서브쿼리
+        builder.and(
+                JPAExpressions.selectOne()
+                        .from(bprojm)
+                        .where(
+                                bprojm.prjMngNo.eq(bitemm.prjMngNo),
+                                bprojm.prjSno.eq(bitemm.prjSno),
+                                bprojm.delYn.eq("N"),
+                                bprojm.lstYn.eq("Y"),
+                                bprojm.bgYy.eq(bgYy),
+                                JPAExpressions.selectOne()
+                                        .from(cappla, capplm)
+                                        .where(
+                                                cappla.apfMngNo.eq(capplm.apfMngNo),
+                                                cappla.orcTbCd.eq("BPROJM"),
+                                                cappla.orcPkVl.eq(bprojm.prjMngNo),
+                                                cappla.orcSnoVl.eq(bprojm.prjSno),
+                                                capplm.apfSts.eq("결재완료"),
+                                                cappla.apfRelSno.eq(
+                                                        JPAExpressions.select(cappla2.apfRelSno.max())
+                                                                .from(cappla2)
+                                                                .where(
+                                                                        cappla2.orcTbCd.eq("BPROJM"),
+                                                                        cappla2.orcPkVl.eq(bprojm.prjMngNo),
+                                                                        cappla2.orcSnoVl.eq(bprojm.prjSno))))
+                                        .exists())
+                        .exists());
+
+        // SUM(GCL_AMT * COALESCE(XCR, 1)) — 환율 적용된 원화 금액 합산
+        return queryFactory
+                .select(Expressions.numberTemplate(BigDecimal.class,
+                        "SUM({0} * COALESCE({1}, 1))", bitemm.gclAmt, bitemm.xcr))
+                .from(bitemm)
+                .where(builder)
+                .fetchOne();
+    }
+}

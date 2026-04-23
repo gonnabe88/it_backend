@@ -47,7 +47,7 @@ public class CostRepositoryImpl implements CostRepositoryCustom {
      * [처리 순서]
      * 1. DEL_YN='N' 기본 조건 설정
      * 2. apfSts 조건 분기 처리 (none / 특정값 / null)
-     * 3. 나머지 단순 필드 조건 추가 (cttTp, pulDpm, infPrtYn)
+     * 3. 나머지 단순 필드 조건 추가 (biceDpm, biceTem, infPrtYn)
      * 4. BooleanBuilder로 조합된 WHERE 절로 쿼리 실행
      * </p>
      *
@@ -139,17 +139,21 @@ public class CostRepositoryImpl implements CostRepositoryCustom {
 
         // === 단순 필드 조건 처리 (null이면 해당 조건 미적용) ===
 
-        // 계약구분 필터
-        if (condition.getCttTp() != null && !condition.getCttTp().isBlank()) {
-            builder.and(bcostm.cttTp.eq(condition.getCttTp()));
+        // 연관부서 필터
+        if (condition.getBiceDpm() != null && !condition.getBiceDpm().isBlank()) {
+            builder.and(bcostm.biceDpm.eq(condition.getBiceDpm()));
         }
-        // 추진부서 필터
-        if (condition.getPulDpm() != null && !condition.getPulDpm().isBlank()) {
-            builder.and(bcostm.pulDpm.eq(condition.getPulDpm()));
+        // 연관팀 필터
+        if (condition.getBiceTem() != null && !condition.getBiceTem().isBlank()) {
+            builder.and(bcostm.biceTem.eq(condition.getBiceTem()));
         }
         // 정보보호여부 필터
         if (condition.getInfPrtYn() != null && !condition.getInfPrtYn().isBlank()) {
             builder.and(bcostm.infPrtYn.eq(condition.getInfPrtYn()));
+        }
+        // 예산연도 필터
+        if (condition.getBgYy() != null && !condition.getBgYy().isBlank()) {
+            builder.and(bcostm.bgYy.eq(condition.getBgYy()));
         }
 
         return queryFactory

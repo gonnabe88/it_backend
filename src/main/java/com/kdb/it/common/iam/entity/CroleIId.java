@@ -25,10 +25,10 @@ import java.io.Serializable;
 public class CroleIId implements Serializable {
 
     /** 권한ID: 자격등급 식별자 (예: ITPZZ001, ITPZZ002, ITPAD001) */
-    @Column(name = "ATH_ID", length = 32)
+    @Column(name = "ATH_ID", length = 32, comment = "권한ID")
     private String athId;
 
     /** 사원번호: 자격등급을 부여받은 사용자의 사번 */
-    @Column(name = "ENO", length = 32)
+    @Column(name = "ENO", length = 32, comment = "사원번호")
     private String eno;
 }

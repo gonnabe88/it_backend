@@ -30,7 +30,7 @@ import com.kdb.it.domain.entity.BaseEntity;
  * </ul>
  */
 @Entity // JPA 엔티티로 등록
-@Table(name = "TAAABB_CUSERI") // 매핑할 DB 테이블명
+@Table(name = "TAAABB_CUSERI", comment = "사용자(직원) 정보") // 매핑할 DB 테이블명
 @Getter // 모든 필드의 getter 자동 생성 (Lombok)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // protected 기본 생성자 (JPA 요구사항)
 @AllArgsConstructor // 전체 필드 생성자 자동 생성
@@ -42,7 +42,7 @@ public class CuserI extends BaseEntity {
      * 로그인 ID로도 사용되며, JWT 토큰의 subject에 저장됩니다.
      */
     @Id
-    @Column(name = "ENO", nullable = false, length = 32)
+    @Column(name = "ENO", nullable = false, length = 32, comment = "사원번호")
     private String eno;
 
     /**
@@ -50,14 +50,14 @@ public class CuserI extends BaseEntity {
      * {@link CustomPasswordEncoder}로 암호화하여 저장합니다.
      * 최대 64자 (SHA-256 + Base64 인코딩 결과)
      */
-    @Column(name = "USR_ECY_PWD", length = 64)
+    @Column(name = "USR_ECY_PWD", length = 64, comment = "사용자암호화패스워드")
     private String usrEcyPwd;
 
     /**
      * 부서코드: 직원이 소속된 부점의 코드
      * {@link CorgnI}의 {@code PRLM_OGZ_C_CONE}과 조인 키로 사용
      */
-    @Column(name = "BBR_C", length = 3)
+    @Column(name = "BBR_C", length = 3, comment = "부서코드")
     private String bbrC;
 
     /**
@@ -121,51 +121,51 @@ public class CuserI extends BaseEntity {
     }
 
     /** 회사번호: 사내 직통 전화번호 */
-    @Column(name = "CADR_TPN", length = 20)
+    @Column(name = "CADR_TPN", length = 20, comment = "회사번호")
     private String cadrTpn;
 
     /** 상위조직코드: 소속 부점의 상위 조직 코드 */
-    @Column(name = "DTC_BBR_C", length = 3)
+    @Column(name = "DTC_BBR_C", length = 3, comment = "상위조직코드")
     private String dtcBbrC;
 
     /** 상세직무내용: 직원의 담당 업무 상세 설명 (최대 2000자) */
-    @Column(name = "DTS_DTL_CONE", length = 2000)
+    @Column(name = "DTS_DTL_CONE", length = 2000, comment = "상세직무내용")
     private String dtsDtlCone;
 
     /** 전자우편주소: 직원 이메일 주소 (최대 200자) */
-    @Column(name = "ETR_MIL_ADDR_NM", length = 200)
+    @Column(name = "ETR_MIL_ADDR_NM", length = 200, comment = "전자우편주소")
     private String etrMilAddrNm;
 
     /** 내선번호: 사내 내선 전화번호 */
-    @Column(name = "INLE_NO", length = 20)
+    @Column(name = "INLE_NO", length = 20, comment = "내선번호")
     private String inleNo;
 
     /** 직위: 직위 코드 (최대 5자) */
-    @Column(name = "PT_C", length = 5)
+    @Column(name = "PT_C", length = 5, comment = "직위")
     private String ptC;
 
     /** 직위명: 직위 명칭 (예: 팀장, 차장, 과장, 대리, 주임) */
-    @Column(name = "PT_C_NM", length = 200)
+    @Column(name = "PT_C_NM", length = 200, comment = "직위명")
     private String ptCNm;
 
     /** 팀코드: 소속 팀의 코드 (최대 5자) */
-    @Column(name = "TEM_C", length = 5)
+    @Column(name = "TEM_C", length = 5, comment = "팀코드")
     private String temC;
 
     /** 팀명: 소속 팀의 명칭 (최대 100자) */
-    @Column(name = "TEM_NM", length = 100)
+    @Column(name = "TEM_NM", length = 100, comment = "팀명")
     private String temNm;
 
     /** 사용자명: 직원 한글 이름 (최대 100자) */
-    @Column(name = "USR_NM", length = 100)
+    @Column(name = "USR_NM", length = 100, comment = "사용자명")
     private String usrNm;
 
     /** 사용자영문명: 직원 영문 이름 (최대 100자) */
-    @Column(name = "USR_WREN_NM", length = 100)
+    @Column(name = "USR_WREN_NM", length = 100, comment = "사용자영문명")
     private String usrWrenNm;
 
     /** 휴대폰번호: 직원 개인 휴대폰 번호 (최대 100자) */
-    @Column(name = "CPN_TPN", length = 100)
+    @Column(name = "CPN_TPN", length = 100, comment = "휴대폰번호")
     private String cpnTpn;
 
     /**
@@ -180,6 +180,29 @@ public class CuserI extends BaseEntity {
     public void prePersist() {
         super.prePersist();
         // CuserI 엔티티 고유의 추가 초기화 로직 (필요 시 구현)
+    }
+
+    /**
+     * 사용자 기본정보 업데이트 (Dirty Checking 활용)
+     * 비밀번호는 별도 updatePassword()로 처리합니다.
+     *
+     * @param usrNm        사용자명
+     * @param ptCNm        직위명
+     * @param temC         팀코드
+     * @param bbrC         부서코드
+     * @param etrMilAddrNm 이메일
+     * @param inleNo       내선번호
+     * @param cpnTpn       휴대폰번호
+     */
+    public void update(String usrNm, String ptCNm, String temC, String bbrC,
+                       String etrMilAddrNm, String inleNo, String cpnTpn) {
+        this.usrNm        = usrNm;
+        this.ptCNm        = ptCNm;
+        this.temC         = temC;
+        this.bbrC         = bbrC;
+        this.etrMilAddrNm = etrMilAddrNm;
+        this.inleNo       = inleNo;
+        this.cpnTpn       = cpnTpn;
     }
 
     /**

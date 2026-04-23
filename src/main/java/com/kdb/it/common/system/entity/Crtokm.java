@@ -86,19 +86,4 @@ public class Crtokm extends BaseEntity {
         return LocalDateTime.now().isAfter(endDtm);
     }
 
-    /**
-     * 토큰 갱신 메서드
-     *
-     * <p>
-     * 재로그인 없이 Refresh Token을 갱신할 때 사용합니다.
-     * 토큰 값과 종료일시를 새 값으로 업데이트합니다.
-     * </p>
-     *
-     * @param tok    새로운 Refresh Token 문자열
-     * @param endDtm 새로운 종료일시
-     */
-    public void updateTok(String tok, LocalDateTime endDtm) {
-        this.tok = tok;
-        this.endDtm = endDtm;
-    }
 }

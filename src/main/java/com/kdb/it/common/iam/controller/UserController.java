@@ -72,4 +72,22 @@ public class UserController {
     public ResponseEntity<UserDto.DetailResponse> getUser(@PathVariable("eno") String eno) {
         return ResponseEntity.ok(userService.getUser(eno));
     }
+
+    /**
+     * 사용자 이름 검색 (자동완성용)
+     *
+     * <p>사용자명(USR_NM)에 검색어를 포함하는 사용자 목록을 반환합니다.
+     * 부서코드(orgCode)를 추가로 전달하면 해당 부서 소속만 필터링합니다.</p>
+     *
+     * @param keyword 검색할 사용자명 (부분 일치)
+     * @param orgCode 부서코드 (선택, 미입력 시 전체 부서 대상)
+     * @return HTTP 200 + 검색 결과 사용자 목록
+     */
+    @GetMapping("/search")
+    @Operation(summary = "사용자 이름 검색", description = "사용자명으로 검색합니다. orgCode 입력 시 해당 부서만 필터링합니다.")
+    public ResponseEntity<List<UserDto.ListResponse>> searchUsers(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "orgCode", required = false) String orgCode) {
+        return ResponseEntity.ok(userService.searchUsersByName(keyword, orgCode));
+    }
 }

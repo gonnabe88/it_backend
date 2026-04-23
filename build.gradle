@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.0.1'
+	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.asciidoctor.jvm.convert' version '4.0.5'
 }
@@ -25,6 +25,26 @@ repositories {
 	mavenCentral()
 }
 
+// Snyk 취약점 대응 — 전이 의존성 강제 버전 업그레이드
+configurations.all {
+	resolutionStrategy.eachDependency { details ->
+		// com.fasterxml.jackson.core: 강제 버전 지정 제거 — Gradle 자연 해소에 위임
+		// tools.jackson:jackson-bom:3.1.0이 선언한 버전(2.19+)이 JsonSerializeAs 등 신규 클래스를 포함
+		// 강제 다운그레이드 시 tools.jackson.databind:3.1.0 런타임 NoClassDefFoundError 발생
+		// jjwt-jackson 2.12.7.1은 swagger-core가 요구하는 상위 버전으로 자동 업그레이드됨 (Snyk 대응)
+		// logback 1.5.22 → 1.5.32 (Low 1건)
+		if (details.requested.group == 'ch.qos.logback') {
+			details.useVersion '1.5.32'
+			details.because 'Snyk SNYK-JAVA-CHQOSLOGBACK-15062482 취약점 대응'
+		}
+		// spring-web/webmvc 7.0.1 → 7.0.6 (High 1건 + Low 2건, Spring Boot BOM 미적용 시 fallback)
+		if (details.requested.group == 'org.springframework') {
+			details.useVersion '7.0.6'
+			details.because 'Snyk SNYK-JAVA-ORGSPRINGFRAMEWORK-* 취약점 대응 (7.0.6 안전 버전)'
+		}
+	}
+}
+
 ext {
 	set('snippetsDir', file("build/generated-snippets"))
 }
@@ -34,20 +54,19 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	
 	// HTML 새니타이징 (XSS 서버 측 방어)
 	implementation 'org.jsoup:jsoup:1.18.3'
 
 	// JWT
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 	
-	// QueryDSL
-	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
-	annotationProcessor 'com.querydsl:querydsl-apt:5.0.0:jakarta'
+	// QueryDSL — 5.1.0으로 업그레이드 (Snyk SNYK-JAVA-COMQUERYDSL-8400287 SQL Injection 대응)
+	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+	annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
@@ -61,7 +80,6 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.1'
 	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

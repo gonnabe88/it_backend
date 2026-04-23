@@ -26,7 +26,7 @@ import com.kdb.it.domain.entity.BaseEntity;
  * </ul>
  */
 @Entity
-@Table(name = "TAAABB_CROLEI")
+@Table(name = "TAAABB_CROLEI", comment = "역할관리(사용자↔자격등급 매핑)")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -41,7 +41,7 @@ public class CroleI extends BaseEntity {
     private CroleIId id;
 
     /** 사용여부: 'Y'=사용, 'N'=미사용 (기본값: 'Y') */
-    @Column(name = "USE_YN", length = 1)
+    @Column(name = "USE_YN", length = 1, comment = "사용여부")
     private String useYn;
 
     // BaseEntity: DEL_YN, GUID, GUID_PRG_SNO, FST_ENR_DTM, FST_ENR_USID, LST_CHG_DTM, LST_CHG_USID 제공
@@ -66,5 +66,14 @@ public class CroleI extends BaseEntity {
      */
     public String getEno() {
         return id.getEno();
+    }
+
+    /**
+     * 사용여부 업데이트 (Dirty Checking 활용)
+     *
+     * @param useYn 사용여부 ('Y'=사용, 'N'=미사용)
+     */
+    public void updateUseYn(String useYn) {
+        this.useYn = useYn;
     }
 }

@@ -59,6 +59,10 @@ public class PlanDto {
         /** 대상 프로젝트관리번호 목록 */
         @Schema(description = "대상 프로젝트관리번호 목록")
         private List<String> prjMngNos;
+
+        /** 대상 전산업무비관리번호 목록 */
+        @Schema(description = "대상 전산업무비관리번호 목록")
+        private List<String> itMngcNos;
     }
 
     /**

@@ -56,6 +56,24 @@ public class ApplicationController {
     }
 
     /**
+     * 미상신(결재 신청 이력 없음) 건수 조회
+     *
+     * <p>정보화사업(BPROJM)과 전산업무비(BCOSTM) 중 결재 신청이 없는 건수를
+     * 각각 집계하여 반환합니다. 사이드바의 [결재 상신] 메뉴 배지 등
+     * 건수 정보만 필요한 위치에서 사용합니다.</p>
+     *
+     * <p>전체 목록을 반환하지 않아 데이터 전송량과 프론트 처리 비용이 최소화됩니다.</p>
+     *
+     * @return HTTP 200 + 미상신 건수 응답 ({@link ApplicationDto.PendingCountResponse})
+     */
+    @GetMapping("/pending-count")
+    @Operation(summary = "미상신 건수 조회",
+            description = "결재 상신 대기 중인 정보화사업/전산업무비 건수를 집계합니다. 사이드바 배지용.")
+    public ResponseEntity<ApplicationDto.PendingCountResponse> getPendingCount() {
+        return ResponseEntity.ok(applicationService.getPendingCount());
+    }
+
+    /**
      * 특정 신청서 단건 조회
      *
      * <p>신청서 관리번호(APF_MNG_NO)로 신청서 상세 정보와 결재자 목록을 조회합니다.</p>

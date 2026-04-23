@@ -20,11 +20,12 @@ import org.jsoup.safety.Safelist;
  * 허용 태그 목록:
  * </p>
  * <ul>
- * <li>블록: {@code p(style), blockquote, h1~h6(style,id), pre, ol, ul(data-type), li(data-type,data-checked), div}</li>
- * <li>인라인: {@code strong, em, u, s, br, span, code, mark, sub, sup}</li>
+ * <li>블록: {@code p(style), blockquote, h1~h6(style,id), pre, ol, ul(data-type), li(data-type,data-checked), div(data-type,data-latex,class)}</li>
+ * <li>인라인: {@code strong, em, u, s, br, span(data-type,data-file-id,data-file-name,data-file-size,data-latex), code, mark, sub, sup}</li>
  * <li>테이블: {@code table, thead, tbody, tfoot, tr, th, td, colgroup, col}</li>
  * <li>체크리스트: {@code label, input(type,checked)}</li>
  * <li>미디어/링크: {@code a(href,target,rel), img(src,alt,style,data-scene,data-align,width,height), figure(data-type)}</li>
+ * <li>수식: {@code math-field(read-only,class,contenteditable,tabindex,style)}</li>
  * </ul>
  */
 public final class HtmlSanitizer {
@@ -56,6 +57,8 @@ public final class HtmlSanitizer {
                 // pre/code: class 허용 (FR-03: CodeBlockLowlight가 language-xxx class 주입)
                 .addAttributes("pre", "class")
                 .addAttributes("code", "class")
+                // div: data-type, data-latex, class 허용 (FR-07: BlockMathExtension 블록 수식 보존)
+                .addAttributes("div", "data-type", "data-latex", "class")
                 // p: style 허용 (FR-01: 텍스트 정렬 style="text-align:center" 보존)
                 .addAttributes("p", "style")
                 // h1~h6: style 허용 (정렬), id 허용 (목차 앵커)
@@ -74,7 +77,13 @@ public final class HtmlSanitizer {
                 .addTags("strong", "em", "u", "s", "span", "code", "mark", "sub", "sup")
                 .addAttributes("mark", "style", "data-color")
                 // span: style, class 속성 허용 (글자색·폰트패밀리 등 서식)
-                .addAttributes("span", "style", "class")
+                // data-type, data-file-id, data-file-name, data-file-size: 첨부파일 노드 (FR-05) 보존
+                // data-latex: 인라인 수식 LaTeX 내용 보존 (FR-07: InlineMathExtension)
+                // data-comment-id: 사전협의 인라인 코멘트 마크 ID 보존
+                // data-resolved: 사전협의 인라인 코멘트 해결 여부 보존
+                .addAttributes("span", "style", "class",
+                        "data-type", "data-file-id", "data-file-name", "data-file-size",
+                        "data-latex", "data-comment-id", "data-resolved")
 
                 // ── 체크리스트 요소 (FR-02: Tiptap TaskItem 구조) ──
                 // <label><input type="checkbox"></label><div>내용</div>
@@ -104,13 +113,17 @@ public final class HtmlSanitizer {
 
                 // ── Excalidraw / 미디어 래퍼 ──
                 .addTags("figure")
-                .addAttributes("figure", "data-type", "data-scene", "class", "style")
+                .addAttributes("figure", "data-type", "data-scene", "data-attachment-id", "class", "style")
 
                 // ── 이미지 ──
                 // style 허용 (ResizableImage width), data-align 허용 (정렬)
                 .addTags("img")
                 .addAttributes("img", "src", "alt", "style", "data-scene", "data-align", "width", "height")
-                .addProtocols("img", "src", "http", "https", "data");
+                .addProtocols("img", "src", "http", "https", "data")
+
+                // ── 수식 (MathLive) ──
+                .addTags("math-field")
+                .addAttributes("math-field", "read-only", "class", "contenteditable", "tabindex", "style");
     }
 
     /**

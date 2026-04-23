@@ -92,6 +92,19 @@ public class CodeRepositoryImpl implements CodeRepositoryCustom {
     }
 
     /**
+     * 논리 삭제되지 않은 전체 공통코드를 코드순서 오름차순(null 마지막)으로 조회
+     *
+     * <p>관리자 목록 화면용 — 유효기간 필터 없이 DEL_YN='N'인 모든 코드를 반환합니다.</p>
+     */
+    public List<Ccodem> findAllActive() {
+        QCcodem qCcodem = QCcodem.ccodem;
+        return queryFactory.selectFrom(qCcodem)
+                .where(qCcodem.delYn.eq("N"))
+                .orderBy(qCcodem.cdSqn.asc().nullsLast(), qCcodem.cdId.asc())
+                .fetch();
+    }
+
+    /**
      * 기준일자(effectiveDate)가 시작일자(sttDt)와 종료일자(endDt) 사이에 존재하는지 검증
      * 각 필드가 null일 경우 검증 패스.
      */

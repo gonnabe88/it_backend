@@ -175,6 +175,10 @@ public class AuthDto {
         /** 소속 부서코드: 권한 범위 결정에 사용 */
         @Schema(description = "소속 부서코드")
         private String bbrC;
+
+        /** 소속 팀코드 */
+        @Schema(description = "소속 팀코드")
+        private String temC;
     }
 
     /**

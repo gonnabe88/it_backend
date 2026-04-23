@@ -45,7 +45,7 @@ public class ProjectDto {
      *
      * <p>
      * {@code prjMngNo}가 null 또는 빈 문자열이면 서비스에서 Oracle 시퀀스로 자동 채번합니다.
-     * 형식: {@code PRJ-{prjYy}-{seq:04d}} (예: "PRJ-2026-0001")
+     * 형식: {@code PRJ-{bgYy}-{seq:04d}} (예: "PRJ-2026-0001")
      * </p>
      *
      * <p>
@@ -62,7 +62,7 @@ public class ProjectDto {
         /**
          * 프로젝트관리번호 (PRJ_MNG_NO, PK)
          * <p>
-         * null 또는 빈 문자열이면 자동 채번됩니다. 형식: {@code PRJ-{prjYy}-{seq:04d}}
+         * null 또는 빈 문자열이면 자동 채번됩니다. 형식: {@code PRJ-{bgYy}-{seq:04d}}
          * </p>
          */
         @Schema(description = "프로젝트관리번호")
@@ -128,10 +128,6 @@ public class ProjectDto {
         @Schema(description = "사업설명")
         private String prjDes;
 
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
-
         /** 현황 (현재 사업 진행 현황) */
         @Schema(description = "현황")
         private String saf;
@@ -194,7 +190,7 @@ public class ProjectDto {
 
         /** 사업연도 (YYYY 형식, 예: "2026") */
         @Schema(description = "사업연도")
-        private String prjYy;
+        private String bgYy;
 
         /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
         @Schema(description = "경상여부")
@@ -202,7 +198,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /**
          * 품목 목록
@@ -242,7 +238,6 @@ public class ProjectDto {
                     .itDpmTlr(itDpmTlr) // IT부서담당팀장
                     .edrt(edrt) // 전결권
                     .prjDes(prjDes) // 사업설명
-                    .pulRsn(pulRsn) // 추진사유
                     .saf(saf) // 현황
                     .ncs(ncs) // 필요성
                     .xptEff(xptEff) // 기대효과
@@ -259,9 +254,9 @@ public class ProjectDto {
                     .lstYn("Y") // 최종여부: 신규 등록은 항상 최신 레코드
                     .prjPulPtt(prjPulPtt) // 프로젝트추진가능성
                     .prjSts(prjSts) // 프로젝트상태
-                    .prjYy(prjYy) // 사업연도
+                    .bgYy(bgYy) // 사업연도
                     .ornYn(ornYn) // 경상여부
-                    .prjDtt(prjDtt) // 사업구분
+                    .pulDtt(pulDtt) // 사업구분
                     .build();
         }
     }
@@ -346,10 +341,6 @@ public class ProjectDto {
         @Schema(description = "사업설명")
         private String prjDes;
 
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
-
         /** 현황 */
         @Schema(description = "현황")
         private String saf;
@@ -412,7 +403,7 @@ public class ProjectDto {
 
         /** 사업연도 */
         @Schema(description = "사업연도")
-        private String prjYy;
+        private String bgYy;
 
         /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
         @Schema(description = "경상여부")
@@ -420,7 +411,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /**
          * 품목 목록 (동기화 대상)
@@ -525,10 +516,6 @@ public class ProjectDto {
         @Schema(description = "사업설명")
         private String prjDes;
 
-        /** 추진사유 */
-        @Schema(description = "추진사유")
-        private String pulRsn;
-
         /** 현황 */
         @Schema(description = "현황")
         private String saf;
@@ -595,7 +582,7 @@ public class ProjectDto {
 
         /** 사업연도 (YYYY 형식) */
         @Schema(description = "사업연도")
-        private String prjYy;
+        private String bgYy;
 
         /** 경상여부 ('Y'=경상사업, 'N'=일반 정보화사업) */
         @Schema(description = "경상여부")
@@ -603,7 +590,7 @@ public class ProjectDto {
 
         /** 사업구분 ('신규', '계속') */
         @Schema(description = "사업구분")
-        private String prjDtt;
+        private String pulDtt;
 
         /** 최초 등록 일시 (JPA Auditing) */
         @Schema(description = "최초생성시간")
@@ -674,13 +661,35 @@ public class ProjectDto {
         @Schema(description = "주관부서담당팀장명")
         private String svnDpmTlrNm;
 
-        /** 자본예산: Bitemm의 gclDtt가 "개발비, 기계장치, 기타무형자산"인 항목의 gclAmt 합계 */
+        /** 자본예산: Bitemm의 gclDtt(비목코드)가 공통코드 코드값구분 IOE_CPIT에 해당하는 항목의 gclAmt 합계 */
         @Schema(description = "자본예산")
         private BigDecimal assetBg;
 
-        /** 일반관리비: Bitemm의 gclDtt가 "전산임차료, 전산제비"인 항목의 gclAmt 합계 */
+        /** 개발비: 자본예산 중 코드설명(cdDes)이 '개발비'인 품목의 gclAmt 합계 (IOE-351-*) */
+        @Schema(description = "개발비")
+        private BigDecimal devBg;
+
+        /** 기계장치: 자본예산 중 코드설명(cdDes)이 '기계장치'인 품목의 gclAmt 합계 (IOE-304-*) */
+        @Schema(description = "기계장치")
+        private BigDecimal machBg;
+
+        /** 기타무형자산: 자본예산 중 코드설명(cdDes)이 '기타무형자산'인 품목의 gclAmt 합계 (IOE-359-*) */
+        @Schema(description = "기타무형자산")
+        private BigDecimal intanBg;
+
+        /** 일반관리비: Bitemm의 gclDtt(비목코드)가 공통코드 코드값구분 IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE에 해당하는 항목의 gclAmt 합계 */
         @Schema(description = "일반관리비")
         private BigDecimal costBg;
+
+        /** 예산 합계 일괄 설정 (Lombok 어노테이션 프로세싱 문제 방지용 명시적 메서드) */
+        public void setBudgetAmounts(BigDecimal assetBg, BigDecimal devBg, BigDecimal machBg,
+                BigDecimal intanBg, BigDecimal costBg) {
+            this.assetBg = assetBg;
+            this.devBg = devBg;
+            this.machBg = machBg;
+            this.intanBg = intanBg;
+            this.costBg = costBg;
+        }
 
         /** 신청서 상세 정보 (신청서명, 신청자, 결재자 목록 등) */
         @Schema(description = "신청서 상세 정보")
@@ -717,7 +726,6 @@ public class ProjectDto {
                     .itDpmTlr(project.getItDpmTlr()) // IT부서담당팀장
                     .edrt(project.getEdrt()) // 전결권
                     .prjDes(project.getPrjDes()) // 사업설명
-                    .pulRsn(project.getPulRsn()) // 추진사유
                     .saf(project.getSaf()) // 현황
                     .ncs(project.getNcs()) // 필요성
                     .xptEff(project.getXptEff()) // 기대효과
@@ -734,9 +742,9 @@ public class ProjectDto {
                     .prjPulPtt(project.getPrjPulPtt()) // 프로젝트추진가능성
                     .prjSts(project.getPrjSts()) // 프로젝트상태
                     .delYn(project.getDelYn()) // 삭제여부
-                    .prjYy(project.getPrjYy()) // 사업연도
+                    .bgYy(project.getBgYy()) // 사업연도
                     .ornYn(project.getOrnYn()) // 경상여부
-                    .prjDtt(project.getPrjDtt()) // 사업구분
+                    .pulDtt(project.getPulDtt()) // 사업구분
                     .fstEnrDtm(project.getFstEnrDtm()) // 최초 등록 일시
                     .fstEnrUsid(project.getFstEnrUsid()) // 최초 등록자
                     .lstChgDtm(project.getLstChgDtm()) // 마지막 수정 일시
@@ -901,7 +909,7 @@ public class ProjectDto {
 
         /** 사업연도 필터 (예: "2026"). null이면 전체 연도 조회 */
         @Schema(description = "사업연도 (예: 2026). 미입력 시 전체 조회")
-        private String prjYy;
+        private String bgYy;
 
         /** 프로젝트상태 필터 (예: "계획", "진행중", "완료"). null이면 전체 상태 조회 */
         @Schema(description = "프로젝트상태 (예: 계획, 진행중, 완료). 미입력 시 전체 조회")
@@ -935,7 +943,7 @@ public class ProjectDto {
          * @return 모든 필드가 null 또는 빈 문자열이면 true
          */
         public boolean isEmpty() {
-            return isBlank(apfSts) && isBlank(prjYy) && isBlank(prjSts)
+            return isBlank(apfSts) && isBlank(bgYy) && isBlank(prjSts)
                     && isBlank(prjTp) && isBlank(itDpm) && isBlank(svnDpm) && isBlank(ornYn);
         }
 

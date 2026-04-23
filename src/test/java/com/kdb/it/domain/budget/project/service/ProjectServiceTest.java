@@ -31,6 +31,8 @@ import com.kdb.it.domain.budget.project.repository.ProjectRepository;
 import com.kdb.it.common.approval.repository.ApplicationMapRepository;
 import com.kdb.it.common.approval.repository.ApplicationRepository;
 import com.kdb.it.common.approval.repository.ApproverRepository;
+import com.kdb.it.common.code.repository.CodeRepository;
+import com.kdb.it.common.code.service.CodeService;
 import com.kdb.it.common.iam.repository.OrganizationRepository;
 import com.kdb.it.common.iam.repository.UserRepository;
 import com.kdb.it.common.system.security.CustomUserDetails;
@@ -55,6 +57,10 @@ class ProjectServiceTest {
         private ApplicationRepository capplmRepository;
         @Mock
         private ProjectItemRepository bitemmRepository;
+        @Mock
+        private CodeRepository ccodemRepository;
+        @Mock
+        private CodeService codeService;
         @Mock
         private OrganizationRepository corgnIRepository;
         @Mock

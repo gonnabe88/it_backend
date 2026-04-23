@@ -112,7 +112,7 @@ public class JwtUtil {
         // athIds가 null/빈 리스트이면 기본값 일반사용자 적용
         List<String> effectiveAthIds = (athIds != null && !athIds.isEmpty())
             ? athIds
-            : List.of("ITPZZ001");
+            : List.of(CustomUserDetails.ATH_USER);
 
         return Jwts.builder()
                 .subject(eno)                          // sub 클레임: 사번
@@ -263,33 +263,4 @@ public class JwtUtil {
         return false; // 예외 발생 시 유효하지 않은 토큰으로 처리
     }
 
-    /**
-     * JWT 토큰 만료 여부 확인
-     *
-     * <p>
-     * 토큰의 {@code exp} 클레임과 현재 시각을 비교하여 만료 여부를 반환합니다.
-     * Refresh Token의 만료 여부 확인 또는 추가 검사에 사용할 수 있습니다.
-     * </p>
-     *
-     * <p>
-     * 주의: 파싱 중 예외 발생 시(위변조 토큰 등) 만료된 것으로 처리합니다.
-     * </p>
-     *
-     * @param token 확인할 JWT 토큰 문자열
-     * @return true이면 만료됨, false이면 유효함
-     */
-    public boolean isTokenExpired(String token) {
-        try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-            // exp 클레임의 날짜가 현재 시각보다 이전이면 만료
-            return claims.getExpiration().before(new Date());
-        } catch (Exception e) {
-            // 파싱 실패(위변조, 형식 오류 등)는 만료로 처리
-            return true;
-        }
-    }
 }

@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,11 +66,19 @@ public class ServiceRequestDocDto {
         /**
          * CreateRequest를 {@link Brdocm} 엔티티로 변환합니다.
          *
+         * <p>
+         * 복합 기본키({@code docMngNo}, {@code docVrs})를 구성하기 위해
+         * 서비스 레이어에서 채번된 문서관리번호와 최초 문서버전을 파라미터로 전달받습니다.
+         * </p>
+         *
+         * @param docMngNo 채번된 문서관리번호 (예: DOC-2026-0001)
+         * @param docVrs   문서버전 (최초 생성 시 일반적으로 0.01)
          * @return 변환된 Brdocm 엔티티
          */
-        public Brdocm toEntity() {
+        public Brdocm toEntity(String docMngNo, BigDecimal docVrs) {
             return Brdocm.builder()
-                    .docMngNo(this.docMngNo)
+                    .docMngNo(docMngNo)
+                    .docVrs(docVrs)
                     .reqNm(this.reqNm)
                     .reqCone(this.reqCone != null ? this.reqCone.getBytes(StandardCharsets.UTF_8) : null)
                     .reqDtt(this.reqDtt)
@@ -126,6 +135,10 @@ public class ServiceRequestDocDto {
         @Schema(description = "문서관리번호")
         private String docMngNo;
 
+        /** 문서버전 */
+        @Schema(description = "문서버전")
+        private BigDecimal docVrs;
+
         /** 요구사항명 */
         @Schema(description = "요구사항명")
         private String reqNm;
@@ -158,6 +171,10 @@ public class ServiceRequestDocDto {
         @Schema(description = "최초생성자")
         private String fstEnrUsid;
 
+        /** 최초생성자 이름 (TAAABB_CUSERI JOIN) */
+        @Schema(description = "최초생성자 이름")
+        private String fstEnrUsNm;
+
         /** 마지막수정시간 */
         @Schema(description = "마지막수정시간")
         private LocalDateTime lstChgDtm;
@@ -181,6 +198,7 @@ public class ServiceRequestDocDto {
 
             return Response.builder()
                     .docMngNo(entity.getDocMngNo())
+                    .docVrs(entity.getDocVrs())
                     .reqNm(entity.getReqNm())
                     .reqCone(reqConeStr)
                     .reqDtt(entity.getReqDtt())
@@ -191,6 +209,58 @@ public class ServiceRequestDocDto {
                     .fstEnrUsid(entity.getFstEnrUsid())
                     .lstChgDtm(entity.getLstChgDtm())
                     .lstChgUsid(entity.getLstChgUsid())
+                    .build();
+        }
+    }
+
+    /**
+     * 요구사항 정의서 버전 히스토리 응답 DTO
+     *
+     * <p>
+     * 동일 {@code docMngNo}에 대한 모든 버전 목록을 반환할 때 사용합니다.
+     * 본문(BLOB)은 제외하고 메타 정보만 포함합니다.
+     * </p>
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(name = "ServiceRequestDocVersionResponse", description = "요구사항 정의서 버전 히스토리 응답")
+    public static class VersionResponse {
+
+        /** 문서관리번호 */
+        @Schema(description = "문서관리번호")
+        private String docMngNo;
+
+        /** 문서버전 */
+        @Schema(description = "문서버전")
+        private BigDecimal docVrs;
+
+        /** 최초생성시간 */
+        @Schema(description = "최초생성시간")
+        private LocalDateTime fstEnrDtm;
+
+        /** 마지막수정시간 */
+        @Schema(description = "마지막수정시간")
+        private LocalDateTime lstChgDtm;
+
+        /** 삭제여부 */
+        @Schema(description = "삭제여부")
+        private String delYn;
+
+        /**
+         * {@link Brdocm} 엔티티를 VersionResponse DTO로 변환합니다.
+         *
+         * @param entity 변환할 Brdocm 엔티티
+         * @return 변환된 VersionResponse DTO
+         */
+        public static VersionResponse fromEntity(Brdocm entity) {
+            return VersionResponse.builder()
+                    .docMngNo(entity.getDocMngNo())
+                    .docVrs(entity.getDocVrs())
+                    .fstEnrDtm(entity.getFstEnrDtm())
+                    .lstChgDtm(entity.getLstChgDtm())
+                    .delYn(entity.getDelYn())
                     .build();
         }
     }

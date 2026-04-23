@@ -1,13 +1,13 @@
 ---
 [ 프로젝트 메인 가이드 ]
-본 파일은 IT Portal System 백엔드의 개발 환경, 기술 스택, 코딩 표준을 정의합니다.
+본 파일은 IT Portal 백엔드의 개발 환경, 기술 스택, 코딩 표준을 정의합니다.
 AI 어시스턴트는 코드 생성 시 이 지침을 준수하며, 모든 주석은 한글로 작성합니다.
 ---
 
 ## 1. 프로젝트 개요
-- 명칭: IT Portal System 백엔드 (IT 정보화사업 관리 시스템 REST API 서버)
-- 주요 기능: 정보화사업 및 전산예산 프로젝트 관리, JWT 기반 인증, 로그인 이력 관리
-- 사용자: 약 3,000명의 사내 임직원 (프론트엔드 Nuxt 4 앱과 연동)
+- 명칭: IT Portal (IT 정보화 포탈)
+- 주요 기능: 정보화 예산, 사업, 인력 관리
+- 사용자: 약 3,000명의 사내 임직원
 - 패키지 루트: `com.kdb.it`
 
 ## 2. 기술 스택 (Tech Stack)
@@ -41,15 +41,24 @@ Controller Layer  →  Service Layer  →  Repository Layer  →  Oracle DB
 src/main/java/com/kdb/it/
 ├── config/                  - Spring Security, JPA Auditing, QueryDSL, Swagger 설정
 ├── common/                  - 공통 도메인
-│   ├── approval/            - 결재 (ApplicationMapRepository, ApplicationRepository, ApproverRepository)
-│   ├── iam/                 - 사용자/조직 (UserRepository, OrganizationRepository, RoleRepository)
+│   ├── admin/               - 시스템관리 (AdminController, AdminService — ROLE_ADMIN 전용)
+│   ├── approval/            - 결재 (ApplicationController, ApplicationService)
+│   ├── code/                - 공통코드 (CodeController, CodeService, CodeRepository + Custom)
+│   ├── iam/                 - 사용자/조직/권한 (UserController, OrganizationController, RoleRepository)
 │   ├── system/              - 인증·보안 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
 │   └── util/                - 공통 유틸 (CustomPasswordEncoder, CookieUtil, HtmlSanitizer)
 ├── domain/                  - 비즈니스 도메인 집합
-│   ├── budget/              - 예산 관리 (project, cost, document)
+│   ├── budget/              - 예산 관리
+│   │   ├── project/         - 정보화사업 (ProjectController, ProjectService, Bprojm)
+│   │   ├── cost/            - 전산업무비 (CostController, CostService, Bcostm, Btermm)
+│   │   ├── document/        - 문서 (GuideDocController, ServiceRequestDocController)
+│   │   ├── plan/            - 정보기술부문 계획 (PlanController, PlanService, Bplanm, Bproja)
+│   │   └── work/            - 예산 작업 (BudgetWorkController, BudgetWorkService, Bbugtm)
+│   ├── council/             - 정보화실무협의회 (CouncilController, 8개 서비스, 14개 엔티티)
 │   ├── cdp/                 - 경력개발 (빈 디렉토리)
 │   ├── audit/               - 감사/이력 (빈 디렉토리)
 │   └── entity/              - BaseEntity
+├── exception/               - 전역 예외 핸들러 (GlobalExceptionHandler, CustomGeneralException)
 └── infra/                   - 인프라 도메인
     ├── ai/                  - Gemini AI 연동 (GeminiController, GeminiService)
     └── file/                - 파일 관리 (FileController, FileService, Cfilem, FileRepository)
@@ -68,14 +77,32 @@ src/main/resources/
 | 엔티티         | 테이블명              | 역할              |
 |--------------|---------------------|-----------------|
 | Bprojm       | TAAABB_BPROJM       | 정보화사업 마스터  |
-| CuserI       | TAAABB_CUSERI       | 사용자/직원 정보  |
-| CorgnI       | TAAABB_CORGNI       | 조직/부점 정보   |
 | Bitemm       | TAAABB_BITEMM       | 프로젝트 품목     |
 | Bcostm       | TAAABB_BCOSTM       | 전산관리비        |
+| Btermm       | TAAABB_BTERMM       | 단말기            |
+| Bplanm       | TAAABB_BPLANM       | 정보기술부문 계획  |
+| Bproja       | TAAABB_BPROJA       | 계획-사업 연결    |
+| Bbugtm       | TAAABB_BBUGTM       | 예산 편성률       |
+| Basctm       | TAAABB_BASCTM       | 협의회 심의과제   |
+| Bchklc       | TAAABB_BCHKLC       | 타당성 검토항목   |
+| Bcmmtm       | TAAABB_BCMMTM       | 평가위원          |
+| Bevalm       | TAAABB_BEVALM       | 평가의견          |
+| Bperfm       | TAAABB_BPERFM       | 성과지표          |
+| Bpovwm       | TAAABB_BPOVWM       | 사업개요          |
+| Bpqnam       | TAAABB_BPQNAM       | 사전질의응답      |
+| Brsltm       | TAAABB_BRSLTM       | 결과서            |
+| Bschdm       | TAAABB_BSCHDM       | 일정              |
+| Bgdocm       | TAAABB_BGDOCM       | 가이드 문서       |
+| Brdocm       | TAAABB_BRDOCM       | 요구사항 정의서   |
+| CuserI       | TAAABB_CUSERI       | 사용자/직원 정보  |
+| CorgnI       | TAAABB_CORGNI       | 조직/부점 정보   |
+| CauthI       | TAAABB_CAUTHI       | 자격등급          |
+| CroleI       | TAAABB_CROLEI       | 역할 매핑         |
 | Capplm       | TAAABB_CAPPLM       | 신청서 마스터     |
 | Cappla       | TAAABB_CAPPLA       | 신청서-원본 연결  |
 | Cdecim       | TAAABB_CDECIM       | 결재선 정보       |
 | Ccodem       | TAAABB_CCODEM       | 코드 마스터       |
+| Cfilem       | TAAABB_CFILEM       | 첨부파일          |
 | Clognh       | TAAABB_CLOGNH       | 로그인이력        |
 | Crtokm       | TAAABB_CRTOKM       | 갱신토큰          |
 
@@ -117,6 +144,8 @@ src/main/resources/
 - 비밀번호 암호화: `CustomPasswordEncoder` (SHA-256 + Base64)
 - 모든 보호 API 요청 헤더: `Authorization: Bearer {accessToken}`
 - 공개 엔드포인트 (인증 불필요): `/api/auth/login`, `/api/auth/signup`, `/api/auth/refresh`, `/swagger-ui/**`, `/v3/api-docs/**`
+- 관리자 전용 엔드포인트: `/api/admin/**` — SecurityConfig URL 패턴 + `@PreAuthorize("hasRole('ADMIN')")` 이중 보호
+- RBAC 모델: 자격등급(`CauthI`) + 역할 매핑(`CroleI`) 기반. `ITPAD001`=시스템관리자, `ITPZZ001`=일반사용자, `ITPZZ002`=기획통할담당자
 
 ### 5.7 채번 규칙
 - 정보화사업 관리번호: `PRJ-{사업연도}-{4자리 시퀀스}` (예: `PRJ-2026-0001`)

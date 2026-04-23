@@ -1,6 +1,5 @@
 package com.kdb.it.domain.council.repository;
 
-import com.kdb.it.domain.council.dto.CouncilDto;
 import com.kdb.it.domain.council.entity.Basctm;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -129,7 +128,7 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
                 a.DBR_TP        AS dbrTp,
                 a.CNRC_DT       AS cnrcDt,
                 CASE WHEN a.ASCT_ID IS NOT NULL THEN 1 ELSE 0 END AS applied,
-                p.PRJ_YY        AS prjYy,
+                p.BG_YY         AS prjYy,
                 p.PRJ_TP        AS prjTp,
                 p.SVN_DPM       AS svnDpm,
                 p.PRJ_BG        AS prjBg,
@@ -195,7 +194,7 @@ public interface CouncilRepository extends JpaRepository<Basctm, String> {
                 a.DBR_TP        AS dbrTp,
                 a.CNRC_DT       AS cnrcDt,
                 CASE WHEN a.ASCT_ID IS NOT NULL THEN 1 ELSE 0 END AS applied,
-                p.PRJ_YY        AS prjYy,
+                p.BG_YY         AS prjYy,
                 p.PRJ_TP        AS prjTp,
                 p.SVN_DPM       AS svnDpm,
                 p.PRJ_BG        AS prjBg,

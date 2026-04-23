@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
 import java.util.stream.Collectors;
 
 /**
@@ -72,9 +72,6 @@ public class FeasibilityService {
     // 6개 고정 점검항목 순서
     private static final List<String> CHECK_ITEM_ORDER =
         List.of("MGMT_STR", "FIN_EFC", "RISK_IMP", "REP_IMP", "DUP_SYS", "ETC");
-
-    // 허용 첨부파일 확장자
-    private static final Set<String> ALLOWED_EXT = Set.of("hwp", "hwpx", "pdf");
 
     // =========================================================================
     // 조회

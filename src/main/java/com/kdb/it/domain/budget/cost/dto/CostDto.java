@@ -66,17 +66,13 @@ public class CostDto {
         @Schema(description = "전산업무비코드 (IT관리비관리번호)", example = "COST_2026_0001")
         private String itMngcNo;
 
-        /** 비목명 (예산 비목의 이름, 예: "서버 유지보수") */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 (계약서 명칭) */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
         private String cttNm;
-
-        /** 계약구분 (예: "유지보수", "구매", "용역") */
-        @Schema(description = "계약구분", example = "유지보수")
-        private String cttTp;
 
         /** 계약상대처 (계약 업체명) */
         @Schema(description = "계약상대처", example = "(주)IT솔루션")
@@ -114,13 +110,36 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 (담당자명) */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 (담당자명) */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 (부서코드) */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 (부서코드) */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        /** 담당팀 (팀코드) */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String pulDtt;
+
+        /** 예산연도 */
+        @Schema(description = "예산연도", example = "2026")
+        private String bgYy;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
 
         /**
          * 요청 DTO를 {@link Bcostm} 엔티티로 변환합니다.
@@ -132,9 +151,8 @@ public class CostDto {
             return Bcostm.builder()
                     .itMngcNo(this.itMngcNo) // 전산관리비관리번호
                     .itMngcSno(nextSno) // 전산관리비일련번호
-                    .ioeNm(this.ioeNm) // 비목명
+                    .ioeC(this.ioeC) // 비목코드
                     .cttNm(this.cttNm) // 계약명
-                    .cttTp(this.cttTp) // 계약구분
                     .cttOpp(this.cttOpp) // 계약상대처
                     .itMngcBg(this.itMngcBg) // 전산관리비예산
                     .dfrCle(this.dfrCle) // 지급주기
@@ -144,8 +162,13 @@ public class CostDto {
                     .xcrBseDt(this.xcrBseDt) // 환율기준일자
                     .infPrtYn(this.infPrtYn == null ? "N" : this.infPrtYn) // 정보보호여부 (기본값 "N")
                     .indRsn(this.indRsn) // 증감사유
-                    .pulCgpr(this.pulCgpr) // 추진담당자
-                    .pulDpm(this.pulDpm) // 추진부서
+                    .cgpr(this.cgpr) // 담당자
+                    .biceDpm(this.biceDpm) // 담당부서
+                    .biceTem(this.biceTem) // 담당팀
+                    .abusC(this.abusC) // 사업코드
+                    .itMngcTp(this.itMngcTp) // 전산업무비유형
+                    .pulDtt(this.pulDtt) // 전산업무비구분
+                    .bgYy(this.bgYy) // 예산연도
                     .lstYn("Y") // 최종여부: 신규는 항상 최신
                     .build();
         }
@@ -166,17 +189,13 @@ public class CostDto {
     @Builder
     @Schema(name = "CostDto.UpdateRequest", description = "전산업무비 수정 요청")
     public static class UpdateRequest {
-        /** 비목명 */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
         private String cttNm;
-
-        /** 계약구분 */
-        @Schema(description = "계약구분", example = "유지보수")
-        private String cttTp;
 
         /** 계약상대처 */
         @Schema(description = "계약상대처", example = "(주)IT솔루션")
@@ -214,13 +233,36 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        /** 담당팀 */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String pulDtt;
+
+        /** 예산연도 */
+        @Schema(description = "예산연도", example = "2026")
+        private String bgYy;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
     }
 
     /**
@@ -250,17 +292,13 @@ public class CostDto {
         @Schema(description = "최종여부", example = "Y")
         private String lstYn;
 
-        /** 비목명 */
-        @Schema(description = "비목명", example = "서버 유지보수")
-        private String ioeNm;
+        /** 비목코드 */
+        @Schema(description = "비목코드", example = "IOE001")
+        private String ioeC;
 
         /** 계약명 */
         @Schema(description = "계약명", example = "2026년 서버 유지보수 계약")
         private String cttNm;
-
-        /** 계약구분 */
-        @Schema(description = "계약구분", example = "유지보수")
-        private String cttTp;
 
         /** 계약상대처 */
         @Schema(description = "계약상대처", example = "(주)IT솔루션")
@@ -298,21 +336,68 @@ public class CostDto {
         @Schema(description = "증감사유", example = "물가 상승 반영")
         private String indRsn;
 
-        /** 추진담당자 */
-        @Schema(description = "추진담당자", example = "홍길동")
-        private String pulCgpr;
+        /** 담당자 */
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
 
-        /** 추진부서 */
-        @Schema(description = "추진부서", example = "001")
-        private String pulDpm;
+        /** 담당부서 */
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
 
-        /** 추진부서명: pulDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
-        @Schema(description = "추진부서명")
-        private String pulDpmNm;
+        /** 담당팀 */
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
 
-        /** 추진담당자명: pulCgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 */
-        @Schema(description = "추진담당자명")
-        private String pulCgprNm;
+        /** 사업코드 */
+        @Schema(description = "사업코드", example = "ABUS01")
+        private String abusC;
+
+        /** 전산업무비유형 */
+        @Schema(description = "전산업무비유형", example = "TP01")
+        private String itMngcTp;
+
+        @Schema(description = "전산업무비구분", example = "DTT01")
+        private String pulDtt;
+
+        /** 예산연도 */
+        @Schema(description = "예산연도", example = "2026")
+        private String bgYy;
+
+        /** 금융정보단말기 목록 (1:N) */
+        @Schema(description = "금융정보단말기 목록 (1:N)")
+        private List<TerminalDto> terminals;
+
+        /** 담당부서명: biceDpm(부서코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
+        @Schema(description = "담당부서명")
+        private String biceDpmNm;
+
+        /** 담당팀명: biceTem(팀코드) 기준 TAAABB_CORGNI에서 BBR_NM 조회 */
+        @Schema(description = "담당팀명")
+        private String biceTemNm;
+
+        /** 담당자명: cgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 */
+        @Schema(description = "담당자명")
+        private String cgprNm;
+
+        /** 자본예산: ioeC(비목코드)가 공통코드 코드값구분 IOE_CPIT에 해당하면 itMngcBg, 아니면 0 */
+        @Schema(description = "자본예산")
+        private java.math.BigDecimal assetBg;
+
+        /** 개발비: 자본예산 중 코드설명(cdDes)이 '개발비'인 경우 itMngcBg, 아니면 0 */
+        @Schema(description = "개발비")
+        private java.math.BigDecimal devBg;
+
+        /** 기계장치: 자본예산 중 코드설명(cdDes)이 '기계장치'인 경우 itMngcBg, 아니면 0 */
+        @Schema(description = "기계장치")
+        private java.math.BigDecimal machBg;
+
+        /** 기타무형자산: 자본예산 중 코드설명(cdDes)이 '기타무형자산'인 경우 itMngcBg, 아니면 0 */
+        @Schema(description = "기타무형자산")
+        private java.math.BigDecimal intanBg;
+
+        /** 일반관리비: ioeC(비목코드)가 공통코드 코드값구분 IOE_IDR, IOE_SEVS, IOE_XPN, IOE_LEAFE에 해당하면 itMngcBg, 아니면 0 */
+        @Schema(description = "일반관리비")
+        private java.math.BigDecimal costBg;
 
         /** 삭제여부 (Soft Delete 상태, "Y": 삭제됨, "N": 정상) */
         @Schema(description = "삭제여부", example = "N")
@@ -341,9 +426,8 @@ public class CostDto {
                     .itMngcNo(entity.getItMngcNo()) // 전산관리비관리번호
                     .itMngcSno(entity.getItMngcSno()) // 전산관리비일련번호
                     .lstYn(entity.getLstYn()) // 최종여부
-                    .ioeNm(entity.getIoeNm()) // 비목명
+                    .ioeC(entity.getIoeC()) // 비목코드
                     .cttNm(entity.getCttNm()) // 계약명
-                    .cttTp(entity.getCttTp()) // 계약구분
                     .cttOpp(entity.getCttOpp()) // 계약상대처
                     .itMngcBg(entity.getItMngcBg()) // 전산관리비예산
                     .dfrCle(entity.getDfrCle()) // 지급주기
@@ -353,8 +437,13 @@ public class CostDto {
                     .xcrBseDt(entity.getXcrBseDt()) // 환율기준일자
                     .infPrtYn(entity.getInfPrtYn()) // 정보보호여부
                     .indRsn(entity.getIndRsn()) // 증감사유
-                    .pulCgpr(entity.getPulCgpr()) // 추진담당자
-                    .pulDpm(entity.getPulDpm()) // 추진부서
+                    .cgpr(entity.getCgpr()) // 담당자
+                    .biceDpm(entity.getBiceDpm()) // 담당부서
+                    .biceTem(entity.getBiceTem()) // 담당팀
+                    .abusC(entity.getAbusC()) // 사업코드
+                    .itMngcTp(entity.getItMngcTp()) // 전산업무비유형
+                    .pulDtt(entity.getPulDtt()) // 전산업무비구분
+                    .bgYy(entity.getBgYy()) // 예산연도
                     .delYn(entity.getDelYn()) // 삭제여부
                     .build();
         }
@@ -393,17 +482,21 @@ public class CostDto {
         @Schema(description = "결재상태 필터 (none=신청서없음, 접수/결재중/결재완료 등 실제 상태값). 미입력 시 전체 조회")
         private String apfSts;
 
-        /** 계약구분 필터 (예: "유지보수", "신규계약"). null이면 전체 조회 */
-        @Schema(description = "계약구분 (예: 유지보수, 신규계약). 미입력 시 전체 조회")
-        private String cttTp;
+        /** 연관부서 코드 필터. null이면 전체 조회 */
+        @Schema(description = "연관부서 코드. 미입력 시 전체 조회")
+        private String biceDpm;
 
-        /** 추진부서 코드 필터. null이면 전체 조회 */
-        @Schema(description = "추진부서 코드. 미입력 시 전체 조회")
-        private String pulDpm;
+        /** 연관팀 코드 필터. null이면 전체 조회 */
+        @Schema(description = "연관팀 코드. 미입력 시 전체 조회")
+        private String biceTem;
 
         /** 정보보호여부 필터 ('Y'=정보보호, 'N'=일반). null이면 전체 조회 */
         @Schema(description = "정보보호여부 (Y/N). 미입력 시 전체 조회")
         private String infPrtYn;
+
+        /** 예산연도 필터 (예: "2026"). null이면 전체 조회 */
+        @Schema(description = "예산연도 (예: 2026). 미입력 시 전체 조회")
+        private String bgYy;
 
         /**
          * 모든 조건이 비어있는지 확인 (전체 조회 여부 판단용)
@@ -411,7 +504,7 @@ public class CostDto {
          * @return 모든 필드가 null 또는 빈 문자열이면 true
          */
         public boolean isEmpty() {
-            return isBlank(apfSts) && isBlank(cttTp) && isBlank(pulDpm) && isBlank(infPrtYn);
+            return isBlank(apfSts) && isBlank(biceDpm) && isBlank(biceTem) && isBlank(infPrtYn) && isBlank(bgYy);
         }
 
         private boolean isBlank(String value) {
@@ -436,5 +529,113 @@ public class CostDto {
         /** 조회할 전산관리비관리번호 목록 */
         @Schema(description = "전산업무비코드 목록", example = "[\"COST_2026_0001\", \"COST_2026_0002\"]")
         private List<String> itMngcNos;
+    }
+
+    /**
+     * 금융정보단말기 정보 DTO
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(name = "CostDto.TerminalDto", description = "금융정보단말기 정보")
+    public static class TerminalDto {
+        @Schema(description = "단말기관리번호", example = "TER_2026_0001")
+        private String tmnMngNo;
+
+        @Schema(description = "단말기일련번호", example = "1")
+        private String tmnSno;
+
+        @Schema(description = "단말기명", example = "대면업무용 단말기")
+        private String tmnNm;
+
+        @Schema(description = "단말기이용방법", example = "본회선 활용")
+        private String tmnTuzManr;
+
+        @Schema(description = "단말기용도", example = "창구업무 및 대민지원")
+        private String tmnUsg;
+
+        @Schema(description = "단말기서비스", example = "인터넷/금융 전용망")
+        private String tmnSvc;
+
+        @Schema(description = "단말기금액", example = "1500000")
+        private BigDecimal tmlAmt;
+
+        @Schema(description = "통화", example = "KRW")
+        private String cur;
+
+        @Schema(description = "환율", example = "1")
+        private BigDecimal xcr;
+
+        @Schema(description = "환율기준일자", example = "2026-04-03")
+        private LocalDate xcrBseDt;
+
+        @Schema(description = "지급주기", example = "매월")
+        private String dfrCle;
+
+        @Schema(description = "증감사유", example = "노후 교체에 따른 한시적 인상")
+        private String indRsn;
+
+        @Schema(description = "담당자", example = "홍길동")
+        private String cgpr;
+
+        /** 담당자명: cgpr(사번) 기준 TAAABB_CUSERI에서 USR_NM 조회 (응답 전용) */
+        @Schema(description = "담당자명")
+        private String cgprNm;
+
+        @Schema(description = "담당팀", example = "00101")
+        private String biceTem;
+
+        @Schema(description = "담당부서", example = "001")
+        private String biceDpm;
+
+        @Schema(description = "비고", example = "특이사항 없음")
+        private String rmk;
+
+        /** DTO → Entity 변환 (itMngcNo, itMngcSno는 서비스에서 설정) */
+        public com.kdb.it.domain.budget.cost.entity.Btermm toEntity() {
+            return com.kdb.it.domain.budget.cost.entity.Btermm.builder()
+                    .tmnMngNo(this.tmnMngNo)
+                    .tmnSno(this.tmnSno)
+                    .tmnNm(this.tmnNm)
+                    .tmnTuzManr(this.tmnTuzManr)
+                    .tmnUsg(this.tmnUsg)
+                    .tmnSvc(this.tmnSvc)
+                    .tmlAmt(this.tmlAmt)
+                    .cur(this.cur)
+                    .xcr(this.xcr)
+                    .xcrBseDt(this.xcrBseDt)
+                    .dfrCle(this.dfrCle)
+                    .indRsn(this.indRsn)
+                    .cgpr(this.cgpr)
+                    .biceTem(this.biceTem)
+                    .biceDpm(this.biceDpm)
+                    .rmk(this.rmk)
+                    .delYn("N")
+                    .build();
+        }
+
+        /** Entity → DTO 변환 */
+        public static TerminalDto fromEntity(com.kdb.it.domain.budget.cost.entity.Btermm entity) {
+            return TerminalDto.builder()
+                    .tmnMngNo(entity.getTmnMngNo())
+                    .tmnSno(entity.getTmnSno())
+                    .tmnNm(entity.getTmnNm())
+                    .tmnTuzManr(entity.getTmnTuzManr())
+                    .tmnUsg(entity.getTmnUsg())
+                    .tmnSvc(entity.getTmnSvc())
+                    .tmlAmt(entity.getTmlAmt())
+                    .cur(entity.getCur())
+                    .xcr(entity.getXcr())
+                    .xcrBseDt(entity.getXcrBseDt())
+                    .dfrCle(entity.getDfrCle())
+                    .indRsn(entity.getIndRsn())
+                    .cgpr(entity.getCgpr())
+                    .biceTem(entity.getBiceTem())
+                    .biceDpm(entity.getBiceDpm())
+                    .rmk(entity.getRmk())
+                    .build();
+        }
     }
 }

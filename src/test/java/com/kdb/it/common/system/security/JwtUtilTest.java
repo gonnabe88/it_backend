@@ -120,27 +120,6 @@ class JwtUtilTest {
     }
 
     @Test
-    @DisplayName("토큰 만료 확인 - 유효한 토큰은 false 반환")
-    void isTokenExpired_유효한토큰_false반환() {
-        // given
-        String token = jwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
-
-        // when & then
-        assertThat(jwtUtil.isTokenExpired(token)).isFalse();
-    }
-
-    @Test
-    @DisplayName("토큰 만료 확인 - 만료된 토큰은 true 반환")
-    void isTokenExpired_만료된토큰_true반환() throws InterruptedException {
-        // given
-        String expiredToken = expiredJwtUtil.generateAccessToken("10001", TEST_ATH_IDS, TEST_BBR_C);
-        Thread.sleep(10);
-
-        // when & then
-        assertThat(jwtUtil.isTokenExpired(expiredToken)).isTrue();
-    }
-
-    @Test
     @DisplayName("Access Token과 Refresh Token은 서로 다른 값 (유효시간 차이)")
     void accessToken과RefreshToken_서로다른값() {
         // given

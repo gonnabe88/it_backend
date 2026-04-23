@@ -103,7 +103,7 @@ public class CostController {
      */
     @Operation(summary = "전산관리비 삭제", description = "전산관리비를 삭제(Soft Delete)합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "삭제 성공", content = @Content),
+            @ApiResponse(responseCode = "204", description = "삭제 성공", content = @Content),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 전산관리비", content = @Content)
     })
     @DeleteMapping("/{itMngcNo}")
@@ -111,7 +111,7 @@ public class CostController {
             @Parameter(description = "전산관리비 관리번호", required = true, example = "COST_2026_0001")
             @PathVariable("itMngcNo") String itMngcNo) {
         costService.deleteCost(itMngcNo);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -127,11 +127,9 @@ public class CostController {
      * <li>{@code GET /api/cost} → 전체 조회</li>
      * <li>{@code GET /api/cost?apfSts=none} → 신청서가 없는 전산관리비만</li>
      * <li>{@code GET /api/cost?apfSts=결재중} → 결재중인 전산관리비만</li>
-     * <li>{@code GET /api/cost?cttTp=유지보수} → 유지보수 계약만</li>
-     * <li>{@code GET /api/cost?apfSts=none&cttTp=유지보수} → 복합 조건</li>
      * </ul>
      *
-     * @param condition 검색 조건 (apfSts, cttTp, pulDpm, infPrtYn). 미입력 시 전체 조회
+     * @param condition 검색 조건 (apfSts, biceDpm, biceTem, infPrtYn). 미입력 시 전체 조회
      * @return HTTP 200 + 전산관리비 목록 ({@link CostDto.Response} 리스트)
      */
     @Operation(

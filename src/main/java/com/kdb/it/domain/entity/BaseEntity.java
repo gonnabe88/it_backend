@@ -56,17 +56,17 @@ import java.util.UUID;
 public abstract class BaseEntity {
 
     /** 삭제여부: 'N'=미삭제(기본값), 'Y'=삭제 (Soft Delete용 플래그) */
-    @Column(name = "DEL_YN", length = 1)
+    @Column(name = "DEL_YN", length = 1, comment = "삭제여부")
     private String delYn;
 
     /**
      * 일련번호: UUID v4 기반 전역 고유 식별자 (자동 생성, 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
      */
-    @Column(name = "GUID", length = 38)
+    @Column(name = "GUID", length = 38, comment = "전역고유식별자")
     private String guid;
 
     /** 일련번호2: 기본값 1 (버전 관리 또는 이력 구분용) */
-    @Column(name = "GUID_PRG_SNO")
+    @Column(name = "GUID_PRG_SNO", comment = "진행일련번호")
     private Integer guidPrgSno;
 
     /**
@@ -74,7 +74,7 @@ public abstract class BaseEntity {
      * {@code updatable = false}로 설정하여 이후 업데이트 시 변경되지 않습니다.
      */
     @CreatedDate
-    @Column(name = "FST_ENR_DTM", updatable = false)
+    @Column(name = "FST_ENR_DTM", updatable = false, comment = "최초등록일시")
     private LocalDateTime fstEnrDtm;
 
     /**
@@ -83,21 +83,21 @@ public abstract class BaseEntity {
      * {@code updatable = false}로 설정하여 이후 업데이트 시 변경되지 않습니다.
      */
     @CreatedBy
-    @Column(name = "FST_ENR_USID", length = 14, updatable = false)
+    @Column(name = "FST_ENR_USID", length = 14, updatable = false, comment = "최초등록자사번")
     private String fstEnrUsid;
 
     /**
      * 마지막수정시간: 엔티티가 수정될 때마다 현재 시각이 자동으로 업데이트됩니다.
      */
     @LastModifiedDate
-    @Column(name = "LST_CHG_DTM")
+    @Column(name = "LST_CHG_DTM", comment = "최종변경일시")
     private LocalDateTime lstChgDtm;
 
     /**
      * 마지막수정자: 엔티티가 수정될 때마다 현재 로그인한 사용자의 사번이 자동으로 업데이트됩니다.
      */
     @LastModifiedBy
-    @Column(name = "LST_CHG_USID", length = 14)
+    @Column(name = "LST_CHG_USID", length = 14, comment = "최종변경자사번")
     private String lstChgUsid;
 
     /**
