@@ -79,9 +79,11 @@ public final class HtmlSanitizer {
                 // span: style, class 속성 허용 (글자색·폰트패밀리 등 서식)
                 // data-type, data-file-id, data-file-name, data-file-size: 첨부파일 노드 (FR-05) 보존
                 // data-latex: 인라인 수식 LaTeX 내용 보존 (FR-07: InlineMathExtension)
+                // data-comment-id: 사전협의 인라인 코멘트 마크 ID 보존
+                // data-resolved: 사전협의 인라인 코멘트 해결 여부 보존
                 .addAttributes("span", "style", "class",
                         "data-type", "data-file-id", "data-file-name", "data-file-size",
-                        "data-latex")
+                        "data-latex", "data-comment-id", "data-resolved")
 
                 // ── 체크리스트 요소 (FR-02: Tiptap TaskItem 구조) ──
                 // <label><input type="checkbox"></label><div>내용</div>
