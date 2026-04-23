@@ -1,0 +1,97 @@
+package com.kdb.it.domain.budget.document.controller;
+
+import com.kdb.it.domain.budget.document.dto.ReviewCommentDto;
+import com.kdb.it.domain.budget.document.service.ReviewCommentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * 문서 검토의견 REST 컨트롤러
+ *
+ * <p>
+ * 문서(TAAABB_BRDOCM) 특정 버전에 달린 검토의견(TAAABB_BRIVGM)의
+ * 조회·등록·해결처리 엔드포인트를 제공합니다.
+ * </p>
+ *
+ * <p>
+ * 기본 URL: {@code /api/documents/{docMngNo}/review-comments}
+ * </p>
+ *
+ * <p>
+ * 보안: JWT 토큰 인증 필요
+ * </p>
+ */
+@Tag(name = "검토의견", description = "문서 검토의견 CRUD API")
+@RestController
+@RequestMapping("/api/documents/{docMngNo}/review-comments")
+@RequiredArgsConstructor
+public class ReviewCommentController {
+
+    /** 검토의견 비즈니스 로직 서비스 */
+    private final ReviewCommentService reviewCommentService;
+
+    /**
+     * 특정 문서+버전의 검토의견 목록 조회
+     *
+     * @param docMngNo 문서관리번호 (예: DOC-2026-0001)
+     * @param docVrs   문서버전 (필수)
+     * @return HTTP 200 + 검토의견 응답 DTO 목록 (생성일시 오름차순)
+     */
+    @Operation(summary = "검토의견 목록 조회", description = "특정 문서+버전의 미삭제 검토의견 목록을 조회합니다.")
+    @GetMapping
+    public List<ReviewCommentDto.Response> getComments(
+            @PathVariable String docMngNo,
+            @RequestParam BigDecimal docVrs) {
+        return reviewCommentService.getComments(docMngNo, docVrs);
+    }
+
+    /**
+     * 검토의견 신규 등록
+     *
+     * @param docMngNo 대상 문서관리번호
+     * @param request  검토의견 생성 요청 DTO
+     * @return HTTP 201 Created + 저장된 검토의견 응답 DTO
+     */
+    @Operation(summary = "검토의견 추가", description = "특정 문서+버전에 검토의견을 신규 등록합니다.")
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ReviewCommentDto.Response addComment(
+            @PathVariable String docMngNo,
+            @Valid @RequestBody ReviewCommentDto.CreateRequest request) {
+        return reviewCommentService.addComment(docMngNo, request);
+    }
+
+    /**
+     * 검토의견 해결 처리
+     *
+     * <p>
+     * 지정한 의견일련번호의 RSLV_YN 값을 'Y'로 변경합니다.
+     * </p>
+     *
+     * @param docMngNo 문서관리번호 (URL 일관성을 위해 포함, 현재 사용하지 않음)
+     * @param ivgSno   의견일련번호 (UUID v4 32자)
+     */
+    @Operation(summary = "검토의견 해결 처리", description = "검토의견을 해결 상태로 변경합니다 (RSLV_YN='Y').")
+    @PatchMapping("/{ivgSno}/resolve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resolveComment(
+            @PathVariable String docMngNo,
+            @PathVariable String ivgSno) {
+        reviewCommentService.resolveComment(ivgSno);
+    }
+}
