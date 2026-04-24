@@ -273,14 +273,13 @@ public class ServiceRequestDocService {
      * @param bbrC 부서코드 (TAAABB_CUSERI.BBR_C)
      * @return 대시보드 집계 응답 DTO
      */
-    @Transactional(readOnly = true)
     public ServiceRequestDocDto.DashboardResponse getDashboard(String bbrC) {
         int totalCount     = serviceRequestDocRepository.countTotalByBbrC(bbrC);
         int reviewingCount = serviceRequestDocRepository.countReviewingByBbrC(bbrC);
         int completedCount = serviceRequestDocRepository.countCompletedByBbrC(bbrC);
         int overdueCount   = serviceRequestDocRepository.countOverdueByBbrC(bbrC);
 
-        java.util.List<ServiceRequestDocDto.MonthlyCount> monthlyTrend =
+        List<ServiceRequestDocDto.MonthlyCount> monthlyTrend =
             serviceRequestDocRepository.findMonthlyTrendByBbrC(bbrC).stream()
                 .map(row -> ServiceRequestDocDto.MonthlyCount.builder()
                     .month((String) row[0])
@@ -288,12 +287,20 @@ public class ServiceRequestDocService {
                     .build())
                 .toList();
 
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.util.List<ServiceRequestDocDto.ReviewingItem> recentReviewing =
+        LocalDate today = LocalDate.now();
+        List<ServiceRequestDocDto.ReviewingItem> recentReviewing =
             serviceRequestDocRepository.findRecentReviewingByBbrC(bbrC).stream()
                 .map(row -> {
-                    java.sql.Date fsgTlm = (java.sql.Date) row[4];
-                    boolean delayed = fsgTlm != null && fsgTlm.toLocalDate().isBefore(today);
+                    LocalDate fsgTlmDate = null;
+                    if (row[4] != null) {
+                        // Oracle JDBC는 DATE를 java.sql.Date 또는 java.sql.Timestamp로 반환 가능
+                        if (row[4] instanceof java.sql.Timestamp ts) {
+                            fsgTlmDate = ts.toLocalDateTime().toLocalDate();
+                        } else if (row[4] instanceof java.sql.Date d) {
+                            fsgTlmDate = d.toLocalDate();
+                        }
+                    }
+                    boolean delayed = fsgTlmDate != null && fsgTlmDate.isBefore(today);
                     return ServiceRequestDocDto.ReviewingItem.builder()
                         .docMngNo((String) row[0])
                         .title((String) row[1])
@@ -320,7 +327,6 @@ public class ServiceRequestDocService {
      * @param bbrC 부서코드
      * @return 배지 건수 응답 DTO
      */
-    @Transactional(readOnly = true)
     public ServiceRequestDocDto.BadgeCountResponse getBadgeCount(String bbrC) {
         return ServiceRequestDocDto.BadgeCountResponse.builder()
             .reviewingCount(serviceRequestDocRepository.countReviewingByBbrC(bbrC))
