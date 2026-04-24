@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 /**
  * 신청서 마스터(Capplm) 데이터 접근 리포지토리
  *
@@ -91,7 +93,7 @@ public interface ApplicationRepository extends JpaRepository<Capplm, String> {
         GROUP BY TO_CHAR(a.RQS_DT, 'YYYY-MM')
         ORDER BY 1
         """, nativeQuery = true)
-    java.util.List<Object[]> findMonthlyTrendByBbrC(@Param("bbrC") String bbrC);
+    List<Object[]> findMonthlyTrendByBbrC(@Param("bbrC") String bbrC);
 
     /**
      * 본인 결재 대기 최근 3건
@@ -109,5 +111,5 @@ public interface ApplicationRepository extends JpaRepository<Capplm, String> {
         ORDER BY a.RQS_DT DESC
         FETCH FIRST 3 ROWS ONLY
         """, nativeQuery = true)
-    java.util.List<Object[]> findPendingListByEno(@Param("eno") String eno);
+    List<Object[]> findPendingListByEno(@Param("eno") String eno);
 }

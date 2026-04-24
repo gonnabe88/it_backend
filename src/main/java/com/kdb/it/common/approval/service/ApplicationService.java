@@ -593,7 +593,7 @@ public class ApplicationService {
             applicationRepository.findPendingListByEno(eno).stream()
                 .map(row -> {
                     String rqsDtStr = (String) row[3];
-                    LocalDate rqsDt = LocalDate.parse(rqsDtStr);
+                    LocalDate rqsDt = rqsDtStr != null ? LocalDate.parse(rqsDtStr) : LocalDate.now();
                     String urgency = rqsDt.isBefore(threeDaysAgo) ? "urgent" : "normal";
                     return ApplicationDto.PendingItem.builder()
                         .apfMngNo((String) row[0])
@@ -618,7 +618,7 @@ public class ApplicationService {
     /**
      * 사이드바 배지용 결재 현황 수 조회
      *
-     * @param bbrC 부서코드
+     * @param bbrC 부서코드 (향후 부서 기준 집계 확장용, 현재 미사용)
      * @param eno  사원번호
      * @return 배지 건수 응답 DTO
      */

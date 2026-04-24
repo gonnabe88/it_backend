@@ -381,8 +381,8 @@ public class ApplicationDto {
         @Schema(description = "내가 기안한 진행 중 수") private int inProgressCount;
         @Schema(description = "이번달 부서 완료 수") private int monthlyCompletedCount;
         @Schema(description = "내 반려 수") private int rejectedCount;
-        @Schema(description = "최근 6개월 월별 처리 현황") private java.util.List<MonthlyCount> monthlyTrend;
-        @Schema(description = "내 결재 대기 목록 (최대 3건)") private java.util.List<PendingItem> pendingList;
+        @Schema(description = "최근 6개월 월별 처리 현황") private List<MonthlyCount> monthlyTrend;
+        @Schema(description = "내 결재 대기 목록 (최대 3건)") private List<PendingItem> pendingList;
     }
 
     /**
