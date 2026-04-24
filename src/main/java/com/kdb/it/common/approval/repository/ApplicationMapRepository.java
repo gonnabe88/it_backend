@@ -68,6 +68,15 @@ public interface ApplicationMapRepository extends JpaRepository<Cappla, String> 
                         String orcTbCd, java.util.List<String> orcPkVls);
 
         /**
+         * 신청서 관리번호와 원본 테이블 코드로 신청서 관계 목록 조회
+         *
+         * @param apfMngNo 신청서 관리번호
+         * @param orcTbCd  원본 테이블 코드
+         * @return 해당 신청서에 연결된 원본 데이터 목록
+         */
+        java.util.List<Cappla> findByApfMngNoAndOrcTbCd(String apfMngNo, String orcTbCd);
+
+        /**
          * 원본 데이터에 특정 상태의 신청서가 존재하는지 확인
          *
          * <p>
