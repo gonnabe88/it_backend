@@ -43,7 +43,7 @@ public interface ApplicationRepository extends JpaRepository<Capplm, String> {
     @Query(value = """
         SELECT COUNT(*)
         FROM TAAABB_CAPPLM a
-        JOIN TAAABB_CDECIM d ON a.APF_MNG_NO = d.APF_MNG_NO
+        JOIN TAAABB_CDECIM d ON a.APF_MNG_NO = d.DCD_MNG_NO
         WHERE a.APF_STS = '결재중'
           AND d.DCD_ENO = :eno
           AND d.DCD_DT IS NULL
@@ -104,7 +104,7 @@ public interface ApplicationRepository extends JpaRepository<Capplm, String> {
                TO_CHAR(a.RQS_DT, 'YYYY-MM-DD') AS RQS_DT_STR
         FROM TAAABB_CAPPLM a
         JOIN TAAABB_CUSERI u ON a.RQS_ENO = u.ENO
-        JOIN TAAABB_CDECIM d ON a.APF_MNG_NO = d.APF_MNG_NO
+        JOIN TAAABB_CDECIM d ON a.APF_MNG_NO = d.DCD_MNG_NO
         WHERE a.APF_STS = '결재중'
           AND d.DCD_ENO = :eno
           AND d.DCD_DT IS NULL
