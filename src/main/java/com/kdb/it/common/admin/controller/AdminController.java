@@ -3,6 +3,7 @@ package com.kdb.it.common.admin.controller;
 import com.kdb.it.common.admin.dto.AdminDto;
 import com.kdb.it.common.admin.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +11,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -72,6 +75,7 @@ public class AdminController {
      * 공통코드 수정 (인라인 편집 즉시 저장)
      *
      * @param cdId 코드ID
+     * @param sttDt 시작일자
      * @param req  공통코드 수정 요청 DTO
      * @return 200 OK
      */
@@ -79,8 +83,9 @@ public class AdminController {
     @Operation(summary = "공통코드 수정", description = "공통코드 정보를 수정합니다. 인라인 편집 즉시 저장에 사용됩니다.")
     public ResponseEntity<Void> updateCode(
             @PathVariable("cdId") String cdId,
+            @Parameter(description = "시작일자 (yyyy-MM-dd)", required = true) @RequestParam("sttDt") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sttDt,
             @Valid @RequestBody AdminDto.CodeRequest req) {
-        adminService.updateCode(cdId, req);
+        adminService.updateCode(cdId, sttDt, req);
         return ResponseEntity.ok().build();
     }
 
@@ -89,12 +94,15 @@ public class AdminController {
      * DEL_YN='Y' 처리 — 물리 삭제 아님.
      *
      * @param cdId 코드ID
+     * @param sttDt 시작일자
      * @return 204 No Content
      */
     @DeleteMapping("/codes/{cdId}")
     @Operation(summary = "공통코드 삭제(논리)", description = "DEL_YN='Y'로 논리 삭제합니다. 물리 삭제 아님.")
-    public ResponseEntity<Void> deleteCode(@PathVariable("cdId") String cdId) {
-        adminService.deleteCode(cdId);
+    public ResponseEntity<Void> deleteCode(
+            @PathVariable("cdId") String cdId,
+            @Parameter(description = "시작일자 (yyyy-MM-dd)", required = true) @RequestParam("sttDt") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sttDt) {
+        adminService.deleteCode(cdId, sttDt);
         return ResponseEntity.noContent().build();
     }
 

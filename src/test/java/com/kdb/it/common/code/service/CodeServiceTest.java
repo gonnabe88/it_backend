@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -115,7 +116,8 @@ class CodeServiceTest {
         // given
         CodeDto.CreateRequest request = new CodeDto.CreateRequest();
         request.setCdId("CD001");
-        given(codeRepository.existsByCdId("CD001")).willReturn(true);
+        request.setSttDt(LocalDate.of(2026, 1, 1));
+        given(codeRepository.existsByCdIdAndSttDt("CD001", LocalDate.of(2026, 1, 1))).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> codeService.createCcodem(request))
@@ -131,7 +133,8 @@ class CodeServiceTest {
         request.setCdId("CD001");
         request.setCdNm("테스트코드");
         request.setCttTp("PRJ_TP");
-        given(codeRepository.existsByCdId("CD001")).willReturn(false);
+        request.setSttDt(LocalDate.of(2026, 1, 1));
+        given(codeRepository.existsByCdIdAndSttDt("CD001", LocalDate.of(2026, 1, 1))).willReturn(false);
 
         // when
         String result = codeService.createCcodem(request);
@@ -149,10 +152,11 @@ class CodeServiceTest {
     @DisplayName("updateCcodem: 존재하지 않는 코드ID이면 IllegalArgumentException을 던진다")
     void updateCcodem_존재하지않는코드ID_IllegalArgumentException발생() {
         // given
-        given(codeRepository.findByCdIdAndDelYn("INVALID", "N")).willReturn(Optional.empty());
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("INVALID", sttDt, "N")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> codeService.updateCcodem("INVALID", new CodeDto.UpdateRequest()))
+        assertThatThrownBy(() -> codeService.updateCcodem("INVALID", sttDt, new CodeDto.UpdateRequest()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("INVALID");
     }
@@ -165,10 +169,11 @@ class CodeServiceTest {
     @DisplayName("deleteCcodem: 존재하지 않는 코드ID이면 IllegalArgumentException을 던진다")
     void deleteCcodem_존재하지않는코드ID_IllegalArgumentException발생() {
         // given
-        given(codeRepository.findByCdIdAndDelYn("INVALID", "N")).willReturn(Optional.empty());
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("INVALID", sttDt, "N")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> codeService.deleteCcodem("INVALID"))
+        assertThatThrownBy(() -> codeService.deleteCcodem("INVALID", sttDt))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("INVALID");
     }
@@ -178,10 +183,11 @@ class CodeServiceTest {
     void deleteCcodem_존재하는코드_논리삭제수행() {
         // given
         Ccodem ccodem = mockCcodem("CD001", "PRJ_TP");
-        given(codeRepository.findByCdIdAndDelYn("CD001", "N")).willReturn(Optional.of(ccodem));
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("CD001", sttDt, "N")).willReturn(Optional.of(ccodem));
 
         // when
-        codeService.deleteCcodem("CD001");
+        codeService.deleteCcodem("CD001", sttDt);
 
         // then
         verify(ccodem).delete();

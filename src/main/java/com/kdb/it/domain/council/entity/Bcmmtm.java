@@ -35,7 +35,7 @@ import lombok.experimental.SuperBuilder;
  * <p>복합키: ({@code ASCT_ID}, {@code ENO})</p>
  */
 @Entity
-@Table(name = "TAAABB_BCMMTM")
+@Table(name = "TAAABB_BCMMTM", comment = "협의회 평가위원")
 @IdClass(BcmmtmId.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -45,16 +45,16 @@ public class Bcmmtm extends BaseEntity {
 
     /** 협의회ID: 복합키 첫 번째 컬럼 */
     @Id
-    @Column(name = "ASCT_ID", length = 32, nullable = false)
+    @Column(name = "ASCT_ID", length = 32, nullable = false, comment = "협의회ID")
     private String asctId;
 
     /** 사번: 복합키 두 번째 컬럼 (TAAABB_CUSERI.ENO FK) */
     @Id
-    @Column(name = "ENO", length = 32, nullable = false)
+    @Column(name = "ENO", length = 32, nullable = false, comment = "사번")
     private String eno;
 
     /** 위원유형: MAND(당연위원) / CALL(소집위원) / SECR(간사), CCODEM VLR_TP 기준 */
-    @Column(name = "VLR_TP", length = 32, nullable = false)
+    @Column(name = "VLR_TP", length = 32, nullable = false, comment = "위원유형")
     private String vlrTp;
 
     /**
@@ -66,3 +66,4 @@ public class Bcmmtm extends BaseEntity {
         this.vlrTp = vlrTp;
     }
 }
+

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,23 +76,25 @@ class AdminServiceTest {
     @DisplayName("createCode - 중복 코드ID 존재 시 IllegalArgumentException 발생")
     void createCode_중복코드ID_예외발생() {
         // given: 이미 존재하는 코드ID
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
         AdminDto.CodeRequest req = new AdminDto.CodeRequest(
-                "CODE001", "코드명", "값", "설명", "구분", "구분설명", null, null, 1);
-        given(codeRepository.existsByCdId("CODE001")).willReturn(true);
+                "CODE001", "코드명", "값", "설명", "구분", "구분설명", sttDt, null, 1);
+        given(codeRepository.existsByCdIdAndSttDt("CODE001", sttDt)).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> adminService.createCode(req))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("이미 존재하는 코드ID입니다");
+                .hasMessageContaining("이미 존재하는 코드ID/시작일자입니다");
     }
 
     @Test
     @DisplayName("createCode - 정상 요청 시 codeRepository.save() 호출")
     void createCode_정상요청_저장호출() {
         // given
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
         AdminDto.CodeRequest req = new AdminDto.CodeRequest(
-                "CODE002", "코드명", "값", "설명", "구분", "구분설명", null, null, 1);
-        given(codeRepository.existsByCdId("CODE002")).willReturn(false);
+                "CODE002", "코드명", "값", "설명", "구분", "구분설명", sttDt, null, 1);
+        given(codeRepository.existsByCdIdAndSttDt("CODE002", sttDt)).willReturn(false);
 
         // when
         adminService.createCode(req);
@@ -104,25 +107,27 @@ class AdminServiceTest {
     @DisplayName("updateCode - 미존재 코드ID 수정 시 IllegalArgumentException 발생")
     void updateCode_미존재코드ID_예외발생() {
         // given
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
         AdminDto.CodeRequest req = new AdminDto.CodeRequest(
-                "NONE", "코드명", "값", "설명", "구분", "구분설명", null, null, 1);
-        given(codeRepository.findByCdIdAndDelYn("NONE", "N")).willReturn(Optional.empty());
+                "NONE", "코드명", "값", "설명", "구분", "구분설명", sttDt, null, 1);
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("NONE", sttDt, "N")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> adminService.updateCode("NONE", req))
+        assertThatThrownBy(() -> adminService.updateCode("NONE", sttDt, req))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("존재하지 않는 코드ID입니다");
+                .hasMessageContaining("존재하지 않는 코드ID/시작일자입니다");
     }
 
     @Test
     @DisplayName("deleteCode - 정상 삭제 시 code.delete() 호출 (Soft Delete)")
     void deleteCode_정상삭제_SoftDelete() {
         // given
-        Ccodem code = Ccodem.builder().cdId("CODE001").build();
-        given(codeRepository.findByCdIdAndDelYn("CODE001", "N")).willReturn(Optional.of(code));
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
+        Ccodem code = Ccodem.builder().cdId("CODE001").sttDt(sttDt).build();
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("CODE001", sttDt, "N")).willReturn(Optional.of(code));
 
         // when
-        adminService.deleteCode("CODE001");
+        adminService.deleteCode("CODE001", sttDt);
 
         // then: DEL_YN='Y' 처리 검증
         assertThat(code.getDelYn()).isEqualTo("Y");
@@ -132,14 +137,15 @@ class AdminServiceTest {
     @DisplayName("bulkUpsertCodes - 신규/수정 건수를 정확히 반환한다")
     void bulkUpsertCodes_신규수정건수반환() {
         // given: CODE001은 기존 존재, CODE002는 신규
-        AdminDto.CodeRequest req1 = new AdminDto.CodeRequest("CODE001", "코드1", null, null, null, null, null, null, 1);
-        AdminDto.CodeRequest req2 = new AdminDto.CodeRequest("CODE002", "코드2", null, null, null, null, null, null, 2);
+        LocalDate sttDt = LocalDate.of(2026, 1, 1);
+        AdminDto.CodeRequest req1 = new AdminDto.CodeRequest("CODE001", "코드1", null, null, null, null, sttDt, null, 1);
+        AdminDto.CodeRequest req2 = new AdminDto.CodeRequest("CODE002", "코드2", null, null, null, null, sttDt, null, 2);
         AdminDto.BulkCodeRequest bulkReq = new AdminDto.BulkCodeRequest(List.of(req1, req2));
 
-        Ccodem existingCode = Ccodem.builder().cdId("CODE001").build();
-        given(codeRepository.existsByCdId("CODE001")).willReturn(true);
-        given(codeRepository.findByCdIdAndDelYn("CODE001", "N")).willReturn(Optional.of(existingCode));
-        given(codeRepository.existsByCdId("CODE002")).willReturn(false);
+        Ccodem existingCode = Ccodem.builder().cdId("CODE001").sttDt(sttDt).build();
+        given(codeRepository.existsByCdIdAndSttDt("CODE001", sttDt)).willReturn(true);
+        given(codeRepository.findByCdIdAndSttDtAndDelYn("CODE001", sttDt, "N")).willReturn(Optional.of(existingCode));
+        given(codeRepository.existsByCdIdAndSttDt("CODE002", sttDt)).willReturn(false);
 
         // when
         var result = adminService.bulkUpsertCodes(bulkReq);
