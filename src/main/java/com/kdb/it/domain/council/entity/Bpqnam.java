@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BpqnamL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +24,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>QTN_ID 형식: QTN-{협의회ID}-{순번} (예: QTN-ASCT-2026-0001-01)</p>
  */
+@LogTarget(entity = BpqnamL.class)
 @Entity
 @Table(name = "TAAABB_BPQNAM", comment = "사전질의응답")
 @Getter

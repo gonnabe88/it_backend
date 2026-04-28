@@ -1,5 +1,7 @@
 package com.kdb.it.common.approval.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.CapplmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +41,7 @@ import java.time.LocalDate;
  * 관리번호 형식: {@code APF_{연도}{8자리 시퀀스}} (예: {@code APF_202600000001})
  * </p>
  */
+@LogTarget(entity = CapplmL.class)
 @Entity // JPA 엔티티로 등록
 @Table(name = "TAAABB_CAPPLM", comment = "신청서 마스터") // 매핑할 DB 테이블명
 @Getter // 모든 필드의 getter 자동 생성 (Lombok)

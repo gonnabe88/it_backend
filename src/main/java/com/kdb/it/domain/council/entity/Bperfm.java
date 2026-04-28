@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BperfmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
  *
  * <p>복합키: ({@code ASCT_ID}, {@code DTP_SNO})</p>
  */
+@LogTarget(entity = BperfmL.class)
 @Entity
 @Table(name = "TAAABB_BPERFM", comment = "성과관리 자체계획(성과지표)")
 @IdClass(BperfmId.class)

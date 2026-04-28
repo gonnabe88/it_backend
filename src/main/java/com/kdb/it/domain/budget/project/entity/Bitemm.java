@@ -1,5 +1,7 @@
 package com.kdb.it.domain.budget.project.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BitemmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,6 +37,7 @@ import lombok.experimental.SuperBuilder;
  * 연관 관계: {@code PRJ_MNG_NO} + {@code PRJ_SNO}로 {@link Bprojm}와 연결됩니다.
  * </p>
  */
+@LogTarget(entity = BitemmL.class)
 @Entity // JPA 엔티티로 등록
 @Table(name = "TAAABB_BITEMM", comment = "정보화사업 품목") // 매핑할 DB 테이블명
 @IdClass(BitemmId.class) // 복합키 클래스 지정

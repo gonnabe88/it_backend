@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BchklcL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,6 +31,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>복합키: ({@code ASCT_ID}, {@code CKG_ITM_C})</p>
  */
+@LogTarget(entity = BchklcL.class)
 @Entity
 @Table(name = "TAAABB_BCHKLC", comment = "타당성 자체점검")
 @IdClass(BchklcId.class)

@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BpovwmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +23,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>KPN_TP(저장유형): TEMP(임시저장) / COMPLETE(작성완료)</p>
  */
+@LogTarget(entity = BpovwmL.class)
 @Entity
 @Table(name = "TAAABB_BPOVWM", comment = "협의회 사업개요")
 @Getter

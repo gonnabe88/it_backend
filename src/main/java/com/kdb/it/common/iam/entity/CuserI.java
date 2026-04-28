@@ -5,6 +5,8 @@ import lombok.*;
 
 import lombok.experimental.SuperBuilder;
 import com.kdb.it.common.util.CustomPasswordEncoder;
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.CuserIL;
 import com.kdb.it.domain.entity.BaseEntity;
 
 /**
@@ -29,6 +31,7 @@ import com.kdb.it.domain.entity.BaseEntity;
  * 저장)</li>
  * </ul>
  */
+@LogTarget(entity = CuserIL.class)
 @Entity // JPA 엔티티로 등록
 @Table(name = "TAAABB_CUSERI", comment = "사용자(직원) 정보") // 매핑할 DB 테이블명
 @Getter // 모든 필드의 getter 자동 생성 (Lombok)

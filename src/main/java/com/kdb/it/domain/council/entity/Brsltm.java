@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BrsltmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,6 +27,7 @@ import lombok.experimental.SuperBuilder;
  *   <li>2page: 평균점수 + 종합의견(SYN_OPNN) + 타당성검토의견(CKG_OPNN)</li>
  * </ul>
  */
+@LogTarget(entity = BrsltmL.class)
 @Entity
 @Table(name = "TAAABB_BRSLTM", comment = "협의회 결과서")
 @Getter

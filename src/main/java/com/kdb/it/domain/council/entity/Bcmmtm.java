@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BcmmtmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +36,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>복합키: ({@code ASCT_ID}, {@code ENO})</p>
  */
+@LogTarget(entity = BcmmtmL.class)
 @Entity
 @Table(name = "TAAABB_BCMMTM", comment = "협의회 평가위원")
 @IdClass(BcmmtmId.class)

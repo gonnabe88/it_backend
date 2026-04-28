@@ -1,5 +1,7 @@
 package com.kdb.it.common.code.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.CcodemL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
  * 시스템에서 사용하는 공통코드를 관리합니다.
  * </p>
  */
+@LogTarget(entity = CcodemL.class)
 @Entity
 @Table(name = "TAAABB_CCODEM", comment = "공통코드마스터")
 @Getter

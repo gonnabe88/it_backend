@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BevalmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,6 +27,7 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>복합키: ({@code ASCT_ID}, {@code ENO}, {@code CKG_ITM_C})</p>
  */
+@LogTarget(entity = BevalmL.class)
 @Entity
 @Table(name = "TAAABB_BEVALM", comment = "평가위원 평가의견")
 @IdClass(BevalmId.class)

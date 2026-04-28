@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BasctmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
  * → SCHEDULED → IN_PROGRESS → EVALUATING → RESULT_WRITING
  * → RESULT_REVIEW → FINAL_APPROVAL → COMPLETED</p>
  */
+@LogTarget(entity = BasctmL.class)
 @Entity
 @Table(name = "TAAABB_BASCTM", comment = "정보화실무협의회 기본정보")
 @Getter

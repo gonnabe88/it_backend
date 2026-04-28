@@ -1,5 +1,7 @@
 package com.kdb.it.domain.budget.document.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BrivgmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,6 +35,7 @@ import java.util.UUID;
  * <li>{@code G}: 전반(General) 코멘트 — 문서 전체에 대한 의견</li>
  * </ul>
  */
+@LogTarget(entity = BrivgmL.class)
 @Entity
 @Table(name = "TAAABB_BRIVGM", comment = "문서 검토의견")
 @Getter

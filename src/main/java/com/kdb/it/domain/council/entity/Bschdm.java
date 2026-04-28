@@ -1,5 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
+import com.kdb.it.domain.audit.annotation.LogTarget;
+import com.kdb.it.domain.audit.entity.BschdmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
  *
  * <p>복합키: ({@code ASCT_ID}, {@code ENO}, {@code DSD_DT}, {@code DSD_TM})</p>
  */
+@LogTarget(entity = BschdmL.class)
 @Entity
 @Table(name = "TAAABB_BSCHDM", comment = "협의회 일정")
 @IdClass(BschdmId.class)
