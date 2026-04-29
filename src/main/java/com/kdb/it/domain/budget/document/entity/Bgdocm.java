@@ -1,7 +1,7 @@
 package com.kdb.it.domain.budget.document.entity;
 
-import com.kdb.it.domain.audit.annotation.LogTarget;
-import com.kdb.it.domain.audit.entity.BgdocmL;
+import com.kdb.it.domain.log.annotation.LogTarget;
+import com.kdb.it.domain.log.entity.BgdocmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

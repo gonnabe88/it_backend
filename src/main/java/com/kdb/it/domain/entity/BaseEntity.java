@@ -16,7 +16,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.kdb.it.config.JpaAuditConfig;
-import com.kdb.it.domain.audit.listener.ChangeLogEntityListener;
+import com.kdb.it.domain.log.listener.ChangeLogEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

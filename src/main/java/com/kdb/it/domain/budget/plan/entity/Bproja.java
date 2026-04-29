@@ -1,7 +1,5 @@
 package com.kdb.it.domain.budget.plan.entity;
 
-import com.kdb.it.domain.audit.annotation.LogTarget;
-import com.kdb.it.domain.audit.entity.BprojaL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,7 +24,6 @@ import lombok.experimental.SuperBuilder;
  * <li>{@code bzMngNo}: 업무관리번호 (BPLANM의 PLN_MNG_NO)</li>
  * </ul>
  */
-@LogTarget(entity = BprojaL.class)
 @Entity
 @Table(name = "TAAABB_BPROJA", comment = "프로젝트-계획 관계")
 @IdClass(BprojaId.class)

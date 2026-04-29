@@ -1,7 +1,7 @@
 package com.kdb.it.domain.council.entity;
 
-import com.kdb.it.domain.audit.annotation.LogTarget;
-import com.kdb.it.domain.audit.entity.BpovwmL;
+import com.kdb.it.domain.log.annotation.LogTarget;
+import com.kdb.it.domain.log.entity.BpovwmL;
 import com.kdb.it.domain.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
