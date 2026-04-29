@@ -38,10 +38,13 @@ import com.kdb.it.domain.budget.project.repository.ProjectRepository;
  * ApplicationService 단위 테스트
  *
  * <p>
- * 결재 처리(approve), 신청서 조회(getApplication), 미상신 건수(getPendingCount)를 검증합니다.
+ * 결재 처리(approve), 신청서 조회(getApplication, getApplications, getApplicationsByIds),
+ * 세부내용 조회(getApfDtlCone), 일괄결재(bulkApprove), 배지수(getApprovalBadgeCount),
+ * 미상신 건수(getPendingCount)를 검증합니다.
  * Capplm 엔티티는 protected 생성자를 우회하기 위해 Mockito.mock()으로 생성합니다.
  * Cdecim 엔티티는 @SuperBuilder로 직접 구성합니다. Oracle DB 없이 실행됩니다.
  * </p>
+ * <p>커버리지 60% 달성을 위해 미커버 메서드 테스트 추가 (2026-04-29)</p>
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -231,5 +234,168 @@ class ApplicationServiceTest {
         ApplicationDto.PendingCountResponse result = applicationService.getPendingCount();
 
         assertThat(result.getTotalCount()).isEqualTo(0L);
+    }
+
+    // ───────────────────────────────────────────────────────
+    // getApfDtlCone — 커버리지 60% 달성을 위해 추가 (2026-04-29)
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getApfDtlCone: 존재하지 않는 신청서이면 IllegalArgumentException을 던진다")
+    void getApfDtlCone_신청서없음_IllegalArgumentException발생() {
+        given(applicationRepository.findById(APF_MNG_NO)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> applicationService.getApfDtlCone(APF_MNG_NO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(APF_MNG_NO);
+    }
+
+    @Test
+    @DisplayName("getApfDtlCone: 존재하는 신청서이면 세부내용 응답 DTO를 반환한다")
+    void getApfDtlCone_존재하는신청서_DTO반환() {
+        // Capplm.ApfDtlConeResponse.fromEntity() 가 호출되므로 필요한 필드만 설정
+        Capplm capplm = mock(Capplm.class);
+        given(capplm.getApfMngNo()).willReturn(APF_MNG_NO);
+        given(capplm.getApfDtlCone()).willReturn("{\"test\":\"value\"}");
+        given(applicationRepository.findById(APF_MNG_NO)).willReturn(Optional.of(capplm));
+
+        ApplicationDto.ApfDtlConeResponse result = applicationService.getApfDtlCone(APF_MNG_NO);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getApfMngNo()).isEqualTo(APF_MNG_NO);
+    }
+
+    // ───────────────────────────────────────────────────────
+    // getApplications — 전체 목록 조회
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getApplications: 전체 신청서 목록을 반환한다")
+    void getApplications_전체목록반환() {
+        // given: 두 개의 Capplm Mock 준비
+        Capplm c1 = mock(Capplm.class);
+        Capplm c2 = mock(Capplm.class);
+        given(c1.getApfMngNo()).willReturn(APF_MNG_NO);
+        given(c2.getApfMngNo()).willReturn("APF_202600000002");
+        given(applicationRepository.findAll()).willReturn(List.of(c1, c2));
+        // 각 신청서의 결재자 목록은 빈 목록으로 반환
+        given(approverRepository.findByDcdMngNoOrderByDcdSqnAsc(any())).willReturn(List.of());
+
+        List<ApplicationDto.Response> result = applicationService.getApplications();
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("getApplications: 신청서가 없으면 빈 목록을 반환한다")
+    void getApplications_신청서없음_빈목록반환() {
+        given(applicationRepository.findAll()).willReturn(List.of());
+
+        List<ApplicationDto.Response> result = applicationService.getApplications();
+
+        assertThat(result).isEmpty();
+    }
+
+    // ───────────────────────────────────────────────────────
+    // getApplicationsByIds — 일괄 조회
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getApplicationsByIds: 존재하는 신청서만 반환하고 없는 항목은 제외된다")
+    void getApplicationsByIds_존재하는것만반환() {
+        // given: APF_MNG_NO는 존재, "APF_NONE"은 없음
+        Capplm capplm = mock(Capplm.class);
+        given(capplm.getApfMngNo()).willReturn(APF_MNG_NO);
+        given(applicationRepository.findById(APF_MNG_NO)).willReturn(Optional.of(capplm));
+        given(applicationRepository.findById("APF_NONE")).willReturn(Optional.empty());
+        given(approverRepository.findByDcdMngNoOrderByDcdSqnAsc(APF_MNG_NO)).willReturn(List.of());
+
+        ApplicationDto.BulkGetRequest request = new ApplicationDto.BulkGetRequest();
+        request.setApfMngNos(List.of(APF_MNG_NO, "APF_NONE"));
+
+        List<ApplicationDto.Response> result = applicationService.getApplicationsByIds(request);
+
+        // 존재하는 1건만 반환
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("getApplicationsByIds: 모두 존재하지 않으면 빈 목록을 반환한다")
+    void getApplicationsByIds_모두없음_빈목록반환() {
+        given(applicationRepository.findById(any())).willReturn(Optional.empty());
+
+        ApplicationDto.BulkGetRequest request = new ApplicationDto.BulkGetRequest();
+        request.setApfMngNos(List.of("APF_NONE1", "APF_NONE2"));
+
+        List<ApplicationDto.Response> result = applicationService.getApplicationsByIds(request);
+
+        assertThat(result).isEmpty();
+    }
+
+    // ───────────────────────────────────────────────────────
+    // getApprovalBadgeCount — 배지 건수 조회
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getApprovalBadgeCount: 결재 대기/진행 건수를 정상 반환한다")
+    void getApprovalBadgeCount_정상반환() {
+        given(applicationRepository.countPendingByEno("E10001")).willReturn(3);
+        given(applicationRepository.countInProgressByEno("E10001")).willReturn(2);
+
+        ApplicationDto.ApprovalBadgeCountResponse result =
+                applicationService.getApprovalBadgeCount("BBR001", "E10001");
+
+        assertThat(result.getPendingCount()).isEqualTo(3);
+        assertThat(result.getInProgressCount()).isEqualTo(2);
+    }
+
+    // ───────────────────────────────────────────────────────
+    // bulkApprove — 일괄 결재
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("bulkApprove: 단건 승인 처리 후 성공 결과를 반환한다")
+    void bulkApprove_단건승인_성공결과반환() {
+        // given: approve 처리를 위한 Mock 설정
+        Capplm capplm = mockCapplm();
+        given(applicationRepository.findById(APF_MNG_NO)).willReturn(Optional.of(capplm));
+        given(approverRepository.findByDcdMngNoOrderByDcdSqnAsc(APF_MNG_NO))
+                .willReturn(List.of(pendingApprover("E10001", 1, "Y")));
+
+        // bulkApprove 요청 생성
+        ApplicationDto.ApprovalItem item = new ApplicationDto.ApprovalItem();
+        item.setApfMngNo(APF_MNG_NO);
+        item.setDcdEno("E10001");
+        item.setDcdOpnn("일괄결재테스트");
+        item.setDcdSts("승인");
+
+        ApplicationDto.BulkApproveRequest request = new ApplicationDto.BulkApproveRequest();
+        request.setApprovals(List.of(item));
+
+        // when
+        ApplicationDto.BulkApproveResponse response = applicationService.bulkApprove(request);
+
+        // then
+        assertThat(response.getTotalCount()).isEqualTo(1);
+        assertThat(response.getSuccessCount()).isEqualTo(1);
+        assertThat(response.getFailureCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("bulkApprove: 신청서가 없으면 RuntimeException을 던진다")
+    void bulkApprove_신청서없음_RuntimeException발생() {
+        given(applicationRepository.findById(APF_MNG_NO)).willReturn(Optional.empty());
+
+        ApplicationDto.ApprovalItem item = new ApplicationDto.ApprovalItem();
+        item.setApfMngNo(APF_MNG_NO);
+        item.setDcdEno("E10001");
+        item.setDcdOpnn("일괄결재테스트");
+        item.setDcdSts("승인");
+
+        ApplicationDto.BulkApproveRequest request = new ApplicationDto.BulkApproveRequest();
+        request.setApprovals(List.of(item));
+
+        assertThatThrownBy(() -> applicationService.bulkApprove(request))
+                .isInstanceOf(RuntimeException.class);
     }
 }

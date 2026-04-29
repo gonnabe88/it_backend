@@ -197,4 +197,68 @@ class GuideDocServiceTest {
         // then
         verify(doc).delete();
     }
+
+    // ───────────────────────────────────────────────────────
+    // updateDocument — 정상 수정 케이스
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("updateDocument: 존재하는 문서를 수정하면 문서관리번호를 반환한다")
+    void updateDocument_존재하는문서_수정성공() {
+        // given: 실제 Bgdocm 엔티티 사용 (update() 호출 후 필드 변경 검증)
+        Bgdocm doc = Bgdocm.builder()
+                .docMngNo("GDOC-2026-0001")
+                .docNm("기존 가이드문서")
+                .build();
+        given(guideDocRepository.findByDocMngNoAndDelYn("GDOC-2026-0001", "N"))
+                .willReturn(Optional.of(doc));
+
+        GuideDocDto.UpdateRequest req = new GuideDocDto.UpdateRequest();
+        req.setDocNm("수정된 가이드문서");
+
+        // when
+        String result = guideDocService.updateDocument("GDOC-2026-0001", req);
+
+        // then: 반환값은 문서관리번호, 문서명이 수정됨
+        assertThat(result).isEqualTo("GDOC-2026-0001");
+        assertThat(doc.getDocNm()).isEqualTo("수정된 가이드문서");
+    }
+
+    @Test
+    @DisplayName("updateDocument: JPA Dirty Checking 사용으로 save()가 호출되지 않는다")
+    void updateDocument_save호출없음_DirtyChecking() {
+        // given
+        Bgdocm doc = mockDocument("GDOC-2026-0001", "가이드문서");
+        given(guideDocRepository.findByDocMngNoAndDelYn("GDOC-2026-0001", "N"))
+                .willReturn(Optional.of(doc));
+
+        // when
+        guideDocService.updateDocument("GDOC-2026-0001", new GuideDocDto.UpdateRequest());
+
+        // then: JPA Dirty Checking으로 처리되므로 save() 불필요
+        verify(guideDocRepository, org.mockito.Mockito.never()).save(any(Bgdocm.class));
+    }
+
+    // ───────────────────────────────────────────────────────
+    // createDocument — 번호 직접 지정 생성
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("createDocument: 문서관리번호 직접 지정 시 중복 확인 후 저장한다")
+    void createDocument_번호직접지정_저장성공() {
+        // given: 지정한 번호가 존재하지 않음
+        given(guideDocRepository.existsByDocMngNoAndDelYn("GDOC-2026-9999", "N"))
+                .willReturn(false);
+        GuideDocDto.CreateRequest request = GuideDocDto.CreateRequest.builder()
+                .docMngNo("GDOC-2026-9999")
+                .docNm("직접지정 가이드문서")
+                .build();
+
+        // when
+        String result = guideDocService.createDocument(request);
+
+        // then: 저장 호출 및 지정한 번호 반환
+        assertThat(result).isEqualTo("GDOC-2026-9999");
+        verify(guideDocRepository).save(any(Bgdocm.class));
+    }
 }

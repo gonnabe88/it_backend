@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  *
  * <p>인증 방식: JWT 기반 Stateless 인증</p>
  * <ul>
- *   <li>Access Token: 단기 유효 (기본 1시간), API 요청 시 Authorization 헤더에 포함</li>
+ *   <li>Access Token: 단기 유효 (기본 15분), httpOnly 쿠키로 자동 전송</li>
  *   <li>Refresh Token: 장기 유효 (기본 7일), DB에 저장, Access Token 갱신에 사용</li>
  * </ul>
  *
@@ -123,14 +123,14 @@ public class AuthService {
      *   <li>Access Token 생성 (단기 유효)</li>
      *   <li>Refresh Token 생성 및 DB 저장 (기존 토큰 삭제 후 신규 저장)</li>
      *   <li>로그인 성공 이력 기록</li>
-     *   <li>토큰 및 사용자 정보 반환</li>
+     *   <li>토큰 및 사용자 정보 반환 (컨트롤러에서 httpOnly 쿠키로 변환)</li>
      * </ol>
      *
      * @param eno       로그인할 사번
      * @param password  입력한 비밀번호 (평문)
      * @param ipAddress 클라이언트 IP 주소 (이력 기록용)
      * @param userAgent 클라이언트 User-Agent 문자열 (이력 기록용)
-     * @return 로그인 응답 DTO (Access Token, Refresh Token, 사번, 사용자명)
+     * @return 로그인 응답 DTO (쿠키 생성에 사용할 토큰, 사번, 사용자명, 자격등급)
      * @throws RuntimeException 사용자 미존재 또는 비밀번호 불일치 시
      */
     @Transactional

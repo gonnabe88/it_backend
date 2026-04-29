@@ -1,6 +1,8 @@
 package com.kdb.it.common.admin.controller;
 
 import com.kdb.it.common.admin.dto.AdminDto;
+import com.kdb.it.common.admin.dto.AdminLogDto;
+import com.kdb.it.common.admin.service.AdminLogService;
 import com.kdb.it.common.admin.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,6 +43,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AdminLogService adminLogService;
 
     // =========================================================================
     // 공통코드 관리 (TAAABB_CCODEM)
@@ -410,6 +413,51 @@ public class AdminController {
     @Operation(summary = "첨부파일 목록 조회", description = "삭제되지 않은 전체 첨부파일 목록을 반환합니다.")
     public ResponseEntity<List<AdminDto.FileResponse>> getFiles() {
         return ResponseEntity.ok(adminService.getFiles());
+    }
+
+    // =========================================================================
+    // 상세 로그 조회 (TAAABB_*L) — M9
+    // =========================================================================
+
+    /**
+     * 상세 로그 테이블 목록 조회
+     *
+     * @return 조회 가능한 로그 테이블 메타 정보 목록
+     */
+    @GetMapping("/logs/tables")
+    @Operation(summary = "상세 로그 테이블 목록 조회", description = "관리자가 조회할 수 있는 변경 로그 테이블 목록을 반환합니다.")
+    public ResponseEntity<List<AdminLogDto.LogTableResponse>> getLogTables() {
+        return ResponseEntity.ok(adminLogService.getTables());
+    }
+
+    /**
+     * 상세 로그 목록 조회
+     *
+     * @param logKey   로그 테이블 키
+     * @param pageable 페이지 정보 (기본: 100건)
+     * @return 로그 목록과 컬럼 메타 정보
+     */
+    @GetMapping("/logs/{logKey}")
+    @Operation(summary = "상세 로그 목록 조회", description = "선택한 로그 테이블의 변경 이력을 최신순으로 조회합니다.")
+    public ResponseEntity<AdminLogDto.LogPageResponse> getLogs(
+            @PathVariable("logKey") String logKey,
+            @PageableDefault(size = 100) Pageable pageable) {
+        return ResponseEntity.ok(adminLogService.getLogs(logKey, pageable));
+    }
+
+    /**
+     * 상세 로그 단건 조회
+     *
+     * @param logKey 로그 테이블 키
+     * @param logSno 로그 일련번호
+     * @return 로그 상세 스냅샷
+     */
+    @GetMapping("/logs/{logKey}/{logSno}")
+    @Operation(summary = "상세 로그 단건 조회", description = "로그 일련번호에 해당하는 전체 스냅샷을 조회합니다.")
+    public ResponseEntity<AdminLogDto.LogDetailResponse> getLogDetail(
+            @PathVariable("logKey") String logKey,
+            @PathVariable("logSno") String logSno) {
+        return ResponseEntity.ok(adminLogService.getLogDetail(logKey, logSno));
     }
 
     // =========================================================================

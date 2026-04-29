@@ -179,4 +179,109 @@ class ScheduleServiceTest {
         assertThat(result.get(0).dsdTm()).isEqualTo("10:00");
         assertThat(result.get(0).psbYn()).isEqualTo("Y");
     }
+
+    // ───────────────────────────────────────────────────────
+    // getMySchedule — 추가 케이스
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getMySchedule: 제출한 일정이 없으면 빈 목록을 반환한다")
+    void getMySchedule_일정없음_빈목록반환() {
+        // given: 아직 일정을 제출하지 않은 위원
+        Basctm council = mock(Basctm.class);
+        given(councilService.findActiveCouncil(ASCT_ID)).willReturn(council);
+        given(scheduleRepository.findByAsctIdAndEnoAndDelYn(ASCT_ID, ENO, "N"))
+                .willReturn(List.of());
+
+        // when
+        List<CouncilDto.ScheduleSlotResponse> result =
+                scheduleService.getMySchedule(ASCT_ID, ENO);
+
+        // then: 빈 목록 반환
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getMySchedule: 여러 슬롯을 제출한 경우 모두 반환한다")
+    void getMySchedule_복수슬롯_모두반환() {
+        // given: 3개 슬롯 제출
+        Basctm council = mock(Basctm.class);
+        given(councilService.findActiveCouncil(ASCT_ID)).willReturn(council);
+
+        Bschdm slot1 = mock(Bschdm.class);
+        given(slot1.getDsdDt()).willReturn(TEST_DATE);
+        given(slot1.getDsdTm()).willReturn("10:00");
+        given(slot1.getPsbYn()).willReturn("Y");
+
+        Bschdm slot2 = mock(Bschdm.class);
+        given(slot2.getDsdDt()).willReturn(TEST_DATE);
+        given(slot2.getDsdTm()).willReturn("14:00");
+        given(slot2.getPsbYn()).willReturn("N");
+
+        Bschdm slot3 = mock(Bschdm.class);
+        given(slot3.getDsdDt()).willReturn(TEST_DATE);
+        given(slot3.getDsdTm()).willReturn("15:00");
+        given(slot3.getPsbYn()).willReturn("Y");
+
+        given(scheduleRepository.findByAsctIdAndEnoAndDelYn(ASCT_ID, ENO, "N"))
+                .willReturn(List.of(slot1, slot2, slot3));
+
+        // when
+        List<CouncilDto.ScheduleSlotResponse> result =
+                scheduleService.getMySchedule(ASCT_ID, ENO);
+
+        // then: 3개 슬롯 모두 반환
+        assertThat(result).hasSize(3);
+        assertThat(result.get(1).dsdTm()).isEqualTo("14:00");
+        assertThat(result.get(1).psbYn()).isEqualTo("N");
+    }
+
+    // ───────────────────────────────────────────────────────
+    // submitSchedule — 허용 시간대 경계 및 복수 슬롯 처리
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("submitSchedule: 허용된 시간대 16:00은 정상 저장된다")
+    void submitSchedule_허용시간대16시_정상저장() {
+        // given: 16:00은 허용 시간대
+        Basctm council = mock(Basctm.class);
+        given(councilService.findActiveCouncil(ASCT_ID)).willReturn(council);
+        given(scheduleRepository.findByAsctIdAndEnoAndDsdDtAndDsdTmAndDelYn(
+                ASCT_ID, ENO, TEST_DATE, "16:00", "N"))
+                .willReturn(Optional.empty());
+
+        CouncilDto.ScheduleRequest request = new CouncilDto.ScheduleRequest(
+                List.of(new CouncilDto.ScheduleItem(TEST_DATE, "16:00", "Y")));
+
+        // when
+        scheduleService.submitSchedule(ASCT_ID, request, mockUser(ENO));
+
+        // then: 신규 저장 호출
+        verify(scheduleRepository).save(any(Bschdm.class));
+    }
+
+    @Test
+    @DisplayName("submitSchedule: 복수 슬롯 요청 시 슬롯 수만큼 save가 호출된다")
+    void submitSchedule_복수슬롯_모두처리() {
+        // given: 2개 슬롯 (10:00, 14:00) 동시 제출, 모두 신규
+        Basctm council = mock(Basctm.class);
+        given(councilService.findActiveCouncil(ASCT_ID)).willReturn(council);
+        given(scheduleRepository.findByAsctIdAndEnoAndDsdDtAndDsdTmAndDelYn(
+                ASCT_ID, ENO, TEST_DATE, "10:00", "N"))
+                .willReturn(Optional.empty());
+        given(scheduleRepository.findByAsctIdAndEnoAndDsdDtAndDsdTmAndDelYn(
+                ASCT_ID, ENO, TEST_DATE, "14:00", "N"))
+                .willReturn(Optional.empty());
+
+        CouncilDto.ScheduleRequest request = new CouncilDto.ScheduleRequest(List.of(
+                new CouncilDto.ScheduleItem(TEST_DATE, "10:00", "Y"),
+                new CouncilDto.ScheduleItem(TEST_DATE, "14:00", "Y")
+        ));
+
+        // when
+        scheduleService.submitSchedule(ASCT_ID, request, mockUser(ENO));
+
+        // then: save가 2회 호출됨
+        verify(scheduleRepository, org.mockito.Mockito.times(2)).save(any(Bschdm.class));
+    }
 }

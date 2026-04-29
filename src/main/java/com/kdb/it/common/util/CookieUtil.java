@@ -31,8 +31,8 @@ public class CookieUtil {
     /** Refresh Token 쿠키 이름 */
     public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
-    /** Access Token 쿠키 만료 시간 (30분, 초 단위) */
-    private static final long ACCESS_TOKEN_MAX_AGE = 30 * 60;
+    /** Access Token 쿠키 만료 시간 (15분, 초 단위) - jwt.access-token-validity와 동일하게 유지 */
+    private static final long ACCESS_TOKEN_MAX_AGE = 15 * 60;
 
     /** Refresh Token 쿠키 만료 시간 (7일, 초 단위) */
     private static final long REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
@@ -48,7 +48,7 @@ public class CookieUtil {
      * Access Token httpOnly 쿠키 생성
      *
      * <p>
-     * 모든 API 경로({@code path="/"})에서 전송되며, 30분 후 만료됩니다.
+     * 모든 API 경로({@code path="/"})에서 전송되며, 15분 후 만료됩니다.
      * </p>
      *
      * @param token JWT Access Token 값
@@ -59,7 +59,7 @@ public class CookieUtil {
                 .httpOnly(true) // JavaScript 접근 차단
                 .secure(secureCookie) // HTTPS 전용 여부 (프로파일별)
                 .path("/") // 모든 API 경로에서 전송
-                .maxAge(ACCESS_TOKEN_MAX_AGE) // 30분
+                .maxAge(ACCESS_TOKEN_MAX_AGE) // 15분
                 .sameSite("Lax") // CSRF 방어 + 네비게이션 허용
                 .build();
     }

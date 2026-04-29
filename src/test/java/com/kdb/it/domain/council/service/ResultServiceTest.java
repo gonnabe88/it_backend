@@ -190,4 +190,74 @@ class ResultServiceTest {
         // then
         verify(councilService).changeStatus("ASCT-2026-0001", "RESULT_REVIEW");
     }
+
+    // ───────────────────────────────────────────────────────
+    // saveResult — 추가 케이스
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("saveResult: 이미 RESULT_WRITING 상태이면 중복 상태 전이를 수행하지 않는다")
+    void saveResult_RESULT_WRITING상태_상태전이없음() {
+        // given: 이미 RESULT_WRITING 상태 — 중복 전이 방지 시나리오
+        Basctm council = mock(Basctm.class);
+        given(council.getAsctSts()).willReturn("RESULT_WRITING");
+        given(councilService.findActiveCouncil("ASCT-2026-0001")).willReturn(council);
+        given(resultRepository.findByAsctIdAndDelYn("ASCT-2026-0001", "N"))
+                .willReturn(Optional.empty());
+
+        // when
+        resultService.saveResult("ASCT-2026-0001",
+                new CouncilDto.ResultRequest("종합의견", "타당성의견", null));
+
+        // then: EVALUATING 상태가 아니므로 changeStatus 호출 없음
+        verify(councilService, never()).changeStatus(any(), any());
+    }
+
+    @Test
+    @DisplayName("saveResult: 결과서 신규 저장 시 resultRepository.save()가 호출된다")
+    void saveResult_신규저장시_save호출() {
+        // given
+        Basctm council = mock(Basctm.class);
+        given(council.getAsctSts()).willReturn("EVALUATING");
+        given(councilService.findActiveCouncil("ASCT-2026-0001")).willReturn(council);
+        given(resultRepository.findByAsctIdAndDelYn("ASCT-2026-0001", "N"))
+                .willReturn(Optional.empty());
+
+        // when
+        resultService.saveResult("ASCT-2026-0001",
+                new CouncilDto.ResultRequest("종합의견", "타당성의견", "FL_00000001"));
+
+        // then: 신규 저장 및 EVALUATING → RESULT_WRITING 전이
+        verify(resultRepository).save(any(Brsltm.class));
+        verify(councilService).changeStatus("ASCT-2026-0001", "RESULT_WRITING");
+    }
+
+    // ───────────────────────────────────────────────────────
+    // getResult — 추가 케이스
+    // ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getResult: avgScores 목록이 있으면 DTO에 포함되어 반환된다")
+    void getResult_avgScores있음_DTO포함반환() {
+        // given: 평가위원의 항목별 평균점수 2건 존재
+        Basctm council = mock(Basctm.class);
+        List<CouncilDto.CheckItemAvgScore> avgScores = List.of(
+                new CouncilDto.CheckItemAvgScore("MGMT_STR", "경영전략/계획 부합", 4.5),
+                new CouncilDto.CheckItemAvgScore("FIN_EFC", "재무 효과", 3.0)
+        );
+        given(councilService.findActiveCouncil("ASCT-2026-0001")).willReturn(council);
+        given(resultRepository.findByAsctIdAndDelYn("ASCT-2026-0001", "N"))
+                .willReturn(Optional.empty());
+        given(evaluationService.buildAvgScores("ASCT-2026-0001")).willReturn(avgScores);
+
+        // when
+        CouncilDto.ResultResponse result = resultService.getResult("ASCT-2026-0001");
+
+        // then: avgScores 2건 포함, 첫 번째 항목 코드·점수 검증
+        assertThat(result.avgScores()).hasSize(2);
+        assertThat(result.avgScores().get(0).ckgItmC()).isEqualTo("MGMT_STR");
+        assertThat(result.avgScores().get(0).avgScore()).isEqualTo(4.5);
+        // 결과서 미작성이므로 내용 필드는 null
+        assertThat(result.synOpnn()).isNull();
+    }
 }

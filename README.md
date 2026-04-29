@@ -9,13 +9,13 @@ IT Portal의 백엔드 API 서버로, 정보화 예산, 사업, 인력을 관리
 | 구분 | 기술 | 버전 | 비고 |
 |------|------|------|------|
 | 언어 | Java | 25 | - |
-| 프레임워크 | Spring Boot | 4.0.1 | Spring Framework 7.0 기반 |
+| 프레임워크 | Spring Boot | 4.0.5 | Spring Framework 7.0 기반 |
 | DB | Oracle Database | - | Native Query(시퀀스 채번) 사용 |
-| ORM | Spring Data JPA + QueryDSL | - | 동적 쿼리용 QueryDSL 병행 |
-| 인증 | Spring Security + JWT (JJWT 0.12.3) | - | httpOnly 쿠키 방식 (XSS 방어) |
-| API 문서 | Springdoc OpenAPI 3.0.0 | - | Swagger UI 자동 생성 |
-| 빌드 | Gradle (Kotlin DSL) | - | - |
-| 유틸 | Lombok | - | 보일러플레이트 코드 제거 |
+| ORM | Spring Data JPA + QueryDSL | QueryDSL 5.1.0 | 동적 쿼리용 QueryDSL 병행 |
+| 인증 | Spring Security + JWT | JJWT 0.13.0 | httpOnly 쿠키 방식 (XSS 방어) |
+| API 문서 | Springdoc OpenAPI | 3.0.3 | Swagger UI 자동 생성 |
+| 빌드 | Gradle (Groovy DSL) | - | `build.gradle` 기반 |
+| 유틸 | Lombok, Jsoup | Jsoup 1.18.3 | 보일러플레이트 제거, HTML 새니타이징 |
 
 ## 3. 아키텍처
 
@@ -39,7 +39,7 @@ Controller → Service → Repository → DB (Oracle)
 | **Soft Delete** | 물리 삭제 대신 `DEL_YN='Y'` 논리 삭제 사용 |
 | **복합키** | `@IdClass` 방식으로 복합 기본키 정의 (`ProjectId`, `BcostmId`, `BitemmId`, `CdecimId`) |
 | **JPA Auditing** | `BaseEntity`에서 생성/수정 일시·사용자 자동 관리 |
-| **JWT 인증** | httpOnly 쿠키 기반 Access Token(30분) + Refresh Token(7일), `CookieUtil`로 관리 |
+| **JWT 인증** | httpOnly 쿠키 기반 Access Token(15분) + Refresh Token(7일), `CookieUtil`로 관리 |
 | **비밀번호** | SHA-256 + Base64 인코딩 (`CustomPasswordEncoder`) |
 | **HTML 새니타이징** | `HtmlSanitizer` (Jsoup 기반)으로 서버 측 XSS 방어, 프론트엔드 DOMPurify와 이중 방어 |
 | **Oracle 시퀀스** | 관리번호 채번에 Native Query로 Oracle 시퀀스 사용 |
@@ -80,22 +80,23 @@ BaseEntity (추상 클래스)
  ├── Brdocm      (요구사항 정의서)
  ├── Cfilem      (첨부파일)
  ├── CauthI      (자격등급)
- └── CroleI      (역할 매핑)
+ ├── CroleI      (역할 매핑)
+ ├── Clognh      (로그인 이력)
+ └── Crtokm      (JWT Refresh Token)
 
-독립 엔티티 (BaseEntity 미상속):
- ├── LoginHistory  (로그인 이력, ID 자동 증가)
- └── RefreshToken  (JWT Refresh Token)
+BaseLogEntity (변경 로그 추상 클래스)
+ └── BprojmL, BcostmL, BrdocmL 등 원본 엔티티별 로그 스냅샷
 ```
 
 ## 4. 모듈 관계
 
 ### 4.1 패키지 구조
 
-2026-03-27 도메인 기반 레이어드 아키텍처로 전환 완료.
+2026-04-29 기준 도메인 기반 레이어드 아키텍처와 예산·결재·변경 로그 모듈 구조를 반영합니다.
 
 ```
 com.kdb.it
-├── config/                  # 전역 설정 (Security, JPA, Jackson, QueryDSL, Swagger) — 5개
+├── config/                  # 전역 설정 (Security, JPA, Jackson, QueryDSL, Swagger, Web) — 6개
 ├── exception/               # 전역 예외 핸들러 + 커스텀 예외 — 2개
 ├── common/
 │   ├── system/              # 인증·로그인 (AuthController, AuthService, JwtUtil, JwtAuthenticationFilter)
@@ -108,10 +109,12 @@ com.kdb.it
 │   ├── budget/              # 예산 관리
 │   │   ├── project/         # 정보화사업 (ProjectController, ProjectService, Bprojm)
 │   │   ├── cost/            # 전산업무비 (CostController, CostService, Bcostm, Btermm)
-│   │   ├── document/        # 문서 (GuideDocController, ServiceRequestDocController)
+│   │   ├── document/        # 문서·검토의견 (GuideDocController, ServiceRequestDocController, ReviewCommentController)
 │   │   ├── plan/            # 정보기술부문 계획 (PlanController, PlanService, Bplanm, Bproja)
+│   │   ├── status/          # 예산현황 대시보드 (BudgetStatusController, BudgetStatusService)
 │   │   └── work/            # 예산 작업 (BudgetWorkController, BudgetWorkService, Bbugtm)
 │   ├── council/             # 정보화실무협의회 (CouncilController, 8개 서비스, 9개 Repository)
+│   ├── log/                 # 변경 로그 (BaseLogEntity, *L 로그 엔티티, ChangeLogEntityListener)
 │   ├── cdp/                 # 경력개발 (빈 디렉토리)
 │   ├── audit/               # 감사/이력 (빈 디렉토리)
 │   └── entity/              # BaseEntity
@@ -122,8 +125,8 @@ com.kdb.it
 
 **의존성 규칙 (단방향)**
 ```
-budget → common (O)   infra → common (O)
-common → budget (X)   common → infra  (X)
+domain → common (O)   infra → common (O)
+common → domain (X)   common → infra  (X)
 ```
 
 ### 4.2 도메인 모듈 관계
@@ -134,18 +137,21 @@ common → budget (X)   common → infra  (X)
 | 전산업무비 | `CostController` | `CostService` | `CostRepository` + Custom | `Bcostm`, `Btermm` |
 | 가이드문서 | `GuideDocController` | `GuideDocService` | `GuideDocRepository` | `Bgdocm` |
 | 요구사항정의서 | `ServiceRequestDocController` | `ServiceRequestDocService` | `ServiceRequestDocRepository` | `Brdocm` |
+| 검토의견 | `ReviewCommentController` | `ReviewCommentService` | `BrivgmRepository` | `Brivgm` |
 | 정보기술부문계획 | `PlanController` | `PlanService` | `BplanmRepository`, `BprojaRepository` | `Bplanm`, `Bproja` |
+| 예산현황 | `BudgetStatusController` | `BudgetStatusService` | `BudgetStatusQueryRepository` | - |
 | 예산작업 | `BudgetWorkController` | `BudgetWorkService` | `BbugtmRepository` + Custom | `Bbugtm` |
 | 정보화실무협의회 | `CouncilController` | `CouncilService` 외 7개 | `CouncilRepository` 외 8개 | `Basctm` 외 13개 |
 | 신청서(결재) | `ApplicationController` | `ApplicationService` | `ApplicationRepository`, `ApplicationMapRepository`, `ApproverRepository` | `Capplm`, `Cappla`, `Cdecim` |
-| 인증 | `AuthController` | `AuthService` | `UserRepository`, `RefreshTokenRepository`, `LoginHistoryRepository` | `CuserI`, `RefreshToken`, `LoginHistory` |
+| 인증 | `AuthController` | `AuthService` | `UserRepository`, `RefreshTokenRepository`, `LoginHistoryRepository` | `CuserI`, `Crtokm`, `Clognh` |
 | 공통코드 | `CodeController` | `CodeService` | `CodeRepository` + Custom | `Ccodem` |
 | 시스템관리 | `AdminController` | `AdminService` | (기존 Repository 활용) | (기존 Entity 활용) |
 | 사용자 | `UserController` | `UserService` | `UserRepository` | `CuserI` |
 | 조직 | `OrganizationController` | `OrganizationService` | `OrganizationRepository` | `CorgnI` |
 | 첨부파일 | `FileController` | `FileService` | `FileRepository` | `Cfilem` |
 | Gemini AI | `GeminiController` | `GeminiService` | `FileRepository` (파일 첨부) | - |
-| 로그인이력 | `LoginHistoryController` | `LoginHistoryService` | `LoginHistoryRepository` | `LoginHistory` |
+| 로그인이력 | `LoginHistoryController` | `LoginHistoryService` | `LoginHistoryRepository` | `Clognh` |
+| 변경로그 | - | `ChangeLogEntityListener`, `AuditLogPersister` | `EntityManager` 직접 저장 | `BaseLogEntity` 하위 `*L` 엔티티 |
 
 ## 5. 인증/인가 흐름
 
@@ -177,8 +183,10 @@ common → budget (X)   common → infra  (X)
 | GET/POST | `/api/costs/**` | 전산관리비 CRUD | 필요 |
 | GET/POST | `/api/applications/**` | 신청서(결재) 관리 | 필요 |
 | GET/POST | `/api/documents/**` | 요구사항 정의서 CRUD | 필요 |
+| GET/POST | `/api/documents/{documentId}/review-comments/**` | 요구사항 정의서 검토의견 CRUD | 필요 |
 | GET/POST | `/api/guide-documents/**` | 가이드 문서 CRUD | 필요 |
 | GET/POST | `/api/plans/**` | 정보기술부문 계획 CRUD | 필요 |
+| GET | `/api/budget/status/**` | 예산현황 집계·대시보드 조회 | 필요 |
 | GET/POST | `/api/budget/work/**` | 예산 편성률 적용 (비목조회/적용/결과) | 필요 |
 | GET/POST/PUT/PATCH | `/api/council/**` | 정보화실무협의회 (23개 엔드포인트) | 필요 |
 | GET/POST/PUT/DELETE | `/api/admin/**` | 시스템 관리 (ROLE_ADMIN 전용) | 필요 (관리자) |
@@ -203,23 +211,26 @@ common → budget (X)   common → infra  (X)
 # 실행
 ./gradlew bootRun
 
-# 테스트 (45개 단위 테스트 — ProjectServiceTest, AuthServiceTest 등)
+# 테스트 (2026-04-29 기준 35개 테스트 파일 / 291개 케이스)
 ./gradlew test
 ```
 
 ## 8. 환경 설정
 
-- `application.properties`: DB 접속 정보, JWT 비밀키/유효시간, CORS 도메인 설정
-- CORS: `cors.allowed-origins` 속성으로 허용 도메인 관리 (기본값 `*`, 운영 시 도메인 지정)
+- `application.properties`: DB 접속 정보, JWT 비밀키/유효시간, CORS 도메인, 쿠키, 파일, Gemini 설정
+- CORS: `cors.allowed-origins=http://localhost:3000,http://localhost:3002` 기준으로 로컬 프론트엔드 허용
 - CSRF: Stateless JWT 방식으로 비활성화
 - 쿠키: `app.cookie.secure` 속성으로 Secure 플래그 제어 (개발=false, 운영=true)
-- Gemini AI: `gemini.api.key`, `gemini.api.base-url`, `gemini.api.model` 설정 필요
-- 파일 업로드: `file.upload.path` 속성으로 저장 경로 설정
+- JWT: `jwt.access-token-expiration=900000`(15분), `jwt.refresh-token-expiration=604800000`(7일)
+- Gemini AI: `gemini.api.key`, `gemini.api.base-url`, `gemini.api.model=gemini-2.5-flash` 설정
+- 파일 업로드: `app.file.base-path=C:/data/files`, multipart 최대 50MB/요청 200MB
+- 서버 식별자: `app.server.instance-id=SVR1`로 파일 ID 등 서버 구분값 관리
 
 ## 9. 변경 이력
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-29 | README 현행화: Spring Boot/JJWT/Springdoc 버전, 15분 Access Token, 예산현황·검토의견·변경로그 도메인, 테스트/환경 설정 반영 |
 | 2026-04-10 | 전체 프로젝트 문서/주석 리프레시 (README/CLAUDE/TASK.md 최신화, AdminController JavaDoc 보강) |
 | 2026-04-05 | 정보화실무협의회(council) 도메인 구현: CouncilController(23 엔드포인트), 8개 서비스, 14개 엔티티, 9개 Repository |
 | 2026-04-04 | 시스템관리(admin) 모듈 구현: AdminController/AdminService, @PreAuthorize ROLE_ADMIN 이중 보호 |
